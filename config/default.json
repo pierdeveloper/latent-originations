@@ -1,0 +1,11 @@
+{
+    "mongoURI": "mongodb+srv://hegevall:Pperry11@cluster0.gupcm.mongodb.net/<dbname>?retryWrites=true&w=majority",
+    "jwtSecret": "mysecrettoken123100!",
+    "githubClientId": "63df2ff88d282e5a5fef",
+    "githubSecret": "beb10bcacfbc364afe3e6133d801b0a0a7488052",
+    "etherscanAPIKey": "DCW5TYYI1PWHU6Q5QSHDZ63ZB8I5SA3BE7",
+    "accountVerificationPubKey": "1566w8n3X8Ph7BibV4GgAAFiL5QHG5jQm1",
+    "accountVerificationETHpubKey": "0x7298B668ffcbF2043ff2dd3e31d9BB3e447C19D1",
+    "ethDivisor": "1000000000000000000",
+    "cryptoCompareApiKey": "c6179e5e410ce8dcb20b145d647c86fd05930fb801f202c87ed5410dace2b76e"
+}
