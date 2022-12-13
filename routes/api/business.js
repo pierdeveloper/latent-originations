@@ -20,7 +20,8 @@ router.post('/', businessValidationRules(), async (req, res) => {
             dba_name, 
             ein, 
             incorporation_date, 
-            kyc_completion_date } = req.body
+            kyc_completion_date,
+            phone } = req.body
 
         let business = await Business.findOne({ ein })
 
@@ -37,7 +38,8 @@ router.post('/', businessValidationRules(), async (req, res) => {
             dba_name,
             ein,
             incorporation_date,
-            kyc_completion_date
+            kyc_completion_date,
+            phone
         })
         
         await business.save()

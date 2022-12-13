@@ -60,22 +60,37 @@ const businessValidationRules = () => {
 
   const offerValidationRules = () => {
     return [
-        check('offer.amount', 'Amount must be integer within state limits')
-            .isInt({min:0, max:100000000}),
-        check('offer.interest_free_period', 'Interest free period must be a number between 0 and 365')
+        check('offer.amount', 'Amount must be an integer greater than or equal to 0')
+            .isInt({min:0}),
+        check('offer.interest_free_period', 'Interest free period must be an integer between 0 and 365')
             .isInt({min:0, max:365}),
-        check('offer.interest_rate', 'Interest rate must be a number between 0 and 10000')
-            .isInt({min:0, max:10000}),
-        check('offer.late_payment_fee', "late payment fee must be a number between 0 and 50000")
+        check('offer.interest_rate', 'Interest rate must be an integer greater than or equal to 0')
+            .isInt({min:0}),
+        check('offer.late_payment_fee', "late payment fee must be an integer between 0 and 50000")
             .isInt({min:0, max:50000}),
         check('offer.repayment_frequency', 'Repayment frequency must be one of: weekly, biweekly, monthly')
             .isIn(['weekly', 'biweekly', 'monthly'])
-        
+    ]
+  }
+
+  const rejectionValidationRules = () => {
+    return [
+        check('rejection_reason', 'Rejection reason is not a valid reason')
+            .isIn(config.rejection_reasons)
+    ]
+  }
+
+  const customerValidationRules = () => {
+    return [
+        check('email', 'Must be valid email')
+            .isEmail()
     ]
   }
 
   module.exports = {
     businessValidationRules,
+    customerValidationRules,
     applicationValidationRules,
-    offerValidationRules
+    offerValidationRules,
+    rejectionValidationRules
   }

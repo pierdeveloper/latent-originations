@@ -89,6 +89,10 @@ const BusinessSchema = new mongoose.Schema({
         email: {
             type: String,
             required: true
+        },
+        title: {
+            type: String,
+            required: true
         }
     },
     business_name: {
@@ -116,6 +120,10 @@ const BusinessSchema = new mongoose.Schema({
         required: true
     },
     kyc_completion_date: {
+        type: String,
+        required: true
+    },
+    phone: {
         type: String,
         required: true
     }

@@ -5,20 +5,20 @@ const DocumentSchema = new mongoose.Schema({
         type: String,
         default: "pending_signature"
     },
-    created_at: {
+    created_on: {
         type: Date,
         default: Date.now
     },
-    doctype: {
+    type: {
         type: String,
-        default: "loan_agreement"
+        default: "commercial_line_of_credit_agreement"
     },
     application_id: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'application',
         required: true
     },
-    date_signed: {
+    signature_timestamp: {
         type: Date,
         required: false
     },
