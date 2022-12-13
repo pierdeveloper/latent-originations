@@ -8,7 +8,7 @@ const { customerValidationRules } = require('../../helpers/validator.js');
 // @route     POST customer
 // @desc      Create a Pier customer profile w/ api keys
 // @access    PRIVATE
-router.post('/', customerValidationRules, async (req, res) => {
+router.post('/', customerValidationRules(), async (req, res) => {
     const errors = validationResult(req);
     if(!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array()});

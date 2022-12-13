@@ -5,6 +5,10 @@ const DocumentSchema = new mongoose.Schema({
         type: String,
         default: "pending_signature"
     },
+    client_id: {
+        type: String,
+        required: false
+    },
     created_on: {
         type: Date,
         default: Date.now

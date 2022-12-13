@@ -1,4 +1,5 @@
 const express = require('express');
+const auth = require('../../middleware/auth');
 const router = express.Router();
 const Business = require('../../models/Business');
 const { validationResult } = require('express-validator');
@@ -7,12 +8,16 @@ const { businessValidationRules } = require('../../helpers/validator.js');
 // @route     POST user
 // @desc      Create a business user
 // @access    Public
-router.post('/', businessValidationRules(), async (req, res) => {
+router.post('/', [auth, businessValidationRules()], async (req, res) => {
+    
     const errors = validationResult(req);
     if(!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array()});
     }
+
     try {
+        const client_id = req.client_id
+
         const { address, beneficial_owners,
             business_contact,
             business_name, 
@@ -23,7 +28,7 @@ router.post('/', businessValidationRules(), async (req, res) => {
             kyc_completion_date,
             phone } = req.body
 
-        let business = await Business.findOne({ ein })
+        let business = await Business.findOne({ ein, client_id })
 
         if (business) {
             return res.status(400).json({ errors: [ { msg: 'Business with this EIN already exists' }] });
@@ -35,6 +40,7 @@ router.post('/', businessValidationRules(), async (req, res) => {
             business_contact,
             business_name,
             business_type,
+            client_id,
             dba_name,
             ein,
             incorporation_date,
@@ -56,11 +62,11 @@ router.post('/', businessValidationRules(), async (req, res) => {
 // @route     PATCH business borrower
 // @desc      Update a business user
 // @access    Public
-router.patch('/:id', businessValidationRules(), async (req, res) => {
+router.patch('/:id', [auth, businessValidationRules()], async (req, res) => {
     try {
         // find the user
         let business = await Business.findById(req.params.id);
-        if (!business) {
+        if (!business || business.client_id !== req.client_id) {
             return res.status(404).json({ msg: 'Business not found' })
         }
         // validations
@@ -110,10 +116,10 @@ router.patch('/:id', businessValidationRules(), async (req, res) => {
 // @route     GET business borrower by id
 // @desc      Retrieve a business borrower's details
 // @access    Public
-router.get('/:id', async (req, res) => {
+router.get('/:id', [auth], async (req, res) => {
     try {
         const business = await Business.findById(req.params.id);
-        if(!business) {
+        if(!business || business.client_id !== req.client_id) {
             return res.status(404).json({ msg: 'Business not found' });
         }
         res.json(business);
@@ -129,9 +135,9 @@ router.get('/:id', async (req, res) => {
 // @route     GET business borrowers
 // @desc      List all business borrowers
 // @access    Public
-router.get('/', async (req, res) => {
+router.get('/', [auth], async (req, res) => {
     try {
-        const businesses = await Business.find();
+        const businesses = await Business.find({ client_id: req.client_id });
         res.json(businesses);
     } catch(err) {
         console.error(err.message);

@@ -1,4 +1,5 @@
 const express = require('express');
+const auth = require('../../middleware/auth');
 const Business = require('../../models/Business');
 const router = express.Router();
 const Document = require('../../models/Document');
@@ -10,13 +11,13 @@ const Application = require('../../models/Application');
 // @route     POST document
 // @desc      Create a loan agreement pdf for user
 // @access    Public
-router.post('/loan_agreement', async (req, res) => {
+router.post('/loan_agreement', [auth], async (req, res) => {
     try {
 
         // get application and borrower info
         const { application_id } = req.body
         const application = await Application.findById(application_id)
-        if(!application) {
+        if(!application || application.client_id !== req.client_id) {
             return res.status(404).json({ msg: "Application not found"});
         }
         if(application.status !== 'approved') {
@@ -81,7 +82,8 @@ router.post('/loan_agreement', async (req, res) => {
                 const doc_url = get_body_json.download_url
                 const loan_document = new Document({
                     application_id: application_id,
-                    document_url: doc_url
+                    document_url: doc_url,
+                    client_id: req.client_id
 
                 })
                 loan_document.save()
@@ -100,13 +102,13 @@ router.post('/loan_agreement', async (req, res) => {
 // @route PATCH document
 // @desc Sign loan agreement
 // @access Public
-router.put('/loan_agreement/:id/sign', async (req, res) => {
+router.patch('/loan_agreement/:id/sign', [auth], async (req, res) => {
     // change loan doc status to signed
     // add time stamp of signuate
     // update application status 
     try {
         let loan_agreement = await Document.findById(req.params.id);
-        if(!loan_agreement) {
+        if(!loan_agreement || loan_agreement.client_id !== req.client_id) {
             return res.status(404).json({ msg: 'Document not found' })
         }
         if(loan_agreement.status !== 'pending_signature') {
@@ -130,10 +132,10 @@ router.put('/loan_agreement/:id/sign', async (req, res) => {
 // @route     GET document by id
 // @desc      Retrieve a document's details
 // @access    Public
-router.get('/:id', async (req, res) => {
+router.get('/:id', [auth], async (req, res) => {
     try {
         const document = await Document.findById(req.params.id);
-        if(!document) {
+        if(!document || document.client_id !== req.client_id) {
             return res.status(404).json({ msg: 'Document not found' });
         }
         res.json(document);
@@ -149,9 +151,9 @@ router.get('/:id', async (req, res) => {
 // @route     GET all documents
 // @desc      List all documents
 // @access    Public
-router.get('/', async (req, res) => {
+router.get('/', [auth], async (req, res) => {
     try {
-        const documents = await Document.find();
+        const documents = await Document.find({ client_id: req.client_id });
         res.json(documents);
     } catch(err) {
         console.error(err.message);

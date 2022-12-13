@@ -103,6 +103,10 @@ const BusinessSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    client_id: {
+        type: String,
+        required: false
+    },
     created_on: {
         type: Date,
         default: Date.now

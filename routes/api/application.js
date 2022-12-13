@@ -1,4 +1,5 @@
 const express = require('express');
+const auth = require('../../middleware/auth');
 const config = require('config');
 const router = express.Router();
 const Application = require('../../models/Application');
@@ -10,17 +11,19 @@ const { applicationValidationRules,
 // @route     POST application
 // @desc      Create a credit application
 // @access    Public
-router.post('/', applicationValidationRules(), async (req, res) => {
+router.post('/', [auth, applicationValidationRules()], async (req, res) => {
     const errors = validationResult(req);
     if(!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array()});
     }
 
     try {
+        const client_id = req.client_id;
         const { borrower_id, credit_type  } = req.body
 
         let application = new Application({
             borrower_id,
+            client_id,
             credit_type
         })
         
@@ -29,9 +32,6 @@ router.post('/', applicationValidationRules(), async (req, res) => {
 
     } catch (err) {
         console.error(err);
-        if(err.kind === 'ObjectId') {
-            return res.status(404).json({ msg: 'Business id does not exist' });
-        }
         res.status(500).send("Server Error");
     }
 });
@@ -39,7 +39,7 @@ router.post('/', applicationValidationRules(), async (req, res) => {
 // @route PATCH applications/reject
 // @desc Reject credit application
 // @access Public
-router.patch('/:id/reject', rejectionValidationRules(), async (req, res) => {
+router.patch('/:id/reject', [auth, rejectionValidationRules()], async (req, res) => {
     const errors = validationResult(req);
     if(!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
@@ -55,11 +55,11 @@ router.patch('/:id/reject', rejectionValidationRules(), async (req, res) => {
 
     try {
         let application = await Application.findById(req.params.id);
-        if(!application) {
+        if(!application || application.client_id !== req.client_id) {
             return res.status(404).json({ msg: 'Application not found'});
         }
 
-        if(application.status != "pending") {
+        if(application.status !== "pending") {
             return res.status(404).json({ msg: 'Only applications with a status=pending can be rejected' });
         }
 
@@ -77,7 +77,7 @@ router.patch('/:id/reject', rejectionValidationRules(), async (req, res) => {
 // @route PATCH application
 // @desc Approve credit application
 // @access Public
-router.patch('/:id/approve', offerValidationRules(), async (req, res) => {
+router.patch('/:id/approve', [auth, offerValidationRules()], async (req, res) => {
 
     const errors = validationResult(req);
     if(!errors.isEmpty()) {
@@ -96,11 +96,11 @@ router.patch('/:id/approve', offerValidationRules(), async (req, res) => {
 
     try {
         let application = await Application.findById(req.params.id);
-        if (!application) {
+        if (!application || application.client_id !== req.client_id) {
             return res.status(404).json({ msg: 'Application not found' })
         }
 
-        if(application.status != "pending") {
+        if(application.status !== "pending") {
             return res.status(404).json({ msg: 'Only applications with a status=pending can be approved' });
         }
 
@@ -150,10 +150,10 @@ router.patch('/:id/approve', offerValidationRules(), async (req, res) => {
 // @route     GET application by id
 // @desc      Retrieve an application's details
 // @access    Public
-router.get('/:id', async (req, res) => {
+router.get('/:id', [auth], async (req, res) => {
     try {
         const application = await Application.findById(req.params.id);
-        if(!application) {
+        if(!application || application.client_id !== req.client_id) {
             return res.status(404).json({ msg: 'Application not found' });
         }
         res.json(application);
@@ -169,9 +169,9 @@ router.get('/:id', async (req, res) => {
 // @route     GET applications
 // @desc      List all applications
 // @access    Public
-router.get('/', async (req, res) => {
+router.get('/', [auth], async (req, res) => {
     try {
-        const applications = await Application.find();
+        const applications = await Application.find({ client_id: req.client_id });
         res.json(applications);
     } catch(err) {
         console.error(err.message);
