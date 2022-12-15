@@ -51,10 +51,6 @@ const ConsumerSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    phone: {
-        type: String,
-        required: true
-    },
     ssn: {
         type: String,
         required: true

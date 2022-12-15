@@ -63,13 +63,11 @@ const consumerValidationRules = () => {
         check('address.zip', 'Zip code must be 5 digits')
             .isNumeric().isLength({min:5, max:5}),
         check('address.state', "State must be valid 2-digit US state abbreviation")
-            .isIn(config.states),
+            .isIn(config.consumer_state_limits),
         check('date_of_birth', 'Date of Birth format must conform to yyyy-mm-dd')
             .isDate({format:"yyyy-mm-dd", strictMode:true}),
         check('email', 'Email must be a valid email')
             .isEmail(),
-        check('phone', 'Phone must be a 10-digit US number')
-            .isNumeric().isLength({min:10, max:10}),
         check('ssn', 'SSN must be 9-digits')
             .isLength({min:9, max:9}).isNumeric(),
         check('kyc_completion_date', 'KYC completion date format must conform to yyyy-mm-dd')

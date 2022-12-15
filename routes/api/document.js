@@ -3,6 +3,7 @@ const { v4: uuidv4 } = require('uuid');
 const auth = require('../../middleware/auth');
 const Business = require('../../models/Business');
 const router = express.Router();
+const Borrower = require('../../models/Borrower');
 const Document = require('../../models/Document');
 const config = require('config');
 const request = require('request');
@@ -24,76 +25,162 @@ router.post('/loan_agreement', [auth], async (req, res) => {
         if(application.status !== 'approved') {
             return res.status(404).json({ msg: "Loan document can only be generated for an approved application"});
         }
-        const borrower = await Business.findOne({ borrower_id: application.borrower_id})     
 
-        // create docspring submission with applicant data
-        const username = config.get('docspring-id');
-        const pw = config.get('docspring-secret');
-        const auth = 'Basic ' + Buffer.from(username + ':' + pw).toString('base64');
-        const header = {'user-agent': 'node.js', 'Authorization': auth}
-        
-        const offer = application.offer
-        const address_line_2 = borrower.address.line_2 ?? ""
-        const doc_data_fields = {}
-        doc_data_fields.account_number = `${application_id}`;
-        doc_data_fields.credit_limit = `$${offer.amount / 100}.00`;
-        doc_data_fields.apr = `${offer.interest_rate / 100}%`;
-        doc_data_fields.late_payment_fee = `$${offer.late_payment_fee / 100}.00`;
-        doc_data_fields.entity_name = `${borrower.business_name}`;
-        doc_data_fields.entity_type = `${borrower.business_type}`;
-        doc_data_fields.ein = `${borrower.ein}`;
-        doc_data_fields.address = `${borrower.address.line_1} ${borrower.address.line_2} ${borrower.address.city} ${borrower.address.state} ${borrower.address.zip}`;
-        doc_data_fields.phone = `${borrower.phone}`;
-        doc_data_fields.officer_name = `${borrower.business_contact.first_name} ${borrower.business_contact.last_name}`;
-        doc_data_fields.officer_title = `${borrower.business_contact.title}`;
-        doc_data_fields.officer_address = `${borrower.address.line_1} ${address_line_2} ${borrower.address.city} ${borrower.address.state} ${borrower.address.zip}`;
-
-        const body_params = {
-            data: doc_data_fields,
-            test: true,
-            editable: false
+        let borrower = await Borrower.findOne({ id: application.borrower_id })
+        if(!borrower || borrower.client_id !== req.client_id) {
+            const error = getError("borrower_not_found")
+            return res.status(error.error_status).json({ 
+                error_type: error.error_type,
+                error_code: error.error_code,
+                error_message: error.error_message
+            })
         }
 
-        const post_options = {
-            url: `https://api.docspring.com/api/v1/templates/tpl_33P5mxxNPj26TzYQK5/submissions`,
-            method: 'POST',
-            headers: header,
-            body: JSON.stringify(body_params)
-        }
+        // for business applicant
+        if(borrower.type === 'business') {
+            const business = await Business.findOne({ borrower_id: application.borrower_id})     
 
-        request(post_options, (err, response, body) => {
-            const body_json = JSON.parse(body)
-            if(body_json.status !== "success") {
-                return res.status(404).json({ msg: "Document creation failed. Please retry"})
+            // create docspring submission with applicant data
+            const username = config.get('docspring-id');
+            const pw = config.get('docspring-secret');
+            const auth = 'Basic ' + Buffer.from(username + ':' + pw).toString('base64');
+            const header = {'user-agent': 'node.js', 'Authorization': auth}
+            
+            const offer = application.offer
+            const address_line_2 = business.address.line_2 ?? ""
+            const doc_data_fields = {}
+            doc_data_fields.account_number = `${application_id}`;
+            doc_data_fields.credit_limit = `$${offer.amount / 100}.00`;
+            doc_data_fields.apr = `${offer.interest_rate / 100}%`;
+            doc_data_fields.late_payment_fee = `$${offer.late_payment_fee / 100}.00`;
+            doc_data_fields.entity_name = `${business.business_name}`;
+            doc_data_fields.entity_type = `${business.business_type}`;
+            doc_data_fields.ein = `${business.ein}`;
+            doc_data_fields.address = `${business.address.line_1} ${business.address.line_2} ${business.address.city} ${business.address.state} ${business.address.zip}`;
+            doc_data_fields.phone = `${business.phone}`;
+            doc_data_fields.officer_name = `${business.business_contact.first_name} ${business.business_contact.last_name}`;
+            doc_data_fields.officer_title = `${business.business_contact.title}`;
+            doc_data_fields.officer_address = `${business.address.line_1} ${business.address_line_2} ${business.address.city} ${business.address.state} ${business.address.zip}`;
+
+            const body_params = {
+                data: doc_data_fields,
+                test: true,
+                editable: false
             }
 
-            const submission_id = body_json.submission.id
-
-            const options = {
-                url: `https://api.docspring.com/api/v1/submissions/${submission_id}`,
-                method: 'GET',
+            const post_options = {
+                url: `https://api.docspring.com/api/v1/templates/tpl_33P5mxxNPj26TzYQK5/submissions`,
+                method: 'POST',
                 headers: header,
-            };
-    
-            request(options, (err, response, body) => {
-                if(res.statusCode !== 200) {
-                    return res.status(404).json({ msg: "Document creation failed. Please retry"});
-                }
-                const get_body_json = JSON.parse(body)
-                const doc_url = get_body_json.download_url
-                const document_id = 'doc_' + uuidv4().replace(/-/g, '');
-                const loan_document = new Document({
-                    application_id: application_id,
-                    document_id: document_id,
-                    document_url: doc_url,
-                    client_id: req.client_id
+                body: JSON.stringify(body_params)
+            }
 
-                })
-                loan_document.save()
-                res.json(loan_document);
+            request(post_options, (err, response, body) => {
+                const body_json = JSON.parse(body)
+                if(body_json.status !== "success") {
+                    return res.status(404).json({ msg: "Document creation failed. Please retry"})
+                }
+
+                const submission_id = body_json.submission.id
+
+                const options = {
+                    url: `https://api.docspring.com/api/v1/submissions/${submission_id}`,
+                    method: 'GET',
+                    headers: header,
+                };
+        
+                request(options, (err, response, body) => {
+                    if(res.statusCode !== 200) {
+                        return res.status(404).json({ msg: "Document creation failed. Please retry"});
+                    }
+                    const get_body_json = JSON.parse(body)
+                    const doc_url = get_body_json.download_url
+                    const document_id = 'doc_' + uuidv4().replace(/-/g, '');
+                    const loan_document = new Document({
+                        application_id: application_id,
+                        document_id: document_id,
+                        document_url: doc_url,
+                        client_id: req.client_id
+
+                    })
+                    loan_document.save()
+                    res.json(loan_document);
+                });
+                
             });
+        } else {
+            // for consumer applicants
+            const consumer = await Consumer.findOne({ borrower_id: application.borrower_id})     
+
+            // create docspring submission with applicant data
+            const username = config.get('docspring-id');
+            const pw = config.get('docspring-secret');
+            const auth = 'Basic ' + Buffer.from(username + ':' + pw).toString('base64');
+            const header = {'user-agent': 'node.js', 'Authorization': auth}
             
-        });
+            const offer = application.offer
+            const address_line_2 = business.address.line_2 ?? ""
+            const doc_data_fields = {}
+            doc_data_fields.account_number = `${application_id}`;
+            doc_data_fields.credit_limit = `$${offer.amount / 100}.00`;
+            doc_data_fields.apr = `${offer.interest_rate / 100}%`;
+            doc_data_fields.late_payment_fee = `$${offer.late_payment_fee / 100}.00`;
+            doc_data_fields.entity_name = `${business.business_name}`;
+            doc_data_fields.entity_type = `${business.business_type}`;
+            doc_data_fields.ein = `${business.ein}`;
+            doc_data_fields.address = `${business.address.line_1} ${business.address.line_2} ${business.address.city} ${business.address.state} ${business.address.zip}`;
+            doc_data_fields.phone = `${business.phone}`;
+            doc_data_fields.officer_name = `${business.business_contact.first_name} ${business.business_contact.last_name}`;
+            doc_data_fields.officer_title = `${business.business_contact.title}`;
+            doc_data_fields.officer_address = `${business.address.line_1} ${business.address_line_2} ${business.address.city} ${business.address.state} ${business.address.zip}`;
+
+            const body_params = {
+                data: doc_data_fields,
+                test: true,
+                editable: false
+            }
+
+            const post_options = {
+                url: `https://api.docspring.com/api/v1/templates/tpl_33P5mxxNPj26TzYQK5/submissions`,
+                method: 'POST',
+                headers: header,
+                body: JSON.stringify(body_params)
+            }
+
+            request(post_options, (err, response, body) => {
+                const body_json = JSON.parse(body)
+                if(body_json.status !== "success") {
+                    return res.status(404).json({ msg: "Document creation failed. Please retry"})
+                }
+
+                const submission_id = body_json.submission.id
+
+                const options = {
+                    url: `https://api.docspring.com/api/v1/submissions/${submission_id}`,
+                    method: 'GET',
+                    headers: header,
+                };
+        
+                request(options, (err, response, body) => {
+                    if(res.statusCode !== 200) {
+                        return res.status(404).json({ msg: "Document creation failed. Please retry"});
+                    }
+                    const get_body_json = JSON.parse(body)
+                    const doc_url = get_body_json.download_url
+                    const document_id = 'doc_' + uuidv4().replace(/-/g, '');
+                    const loan_document = new Document({
+                        application_id: application_id,
+                        document_id: document_id,
+                        document_url: doc_url,
+                        client_id: req.client_id
+
+                    })
+                    loan_document.save()
+                    res.json(loan_document);
+                });
+                
+            });
+        }
 
     } catch (err) {
         console.error(err.message);

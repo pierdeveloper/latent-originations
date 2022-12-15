@@ -846,13 +846,7 @@
                     "min": 150000,
                     "max": 500000
                 },
-                "max_apr": 0,
-                "supported_business_types": [
-                    "corporation",
-                    "partnership",
-                    "llc",
-                    "sole_proprietorship"
-                ]
+                "max_apr": 0
             }
         },
         "AK": {
@@ -861,13 +855,7 @@
                     "min": 5000,
                     "max": 500000
                 },
-                "max_apr": 0,
-                "supported_business_types": [
-                    "corporation",
-                    "partnership",
-                    "llc",
-                    "sole_proprietorship"
-                ]
+                "max_apr": 0
             }
         },
         "AZ": {},
@@ -877,13 +865,7 @@
                     "min": 5000,
                     "max": 500000
                 },
-                "max_apr": 0,
-                "supported_business_types": [
-                    "corporation",
-                    "partnership",
-                    "llc",
-                    "sole_proprietorship"
-                ]
+                "max_apr": 0
             }
         },
         "CA": {},
@@ -893,13 +875,7 @@
                     "min": 5000,
                     "max": 500000
                 },
-                "max_apr": 0,
-                "supported_business_types": [
-                    "corporation",
-                    "partnership",
-                    "llc",
-                    "sole_proprietorship"
-                ]
+                "max_apr": 0
             }
         },
         "CT": {
@@ -908,13 +884,7 @@
                     "min": 5000,
                     "max": 500000
                 },
-                "max_apr": 0,
-                "supported_business_types": [
-                    "corporation",
-                    "partnership",
-                    "llc",
-                    "sole_proprietorship"
-                ]
+                "max_apr": 0
             }
         },
         "DE": {},
@@ -924,13 +894,7 @@
                     "min": 5000,
                     "max": 500000
                 },
-                "max_apr": 0,
-                "supported_business_types": [
-                    "corporation",
-                    "partnership",
-                    "llc",
-                    "sole_proprietorship"
-                ]
+                "max_apr": 0
             }
         },
         "FL": {
@@ -939,13 +903,7 @@
                     "min": 5000,
                     "max": 500000
                 },
-                "max_apr": 0,
-                "supported_business_types": [
-                    "corporation",
-                    "partnership",
-                    "llc",
-                    "sole_proprietorship"
-                ]
+                "max_apr": 0
             }
         },
         "GA": {
@@ -954,13 +912,7 @@
                     "min": 300000,
                     "max": 500000
                 },
-                "max_apr": 0,
-                "supported_business_types": [
-                    "corporation",
-                    "partnership",
-                    "llc",
-                    "sole_proprietorship"
-                ]
+                "max_apr": 0
             }
         },
         "HI": {
@@ -969,13 +921,7 @@
                     "min": 5000,
                     "max": 500000
                 },
-                "max_apr": 0,
-                "supported_business_types": [
-                    "corporation",
-                    "partnership",
-                    "llc",
-                    "sole_proprietorship"
-                ]
+                "max_apr": 0
             }
         },
         "ID": {},
@@ -985,13 +931,7 @@
                     "min": 5000,
                     "max": 500000
                 },
-                "max_apr": 0,
-                "supported_business_types": [
-                    "corporation",
-                    "partnership",
-                    "llc",
-                    "sole_proprietorship"
-                ]
+                "max_apr": 0
             }
         },
         "IN": {},
@@ -1001,13 +941,7 @@
                     "min": 5000,
                     "max": 500000
                 },
-                "max_apr": 0,
-                "supported_business_types": [
-                    "corporation",
-                    "partnership",
-                    "llc",
-                    "sole_proprietorship"
-                ]
+                "max_apr": 0
             }
         },
         "KS": {
@@ -1016,13 +950,7 @@
                     "min": 5000,
                     "max": 500000
                 },
-                "max_apr": 0,
-                "supported_business_types": [
-                    "corporation",
-                    "partnership",
-                    "llc",
-                    "sole_proprietorship"
-                ]
+                "max_apr": 0
             }
         },
         "KY": {},
@@ -1033,13 +961,7 @@
                     "min": 5000,
                     "max": 500000
                 },
-                "max_apr": 0,
-                "supported_business_types": [
-                    "corporation",
-                    "partnership",
-                    "llc",
-                    "sole_proprietorship"
-                ]
+                "max_apr": 0
             }
         },
         "MD": {},
@@ -1049,13 +971,7 @@
                     "min": 5000,
                     "max": 500000
                 },
-                "max_apr": 0,
-                "supported_business_types": [
-                    "corporation",
-                    "partnership",
-                    "llc",
-                    "sole_proprietorship"
-                ]
+                "max_apr": 0
             }
         },
         "MI": {},
@@ -1065,12 +981,7 @@
                     "min": 5000,
                     "max": 500000
                 },
-                "max_apr": 0,
-                "supported_business_types": [
-                    "corporation",
-                    "partnership",
-                    "llc"
-                ]
+                "max_apr": 0
             }
         },
         "MS": {},
@@ -1080,13 +991,7 @@
                     "min": 5000,
                     "max": 500000
                 },
-                "max_apr": 0,
-                "supported_business_types": [
-                    "corporation",
-                    "partnership",
-                    "llc",
-                    "sole_proprietorship"
-                ]
+                "max_apr": 0
             }
         },
         "MT": {},
@@ -1096,10 +1001,7 @@
                     "min": 5000,
                     "max": 500000
                 },
-                "max_apr": 0,
-                "supported_business_types": [
-                    "sole_proprietorship"
-                ]
+                "max_apr": 0
             }
         },
         "NV": {},
@@ -1110,11 +1012,7 @@
                     "min": 5000,
                     "max": 500000
                 },
-                "max_apr": 0,
-                "supported_business_types": [
-                    "partnership",
-                    "sole_proprietorship"
-                ]
+                "max_apr": 0
             }
         },
         "NM": {},
@@ -1124,11 +1022,7 @@
                     "min": 5000,
                     "max": 500000
                 },
-                "max_apr": 0,
-                "supported_business_types": [
-                    "partnership",
-                    "sole_proprietorship"
-                ]
+                "max_apr": 0
             }
         },
         "NC": {
@@ -1137,13 +1031,7 @@
                     "min": 5000,
                     "max": 500000
                 },
-                "max_apr": 0,
-                "supported_business_types": [
-                    "corporation",
-                    "partnership",
-                    "llc",
-                    "sole_proprietorship"
-                ]
+                "max_apr": 0
             }
         },
         "ND": {},
@@ -1154,13 +1042,7 @@
                     "min": 5000,
                     "max": 500000
                 },
-                "max_apr": 0,
-                "supported_business_types": [
-                    "corporation",
-                    "partnership",
-                    "llc",
-                    "sole_proprietorship"
-                ]
+                "max_apr": 0
             }
         },
         "OR": {
@@ -1169,13 +1051,7 @@
                     "min": 5000,
                     "max": 500000
                 },
-                "max_apr": 0,
-                "supported_business_types": [
-                    "corporation",
-                    "partnership",
-                    "llc",
-                    "sole_proprietorship"
-                ]
+                "max_apr": 0
             }
         },
         "PA": {},
@@ -1186,13 +1062,7 @@
                     "min": 5000,
                     "max": 500000
                 },
-                "max_apr": 0,
-                "supported_business_types": [
-                    "corporation",
-                    "partnership",
-                    "llc",
-                    "sole_proprietorship"
-                ]
+                "max_apr": 0
             }
         },
         "SD": {},
@@ -1202,13 +1072,7 @@
                     "min": 5000,
                     "max": 500000
                 },
-                "max_apr": 0,
-                "supported_business_types": [
-                    "corporation",
-                    "partnership",
-                    "llc",
-                    "sole_proprietorship"
-                ]
+                "max_apr": 0
             }
         },
         "TX": {
@@ -1217,13 +1081,7 @@
                     "min": 5000,
                     "max": 500000
                 },
-                "max_apr": 0,
-                "supported_business_types": [
-                    "corporation",
-                    "partnership",
-                    "llc",
-                    "sole_proprietorship"
-                ]
+                "max_apr": 0
             }
         },
         "UT": {},
@@ -1234,13 +1092,7 @@
                     "min": 5000,
                     "max": 500000
                 },
-                "max_apr": 0,
-                "supported_business_types": [
-                    "corporation",
-                    "partnership",
-                    "llc",
-                    "sole_proprietorship"
-                ]
+                "max_apr": 0
             }
         },
         "WA": {},
@@ -1250,12 +1102,7 @@
                     "min": 5000,
                     "max": 500000
                 },
-                "max_apr": 0,
-                "supported_business_types": [
-                    "corporation",
-                    "partnership",
-                    "llc"
-                ]
+                "max_apr": 0
             }
         },
         "WI": {},

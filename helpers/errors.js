@@ -10,13 +10,13 @@ const errors = {
     duplicate_ein: {
         error_code: "duplicate_ein",
         error_message: "A borrower with that EIN already exists",
-        error_status: 404,
+        error_status: 400,
         error_type: "borrower_error"
     }, 
     duplicate_ssn: {
         error_code: "duplicate_ssn",
         error_message: "A borrower with that SSN already exists",
-        error_status: 404,
+        error_status: 400,
         error_type: "borrower_error"
     }, 
     borrower_not_found: {
@@ -28,8 +28,20 @@ const errors = {
     invalid_borrower_id: {
         error_code: "invalid_borrower_id",
         error_message: "The borrower_id specified is invalid",
-        error_status: 404,
+        error_status: 400,
         error_type: "borrower_error"
+    },
+    state_not_supported: {
+        error_code: "state_not_supported",
+        error_message: "The applicant's state or territory is not supported",
+        error_status: 400,
+        error_type: "application_error"
+    },
+    unsupported_offer_terms: {
+        error_code: "unsupported_offer_terms",
+        error_message: "The requested offer terms are not supported for this state",
+        error_status: 400,
+        error_type: "application_error"
     }
 }
 
