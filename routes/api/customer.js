@@ -27,9 +27,9 @@ router.post('/', customerValidationRules(), async (req, res) => {
 
         // create api keys
         const client_id_uuid = uuidv4();
-        const client_id = client_id_uuid.replace(/-/g, '');
+        const client_id = 'test_' + client_id_uuid.replace(/-/g, '');
         const secret_uuid = uuidv4();
-        const secret = secret_uuid.replace(/-/g, '');
+        const secret = 'test_' + secret_uuid.replace(/-/g, '');
 
         customer = new Customer({
             client_id,

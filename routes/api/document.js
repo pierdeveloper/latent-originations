@@ -1,4 +1,5 @@
 const express = require('express');
+const { v4: uuidv4 } = require('uuid');
 const auth = require('../../middleware/auth');
 const Business = require('../../models/Business');
 const router = express.Router();
@@ -16,14 +17,14 @@ router.post('/loan_agreement', [auth], async (req, res) => {
 
         // get application and borrower info
         const { application_id } = req.body
-        const application = await Application.findById(application_id)
+        const application = await Application.findOne({ application_id });
         if(!application || application.client_id !== req.client_id) {
             return res.status(404).json({ msg: "Application not found"});
         }
         if(application.status !== 'approved') {
             return res.status(404).json({ msg: "Loan document can only be generated for an approved application"});
         }
-        const borrower = await Business.findById(application.borrower_id)     
+        const borrower = await Business.findOne({ borrower_id: application.borrower_id})     
 
         // create docspring submission with applicant data
         const username = config.get('docspring-id');
@@ -80,8 +81,10 @@ router.post('/loan_agreement', [auth], async (req, res) => {
                 }
                 const get_body_json = JSON.parse(body)
                 const doc_url = get_body_json.download_url
+                const document_id = 'doc_' + uuidv4().replace(/-/g, '');
                 const loan_document = new Document({
                     application_id: application_id,
+                    document_id: document_id,
                     document_url: doc_url,
                     client_id: req.client_id
 
@@ -107,7 +110,7 @@ router.patch('/loan_agreement/:id/sign', [auth], async (req, res) => {
     // add time stamp of signuate
     // update application status 
     try {
-        let loan_agreement = await Document.findById(req.params.id);
+        let loan_agreement = await Document.findOne({ document_id: req.params.id });
         if(!loan_agreement || loan_agreement.client_id !== req.client_id) {
             return res.status(404).json({ msg: 'Document not found' })
         }
@@ -118,7 +121,7 @@ router.patch('/loan_agreement/:id/sign', [auth], async (req, res) => {
         loan_agreement.status = "signed"
         await loan_agreement.save();
 
-        let application = await Application.findById(loan_agreement.application_id)
+        let application = await Application.findOne({ application_id: loan_agreement.application_id })
         application.status = 'accepted'
         await application.save()
 
@@ -134,7 +137,7 @@ router.patch('/loan_agreement/:id/sign', [auth], async (req, res) => {
 // @access    Public
 router.get('/:id', [auth], async (req, res) => {
     try {
-        const document = await Document.findById(req.params.id);
+        const document = await Document.findOne({ document_id: req.params.id });
         if(!document || document.client_id !== req.client_id) {
             return res.status(404).json({ msg: 'Document not found' });
         }

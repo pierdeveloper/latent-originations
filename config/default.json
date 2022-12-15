@@ -24,7 +24,7 @@
         "processor_suspended" : "Payment processor is unable to authenticate user",
         "cash_flow_verification_failed" : "Cash flow analysis - income funds are quickly depleted from bank account after income deposit"
     },
-    "states": {
+    "commercial_state_limits": {
         "AL": {
             "type_1": {
                 "amount": {
@@ -838,5 +838,427 @@
                 ]
             }
         }
+    },
+    "consumer_state_limits": {
+        "AL": {
+            "type_1": {
+                "amount": {
+                    "min": 150000,
+                    "max": 500000
+                },
+                "max_apr": 0,
+                "supported_business_types": [
+                    "corporation",
+                    "partnership",
+                    "llc",
+                    "sole_proprietorship"
+                ]
+            }
+        },
+        "AK": {
+            "type_1": {
+                "amount": {
+                    "min": 5000,
+                    "max": 500000
+                },
+                "max_apr": 0,
+                "supported_business_types": [
+                    "corporation",
+                    "partnership",
+                    "llc",
+                    "sole_proprietorship"
+                ]
+            }
+        },
+        "AZ": {},
+        "AR": {
+            "type_1": {
+                "amount": {
+                    "min": 5000,
+                    "max": 500000
+                },
+                "max_apr": 0,
+                "supported_business_types": [
+                    "corporation",
+                    "partnership",
+                    "llc",
+                    "sole_proprietorship"
+                ]
+            }
+        },
+        "CA": {},
+        "CO": {
+            "type_1": {
+                "amount": {
+                    "min": 5000,
+                    "max": 500000
+                },
+                "max_apr": 0,
+                "supported_business_types": [
+                    "corporation",
+                    "partnership",
+                    "llc",
+                    "sole_proprietorship"
+                ]
+            }
+        },
+        "CT": {
+            "type_1": {
+                "amount": {
+                    "min": 5000,
+                    "max": 500000
+                },
+                "max_apr": 0,
+                "supported_business_types": [
+                    "corporation",
+                    "partnership",
+                    "llc",
+                    "sole_proprietorship"
+                ]
+            }
+        },
+        "DE": {},
+        "DC": {
+            "type_1": {
+                "amount": {
+                    "min": 5000,
+                    "max": 500000
+                },
+                "max_apr": 0,
+                "supported_business_types": [
+                    "corporation",
+                    "partnership",
+                    "llc",
+                    "sole_proprietorship"
+                ]
+            }
+        },
+        "FL": {
+            "type_1": {
+                "amount": {
+                    "min": 5000,
+                    "max": 500000
+                },
+                "max_apr": 0,
+                "supported_business_types": [
+                    "corporation",
+                    "partnership",
+                    "llc",
+                    "sole_proprietorship"
+                ]
+            }
+        },
+        "GA": {
+            "type_1": {
+                "amount": {
+                    "min": 300000,
+                    "max": 500000
+                },
+                "max_apr": 0,
+                "supported_business_types": [
+                    "corporation",
+                    "partnership",
+                    "llc",
+                    "sole_proprietorship"
+                ]
+            }
+        },
+        "HI": {
+            "type_1": {
+                "amount": {
+                    "min": 5000,
+                    "max": 500000
+                },
+                "max_apr": 0,
+                "supported_business_types": [
+                    "corporation",
+                    "partnership",
+                    "llc",
+                    "sole_proprietorship"
+                ]
+            }
+        },
+        "ID": {},
+        "IL": {
+            "type_1": {
+                "amount": {
+                    "min": 5000,
+                    "max": 500000
+                },
+                "max_apr": 0,
+                "supported_business_types": [
+                    "corporation",
+                    "partnership",
+                    "llc",
+                    "sole_proprietorship"
+                ]
+            }
+        },
+        "IN": {},
+        "IA": {
+            "type_1": {
+                "amount": {
+                    "min": 5000,
+                    "max": 500000
+                },
+                "max_apr": 0,
+                "supported_business_types": [
+                    "corporation",
+                    "partnership",
+                    "llc",
+                    "sole_proprietorship"
+                ]
+            }
+        },
+        "KS": {
+            "type_1": {
+                "amount": {
+                    "min": 5000,
+                    "max": 500000
+                },
+                "max_apr": 0,
+                "supported_business_types": [
+                    "corporation",
+                    "partnership",
+                    "llc",
+                    "sole_proprietorship"
+                ]
+            }
+        },
+        "KY": {},
+        "LA": {},
+        "ME": {
+            "type_1": {
+                "amount": {
+                    "min": 5000,
+                    "max": 500000
+                },
+                "max_apr": 0,
+                "supported_business_types": [
+                    "corporation",
+                    "partnership",
+                    "llc",
+                    "sole_proprietorship"
+                ]
+            }
+        },
+        "MD": {},
+        "MA": {
+            "type_1": {
+                "amount": {
+                    "min": 5000,
+                    "max": 500000
+                },
+                "max_apr": 0,
+                "supported_business_types": [
+                    "corporation",
+                    "partnership",
+                    "llc",
+                    "sole_proprietorship"
+                ]
+            }
+        },
+        "MI": {},
+        "MN": {
+            "type_1": {
+                "amount": {
+                    "min": 5000,
+                    "max": 500000
+                },
+                "max_apr": 0,
+                "supported_business_types": [
+                    "corporation",
+                    "partnership",
+                    "llc"
+                ]
+            }
+        },
+        "MS": {},
+        "MO": {
+            "type_1": {
+                "amount": {
+                    "min": 5000,
+                    "max": 500000
+                },
+                "max_apr": 0,
+                "supported_business_types": [
+                    "corporation",
+                    "partnership",
+                    "llc",
+                    "sole_proprietorship"
+                ]
+            }
+        },
+        "MT": {},
+        "NE": {
+            "type_1": {
+                "amount": {
+                    "min": 5000,
+                    "max": 500000
+                },
+                "max_apr": 0,
+                "supported_business_types": [
+                    "sole_proprietorship"
+                ]
+            }
+        },
+        "NV": {},
+        "NH": {},
+        "NJ": {
+            "type_1": {
+                "amount": {
+                    "min": 5000,
+                    "max": 500000
+                },
+                "max_apr": 0,
+                "supported_business_types": [
+                    "partnership",
+                    "sole_proprietorship"
+                ]
+            }
+        },
+        "NM": {},
+        "NY": {
+            "type_1": {
+                "amount": {
+                    "min": 5000,
+                    "max": 500000
+                },
+                "max_apr": 0,
+                "supported_business_types": [
+                    "partnership",
+                    "sole_proprietorship"
+                ]
+            }
+        },
+        "NC": {
+            "type_1": {
+                "amount": {
+                    "min": 5000,
+                    "max": 500000
+                },
+                "max_apr": 0,
+                "supported_business_types": [
+                    "corporation",
+                    "partnership",
+                    "llc",
+                    "sole_proprietorship"
+                ]
+            }
+        },
+        "ND": {},
+        "OH": {},
+        "OK": {
+            "type_1": {
+                "amount": {
+                    "min": 5000,
+                    "max": 500000
+                },
+                "max_apr": 0,
+                "supported_business_types": [
+                    "corporation",
+                    "partnership",
+                    "llc",
+                    "sole_proprietorship"
+                ]
+            }
+        },
+        "OR": {
+            "type_1": {
+                "amount": {
+                    "min": 5000,
+                    "max": 500000
+                },
+                "max_apr": 0,
+                "supported_business_types": [
+                    "corporation",
+                    "partnership",
+                    "llc",
+                    "sole_proprietorship"
+                ]
+            }
+        },
+        "PA": {},
+        "RI": {},
+        "SC": {
+            "type_1": {
+                "amount": {
+                    "min": 5000,
+                    "max": 500000
+                },
+                "max_apr": 0,
+                "supported_business_types": [
+                    "corporation",
+                    "partnership",
+                    "llc",
+                    "sole_proprietorship"
+                ]
+            }
+        },
+        "SD": {},
+        "TN": {
+            "type_1": {
+                "amount": {
+                    "min": 5000,
+                    "max": 500000
+                },
+                "max_apr": 0,
+                "supported_business_types": [
+                    "corporation",
+                    "partnership",
+                    "llc",
+                    "sole_proprietorship"
+                ]
+            }
+        },
+        "TX": {
+            "type_1": {
+                "amount": {
+                    "min": 5000,
+                    "max": 500000
+                },
+                "max_apr": 0,
+                "supported_business_types": [
+                    "corporation",
+                    "partnership",
+                    "llc",
+                    "sole_proprietorship"
+                ]
+            }
+        },
+        "UT": {},
+        "VT": {},
+        "VA": {
+            "type_1": {
+                "amount": {
+                    "min": 5000,
+                    "max": 500000
+                },
+                "max_apr": 0,
+                "supported_business_types": [
+                    "corporation",
+                    "partnership",
+                    "llc",
+                    "sole_proprietorship"
+                ]
+            }
+        },
+        "WA": {},
+        "WV": {
+            "type_1": {
+                "amount": {
+                    "min": 5000,
+                    "max": 500000
+                },
+                "max_apr": 0,
+                "supported_business_types": [
+                    "corporation",
+                    "partnership",
+                    "llc"
+                ]
+            }
+        },
+        "WI": {},
+        "WY": {}
     }
 }

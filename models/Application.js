@@ -2,9 +2,12 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
 const ApplicationSchema = new mongoose.Schema({
+    application_id: {
+        type: String,
+        required: true
+    },
     borrower_id: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'business',
+        type: String,
         required: true
     },
     client_id: {

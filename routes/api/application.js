@@ -1,4 +1,5 @@
 const express = require('express');
+const { v4: uuidv4 } = require('uuid');
 const auth = require('../../middleware/auth');
 const config = require('config');
 const router = express.Router();
@@ -21,7 +22,18 @@ router.post('/', [auth, applicationValidationRules()], async (req, res) => {
         const client_id = req.client_id;
         const { borrower_id, credit_type  } = req.body
 
+        // check that borrower exists
+        let borrower = await Borrower.findOne({ id: borrower_id })
+        if(!borrower || borrower.client_id !== req.client_id) {
+            return res.status(error.error_status).json({ 
+                error_type: error.error_type,
+                error_code: error.error_code,
+                error_message: error.error_message
+            })
+        }
+        const application_id = 'app_' + uuidv4().replace(/-/g, '');
         let application = new Application({
+            application_id,
             borrower_id,
             client_id,
             credit_type
@@ -47,14 +59,13 @@ router.patch('/:id/reject', [auth, rejectionValidationRules()], async (req, res)
 
     const rejection_reason = req.body.rejection_reason
 
-    console.log(rejection_reason)
 
     const rejectionFields = {}
     rejectionFields.reason = rejection_reason
     rejectionFields.reason_message = config.rejection_reasons.get(rejection_reason)
 
     try {
-        let application = await Application.findById(req.params.id);
+        let application = await Application.findOne({ application_id: req.params.id });
         if(!application || application.client_id !== req.client_id) {
             return res.status(404).json({ msg: 'Application not found'});
         }
@@ -95,7 +106,7 @@ router.patch('/:id/approve', [auth, offerValidationRules()], async (req, res) =>
     offerFields.late_payment_fee = offer.late_payment_fee
 
     try {
-        let application = await Application.findById(req.params.id);
+        let application = await Application.findOne({ application_id: req.params.id});
         if (!application || application.client_id !== req.client_id) {
             return res.status(404).json({ msg: 'Application not found' })
         }
@@ -104,21 +115,22 @@ router.patch('/:id/approve', [auth, offerValidationRules()], async (req, res) =>
             return res.status(404).json({ msg: 'Only applications with a status=pending can be approved' });
         }
 
-        let business = await Business.findById(application.borrower_id)
-
+        let business = await Business.findOne({ borrower_id: application.borrower_id })
+        console.log('business info')
+        console.log(business)
         //verify state is supported (ie it's not PR, guam etc)
-        if(!(business.address.state in config.states)) {
+        if(!(business.address.state in config.commercial_state_limits)) {
             return res.status(404).json({ msg: 'Territory not supported' });
         } 
 
         // verify Pier has limits for the state
-        if(Object.keys(config.states.get(business.address.state)).length === 0) {
+        if(Object.keys(config.commercial_state_limits.get(business.address.state)).length === 0) {
             return res.status(404).json({ msg: 'Pier does not currently support loans to this state' });
         }
         
         // verify if either type 1 or type 2 supports the offer
-        const type_1 = config.states.get(business.address.state).type_1
-        const type_2 = config.states.get(business.address.state).type_2
+        const type_1 = config.commercial_state_limits.get(business.address.state).type_1
+        const type_2 = config.commercial_state_limits.get(business.address.state).type_2
 
         //type 1
         if ((offer.amount >= type_1.amount.min && 
@@ -152,7 +164,7 @@ router.patch('/:id/approve', [auth, offerValidationRules()], async (req, res) =>
 // @access    Public
 router.get('/:id', [auth], async (req, res) => {
     try {
-        const application = await Application.findById(req.params.id);
+        const application = await Application.findOne({ application_id: req.params.id });
         if(!application || application.client_id !== req.client_id) {
             return res.status(404).json({ msg: 'Application not found' });
         }

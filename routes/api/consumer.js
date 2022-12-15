@@ -3,15 +3,15 @@ const { v4: uuidv4 } = require('uuid');
 const express = require('express');
 const auth = require('../../middleware/auth');
 const router = express.Router();
-const Business = require('../../models/Business');
+const Consumer = require('../../models/Consumer');
 const Borrower = require('../../models/Borrower');
 const { validationResult } = require('express-validator');
-const { businessValidationRules } = require('../../helpers/validator.js');
+const { consumerValidationRules } = require('../../helpers/validator.js');
 
 // @route     POST user
-// @desc      Create a business user
+// @desc      Create a consumer user
 // @access    Public
-router.post('/', [auth, businessValidationRules()], async (req, res) => {
+router.post('/', [auth, consumerValidationRules()], async (req, res) => {
     
     const errors = validationResult(req);
     if(!errors.isEmpty()) {
@@ -21,20 +21,18 @@ router.post('/', [auth, businessValidationRules()], async (req, res) => {
     try {
         const client_id = req.client_id
 
-        const { address, beneficial_owners,
-            business_contact,
-            business_name, 
-            business_type, 
-            dba_name, 
-            ein, 
-            incorporation_date, 
+        const { address, date_of_birth,
+            email,
+            first_name,
+            last_name,
             kyc_completion_date,
-            phone } = req.body
+            phone,
+            ssn } = req.body
 
-        let business = await Business.findOne({ ein, client_id })
+        let consumer = await Consumer.findOne({ ssn, client_id })
 
-        if (business) {
-            const error = getError("duplicate_ein")
+        if (consumer) {
+            const error = getError("duplicate_ssn")
             return res.status(error.error_status).json({ 
                 error_type: error.error_type,
                 error_code: error.error_code,
@@ -45,31 +43,29 @@ router.post('/', [auth, businessValidationRules()], async (req, res) => {
         const borrower_id = 'bor_' + uuidv4().replace(/-/g, '');
         let borrower = new Borrower({
             id: borrower_id,
-            type: "business",
+            type: "consumer",
             client_id: client_id
         });
 
         await borrower.save();
 
         // create business and set the borrower_id on it
-        business = new Business({
+        consumer = new Consumer({
             address,
-            beneficial_owners,
             borrower_id,
-            business_contact,
-            business_name,
-            business_type,
+            date_of_birth,
+            email,
+            first_name,
+            last_name,
             client_id,
-            dba_name,
-            ein,
-            incorporation_date,
             kyc_completion_date,
-            phone
+            phone,
+            ssn
         });
         
-        await business.save();
+        await consumer.save();
 
-        res.json(business);
+        res.json(consumer);
 
     } catch (err) {
         console.log(err);
@@ -83,11 +79,11 @@ router.post('/', [auth, businessValidationRules()], async (req, res) => {
 });
 
 
-// @route     PATCH business borrower
-// @desc      Update a business user
+// @route     PATCH consumer borrower
+// @desc      Update a consumer borrower
 // @access    Public
-router.patch('/:id', [auth, businessValidationRules()], async (req, res) => {
-    //TODO - check for EIN uniqueness on update call
+router.patch('/:id', [auth, consumerValidationRules()], async (req, res) => {
+    //TODO - check for SSN uniqueness on update call
     try {
         //lookup borrower
         let borrower = await Borrower.findOne({ id: req.params.id })
@@ -99,10 +95,10 @@ router.patch('/:id', [auth, businessValidationRules()], async (req, res) => {
                 error_message: error.error_message
             })
         }
-        // find the business 
-        let business = await Business.findOne({ borrower_id: req.params.id });
-        if (!business || business.client_id !== req.client_id) {
-            console.log('business not found');
+        // find the consumer 
+        let consumer = await Consumer.findOne({ borrower_id: req.params.id });
+        if (!consumer || consumer.client_id !== req.client_id) {
+            console.log('consumer not found');
             const error = getError("borrower_not_found")
             return res.status(error.error_status).json({ 
                 error_type: error.error_type,
@@ -116,30 +112,27 @@ router.patch('/:id', [auth, businessValidationRules()], async (req, res) => {
             return res.status(400).json({ errors: errors.array()});
         }
         // update and return
-        const { address, beneficial_owners,
-            business_contact,
-            business_name, 
-            business_type, 
-            dba_name, 
-            ein, 
-            incorporation_date, 
+        const { address,
+            date_of_birth,
+            email,
+            first_name,
+            last_name,
             kyc_completion_date,
-            phone } = req.body
+            phone,
+            ssn } = req.body
         
-        if(address) business.address = address;
-        if(beneficial_owners) business.beneficial_owners = beneficial_owners;
-        if(business_contact) business.business_contact = business_contact;
-        if(business_name) business.business_name = business_name;
-        if(business_type) business.business_type = business_type;
-        if(dba_name) business.dba_name = dba_name;
-        if(ein) business.ein = ein;
-        if(incorporation_date) business.incorporation_date = incorporation_date;
-        if(kyc_completion_date) business.kyc_completion_date = kyc_completion_date;
-        if(phone) business.phone = phone;
+        if(address) consumer.address = address;
+        if(date_of_birth) consumer.date_of_birth = date_of_birth;
+        if(email) consumer.email = email;
+        if(first_name) consumer.first_name = first_name;
+        if(last_name) consumer.last_name = last_name;
+        if(kyc_completion_date) consumer.kyc_completion_date = kyc_completion_date;
+        if(phone) consumer.phone = phone;
+        if(ssn) consumer.ssn = ssn;
 
-        await business.save()
+        await consumer.save()
 
-        return res.json(business)
+        return res.json(consumer)
 
     } catch (err) {
         console.log(err)
@@ -178,8 +171,8 @@ router.get('/:id', [auth], async (req, res) => {
             })
         }
 
-        const business = await Business.findOne({ borrower_id: req.params.id });
-        if(!business || business.client_id !== req.client_id) {
+        const consumer = await Consumer.findOne({ borrower_id: req.params.id });
+        if(!consumer || consumer.client_id !== req.client_id) {
             const error = getError("borrower_not_found")
             return res.status(error.error_status).json({ 
                 error_type: error.error_type,
@@ -187,7 +180,7 @@ router.get('/:id', [auth], async (req, res) => {
                 error_message: error.error_message
             })
         }
-        res.json(business);
+        res.json(consumer);
     } catch(err) {
         console.error(err.message);
         if(err.kind === 'ObjectId') {
@@ -207,13 +200,13 @@ router.get('/:id', [auth], async (req, res) => {
     }
 })
 
-// @route     GET business borrowers
-// @desc      List all business borrowers
+// @route     GET consumer borrowers
+// @desc      List all consumer borrowers
 // @access    Public
 router.get('/', [auth], async (req, res) => {
     try {
-        const businesses = await Business.find({ client_id: req.client_id });
-        res.json(businesses);
+        const consumers = await Consumer.find({ client_id: req.client_id });
+        res.json(consumers);
     } catch(err) {
         const error = getError("internal_server_error")
         return res.status(error.error_status).json({ 

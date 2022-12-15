@@ -50,11 +50,37 @@ const businessValidationRules = () => {
             .isDate({format:"yyyy-mm-dd", strictMode:true})
     ]
   }
+
+  // Business borrower validation rules
+const consumerValidationRules = () => {
+    return [
+        check('address.line_1', 'Address line 1 max length is 256 chars')
+            .isLength({max:256}),
+        check('address.line_2', 'Address line 2 max length is 256 chars')
+            .isLength({max:256}),
+        check('address.city', 'City max length is 30 chars')
+            .isLength({max:30}),
+        check('address.zip', 'Zip code must be 5 digits')
+            .isNumeric().isLength({min:5, max:5}),
+        check('address.state', "State must be valid 2-digit US state abbreviation")
+            .isIn(config.states),
+        check('date_of_birth', 'Date of Birth format must conform to yyyy-mm-dd')
+            .isDate({format:"yyyy-mm-dd", strictMode:true}),
+        check('email', 'Email must be a valid email')
+            .isEmail(),
+        check('phone', 'Phone must be a 10-digit US number')
+            .isNumeric().isLength({min:10, max:10}),
+        check('ssn', 'SSN must be 9-digits')
+            .isLength({min:9, max:9}).isNumeric(),
+        check('kyc_completion_date', 'KYC completion date format must conform to yyyy-mm-dd')
+            .isDate({format:"yyyy-mm-dd", strictMode:true})
+    ]
+  }
   
   const applicationValidationRules = () => {
     return [
-        check('credit_type', 'Credit type must be either loan or line_of_credit')
-            .isIn(['loan', 'line_of_credit'])
+        check('credit_type', 'Credit type must be either loan, revolving_line_of_credit or closed_line_of_credit')
+            .isIn(['loan', 'revolving_line_of_credit', 'closed_line_of_credit'])
     ]
   }
 
@@ -89,6 +115,7 @@ const businessValidationRules = () => {
 
   module.exports = {
     businessValidationRules,
+    consumerValidationRules,
     customerValidationRules,
     applicationValidationRules,
     offerValidationRules,

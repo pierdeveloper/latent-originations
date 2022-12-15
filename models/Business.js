@@ -73,6 +73,10 @@ const BusinessSchema = new mongoose.Schema({
             }
         }
     ],
+    borrower_id: {
+        type: String,
+        required: true
+    },
     business_contact: {
         first_name: {
             type: String,

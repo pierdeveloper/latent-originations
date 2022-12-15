@@ -13,13 +13,16 @@ const DocumentSchema = new mongoose.Schema({
         type: Date,
         default: Date.now
     },
+    document_id: {
+        type: String,
+        required: true
+    },
     type: {
         type: String,
         default: "commercial_line_of_credit_agreement"
     },
     application_id: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'application',
+        type: String,
         required: true
     },
     signature_timestamp: {
