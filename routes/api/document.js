@@ -119,7 +119,7 @@ router.post('/loan_agreement', [auth], async (req, res) => {
             const header = {'user-agent': 'node.js', 'Authorization': auth}
             
             const offer = application.offer
-            const address_line_2 = business.address.line_2 ?? ""
+            const address_line_2 = consumer.address.line_2 ?? ""
             const doc_data_fields = {}
             doc_data_fields.account_number = `${application_id}`;
             doc_data_fields.credit_limit = `$${offer.amount / 100}.00`;
