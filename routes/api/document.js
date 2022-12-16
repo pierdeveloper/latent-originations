@@ -120,20 +120,19 @@ router.post('/loan_agreement', [auth], async (req, res) => {
             
             const offer = application.offer
             const address_line_2 = consumer.address.line_2 ?? ""
+            const credit_limit = (offer.amount / 100).toLocaleString('en-US', {
+                style: 'currency',
+                currency: 'USD'
+            })
             const doc_data_fields = {}
             doc_data_fields.account_number = `${application_id}`;
-            doc_data_fields.credit_limit = `$${offer.amount / 100}.00`;
+            doc_data_fields.credit_limit = credit_limit;
             doc_data_fields.apr = `${offer.interest_rate / 100}%`;
             doc_data_fields.late_payment_fee = `$${offer.late_payment_fee / 100}.00`;
-            doc_data_fields.entity_name = `${business.business_name}`;
-            doc_data_fields.entity_type = `${business.business_type}`;
-            doc_data_fields.ein = `${business.ein}`;
-            doc_data_fields.address = `${business.address.line_1} ${business.address.line_2} ${business.address.city} ${business.address.state} ${business.address.zip}`;
-            doc_data_fields.phone = `${business.phone}`;
-            doc_data_fields.officer_name = `${business.business_contact.first_name} ${business.business_contact.last_name}`;
-            doc_data_fields.officer_title = `${business.business_contact.title}`;
-            doc_data_fields.officer_address = `${business.address.line_1} ${business.address_line_2} ${business.address.city} ${business.address.state} ${business.address.zip}`;
-
+            doc_data_fields.name = `${consumer.first_name} ${consumer.last_name}`;
+            doc_data_fields.address = `${consumer.address.line_1} ${consumer.address.line_2} ${consumer.address.city} ${consumer.address.state} ${consumer.address.zip}`;
+            doc_data_fields.email = `${consumer.email}`;
+            
             const body_params = {
                 data: doc_data_fields,
                 test: true,
@@ -141,7 +140,7 @@ router.post('/loan_agreement', [auth], async (req, res) => {
             }
 
             const post_options = {
-                url: `https://api.docspring.com/api/v1/templates/tpl_33P5mxxNPj26TzYQK5/submissions`,
+                url: `https://api.docspring.com/api/v1/templates/tpl_4zqGxezHzrfqDaxGr2/submissions`,
                 method: 'POST',
                 headers: header,
                 body: JSON.stringify(body_params)
