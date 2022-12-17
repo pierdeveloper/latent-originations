@@ -20,10 +20,21 @@ router.post('/loan_agreement', [auth], async (req, res) => {
         const { application_id } = req.body
         const application = await Application.findOne({ application_id });
         if(!application || application.client_id !== req.client_id) {
-            return res.status(404).json({ msg: "Application not found"});
+            const error = getError("application_not_found")
+            return res.status(error.error_status).json({ 
+                error_type: error.error_type,
+                error_code: error.error_code,
+                error_message: error.error_message
+            })
+
         }
         if(application.status !== 'approved') {
-            return res.status(404).json({ msg: "Loan document can only be generated for an approved application"});
+            const error = getError("document_cannot_be_signed")
+            return res.status(error.error_status).json({ 
+                error_type: error.error_type,
+                error_code: error.error_code,
+                error_message: error.error_message
+            })
         }
 
         let borrower = await Borrower.findOne({ id: application.borrower_id })
@@ -78,7 +89,12 @@ router.post('/loan_agreement', [auth], async (req, res) => {
             request(post_options, (err, response, body) => {
                 const body_json = JSON.parse(body)
                 if(body_json.status !== "success") {
-                    return res.status(404).json({ msg: "Document creation failed. Please retry"})
+                    const error = getError("document_creation_failed")
+                    return res.status(error.error_status).json({ 
+                        error_type: error.error_type,
+                        error_code: error.error_code,
+                        error_message: error.error_message
+                    })
                 }
 
                 const submission_id = body_json.submission.id
@@ -91,7 +107,12 @@ router.post('/loan_agreement', [auth], async (req, res) => {
         
                 request(options, (err, response, body) => {
                     if(res.statusCode !== 200) {
-                        return res.status(404).json({ msg: "Document creation failed. Please retry"});
+                        const error = getError("document_creation_failed")
+                        return res.status(error.error_status).json({ 
+                            error_type: error.error_type,
+                            error_code: error.error_code,
+                            error_message: error.error_message
+                        })
                     }
                     const get_body_json = JSON.parse(body)
                     const doc_url = get_body_json.download_url
@@ -149,7 +170,12 @@ router.post('/loan_agreement', [auth], async (req, res) => {
             request(post_options, (err, response, body) => {
                 const body_json = JSON.parse(body)
                 if(body_json.status !== "success") {
-                    return res.status(404).json({ msg: "Document creation failed. Please retry"})
+                    const error = getError("document_creation_failed")
+                    return res.status(error.error_status).json({ 
+                        error_type: error.error_type,
+                        error_code: error.error_code,
+                        error_message: error.error_message
+                    })
                 }
 
                 const submission_id = body_json.submission.id
@@ -162,7 +188,12 @@ router.post('/loan_agreement', [auth], async (req, res) => {
         
                 request(options, (err, response, body) => {
                     if(res.statusCode !== 200) {
-                        return res.status(404).json({ msg: "Document creation failed. Please retry"});
+                        const error = getError("document_creation_failed")
+                        return res.status(error.error_status).json({ 
+                            error_type: error.error_type,
+                            error_code: error.error_code,
+                            error_message: error.error_message
+                        })
                     }
                     const get_body_json = JSON.parse(body)
                     const doc_url = get_body_json.download_url
@@ -182,8 +213,12 @@ router.post('/loan_agreement', [auth], async (req, res) => {
         }
 
     } catch (err) {
-        console.error(err.message);
-        res.status(500).send("Server Error");
+        const error = getError("internal_server_error")
+        return res.status(error.error_status).json({ 
+            error_type: error.error_type,
+            error_code: error.error_code,
+            error_message: error.error_message
+        })
     }
     
 });
@@ -198,10 +233,20 @@ router.patch('/loan_agreement/:id/sign', [auth], async (req, res) => {
     try {
         let loan_agreement = await Document.findOne({ document_id: req.params.id });
         if(!loan_agreement || loan_agreement.client_id !== req.client_id) {
-            return res.status(404).json({ msg: 'Document not found' })
+            const error = getError("document_not_found")
+            return res.status(error.error_status).json({ 
+                error_type: error.error_type,
+                error_code: error.error_code,
+                error_message: error.error_message
+            })
         }
         if(loan_agreement.status !== 'pending_signature') {
-            return res.status(404).json({ msg: 'Only documents with status pending_signature can be signed' });
+            const error = getError("document_cannot_be_signed")
+            return res.status(error.error_status).json({ 
+                error_type: error.error_type,
+                error_code: error.error_code,
+                error_message: error.error_message
+            })
         }
         loan_agreement.signature_timestamp = Date.now()
         loan_agreement.status = "signed"
@@ -214,7 +259,12 @@ router.patch('/loan_agreement/:id/sign', [auth], async (req, res) => {
         res.json(loan_agreement)
     } catch(err) {
         console.error(err.message);
-        res.status(500).send('Server error');
+        const error = getError("internal_server_error")
+        return res.status(error.error_status).json({ 
+            error_type: error.error_type,
+            error_code: error.error_code,
+            error_message: error.error_message
+        })
     }
 })
 
@@ -225,15 +275,30 @@ router.get('/:id', [auth], async (req, res) => {
     try {
         const document = await Document.findOne({ document_id: req.params.id });
         if(!document || document.client_id !== req.client_id) {
-            return res.status(404).json({ msg: 'Document not found' });
+            const error = getError("document_not_found")
+            return res.status(error.error_status).json({ 
+                error_type: error.error_type,
+                error_code: error.error_code,
+                error_message: error.error_message
+            })
         }
         res.json(document);
     } catch(err) {
         console.error(err.message);
         if(err.kind === 'ObjectId') {
-            return res.status(404).json({ msg: 'Document id does not exist' });
+            const error = getError("invalid_document_id")
+            return res.status(error.error_status).json({ 
+                error_type: error.error_type,
+                error_code: error.error_code,
+                error_message: error.error_message
+            })
         }
-        res.status(500).send('Server Error');
+        const error = getError("internal_server_error")
+        return res.status(error.error_status).json({ 
+            error_type: error.error_type,
+            error_code: error.error_code,
+            error_message: error.error_message
+        })
     }
 })
 
@@ -245,8 +310,12 @@ router.get('/', [auth], async (req, res) => {
         const documents = await Document.find({ client_id: req.client_id });
         res.json(documents);
     } catch(err) {
-        console.error(err.message);
-        res.status(500).send('Server Error');
+        const error = getError("internal_server_error")
+        return res.status(error.error_status).json({ 
+            error_type: error.error_type,
+            error_code: error.error_code,
+            error_message: error.error_message
+        })
     }
 })
 

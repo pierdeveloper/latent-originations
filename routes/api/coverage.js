@@ -11,8 +11,12 @@ router.get('/commercial', [auth], async (req, res) => {
         const states = config.get('commercial_state_limits')
         res.json(states)
     } catch(err) {
-        console.error(err.message);
-        res.status(500).send('Server Error');
+        const error = getError("internal_server_error")
+        return res.status(error.error_status).json({ 
+            error_type: error.error_type,
+            error_code: error.error_code,
+            error_message: error.error_message
+        })
     }
 })
 
@@ -24,8 +28,12 @@ router.get('/consumer', [auth], async (req, res) => {
         const states = config.get('consumer_state_limits')
         res.json(states)
     } catch(err) {
-        console.error(err.message);
-        res.status(500).send('Server Error');
+        const error = getError("internal_server_error")
+        return res.status(error.error_status).json({ 
+            error_type: error.error_type,
+            error_code: error.error_code,
+            error_message: error.error_message
+        })
     }
 })
 

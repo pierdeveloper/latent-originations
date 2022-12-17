@@ -19,6 +19,18 @@ const errors = {
         error_status: 400,
         error_type: "borrower_error"
     }, 
+    application_not_found: {
+        error_code: "application_not_found",
+        error_message: "The application resource does not exist",
+        error_status: 404,
+        error_type: "application_error"
+    },
+    application_cannot_be_approved: {
+        error_code: "application_cannot_be_approved",
+        error_message: "The application's status must be pending in order to approve it",
+        error_status: 400,
+        error_type: "application_error"
+    },
     borrower_not_found: {
         error_code: "borrower_not_found",
         error_message: "The borrower resource does not exist",
@@ -30,6 +42,36 @@ const errors = {
         error_message: "The borrower_id specified is invalid",
         error_status: 400,
         error_type: "borrower_error"
+    },
+    invalid_application_id: {
+        error_code: "invalid_application_id",
+        error_message: "The application_id specified is invalid",
+        error_status: 400,
+        error_type: "application_error"
+    },
+    document_not_found: {
+        error_code: "document_not_found",
+        error_message: "The borrower resource does not exist",
+        error_status: 404,
+        error_type: "document_error"
+    },
+    invalid_document_id: {
+        error_code: "invalid_document_id",
+        error_message: "The borrower_id specified is invalid",
+        error_status: 400,
+        error_type: "document_error"
+    },
+    document_cannot_be_signed: {
+        error_code: "document_cannot_be_signed",
+        error_message: "The document's status must be pending in order to sign it",
+        error_status: 400,
+        error_type: "document_error"
+    },
+    document_creation_failed: {
+        error_code: "document_creation_failed",
+        error_message: "The document could not be created. Please retry",
+        error_status: 400,
+        error_type: "document_error"
     },
     state_not_supported: {
         error_code: "state_not_supported",

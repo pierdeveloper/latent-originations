@@ -17,7 +17,13 @@ const { applicationValidationRules,
 router.post('/', [auth, applicationValidationRules()], async (req, res) => {
     const errors = validationResult(req);
     if(!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array()});
+        const response = {
+            error_type: "invalid_input",
+            error_code: 400,
+            error_message: "A value provided in the body is incorrect. See error_detail for more",
+            error_detail: errors.array()
+        }
+        return res.status(400).json(response);
     }
 
     try {
@@ -46,7 +52,12 @@ router.post('/', [auth, applicationValidationRules()], async (req, res) => {
 
     } catch (err) {
         console.error(err);
-        res.status(500).send("Server Error");
+        const error = getError("internal_server_error")
+        return res.status(error.error_status).json({ 
+            error_type: error.error_type,
+            error_code: error.error_code,
+            error_message: error.error_message
+        })
     }
 });
 
@@ -56,7 +67,13 @@ router.post('/', [auth, applicationValidationRules()], async (req, res) => {
 router.patch('/:id/reject', [auth, rejectionValidationRules()], async (req, res) => {
     const errors = validationResult(req);
     if(!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
+        const response = {
+            error_type: "invalid_input",
+            error_code: 400,
+            error_message: "A value provided in the body is incorrect. See error_detail for more",
+            error_detail: errors.array()
+        }
+        return res.status(400).json(response);
     }
 
     const rejection_reason = req.body.rejection_reason
@@ -68,11 +85,21 @@ router.patch('/:id/reject', [auth, rejectionValidationRules()], async (req, res)
     try {
         let application = await Application.findOne({ application_id: req.params.id });
         if(!application || application.client_id !== req.client_id) {
-            return res.status(404).json({ msg: 'Application not found'});
+            const error = getError("application_not_found")
+            return res.status(error.error_status).json({ 
+                error_type: error.error_type,
+                error_code: error.error_code,
+                error_message: error.error_message
+            })
         }
 
         if(application.status !== "pending") {
-            return res.status(404).json({ msg: 'Only applications with a status=pending can be rejected' });
+            const error = getError("application_cannot_be_approved")
+            return res.status(error.error_status).json({ 
+                error_type: error.error_type,
+                error_code: error.error_code,
+                error_message: error.error_message
+            })
         }
 
         application.rejection = rejectionFields
@@ -81,8 +108,13 @@ router.patch('/:id/reject', [auth, rejectionValidationRules()], async (req, res)
         res.json(application)
 
     } catch(err) {
-        console.error(err.message);
-        res.status(500).send('Server error');
+        console.error(err);
+        const error = getError("internal_server_error")
+        return res.status(error.error_status).json({ 
+            error_type: error.error_type,
+            error_code: error.error_code,
+            error_message: error.error_message
+        })
     }
 })
 
@@ -93,7 +125,13 @@ router.patch('/:id/approve', [auth, offerValidationRules()], async (req, res) =>
 
     const errors = validationResult(req);
     if(!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array()});
+        const response = {
+            error_type: "invalid_input",
+            error_code: 400,
+            error_message: "A value provided in the body is incorrect. See error_detail for more",
+            error_detail: errors.array()
+        }
+        return res.status(400).json(response);
     }
 
     const { offer } = req.body
@@ -109,11 +147,21 @@ router.patch('/:id/approve', [auth, offerValidationRules()], async (req, res) =>
     try {
         let application = await Application.findOne({ application_id: req.params.id});
         if (!application || application.client_id !== req.client_id) {
-            return res.status(404).json({ msg: 'Application not found' })
+            const error = getError("application_not_found")
+            return res.status(error.error_status).json({ 
+                error_type: error.error_type,
+                error_code: error.error_code,
+                error_message: error.error_message
+            })
         }
 
         if(application.status !== "pending") {
-            return res.status(404).json({ msg: 'Only applications with a status=pending can be approved' });
+            const error = getError("application_cannot_be_approved")
+            return res.status(error.error_status).json({ 
+                error_type: error.error_type,
+                error_code: error.error_code,
+                error_message: error.error_message
+            })
         }
 
         // grab borrower
@@ -133,12 +181,22 @@ router.patch('/:id/approve', [auth, offerValidationRules()], async (req, res) =>
             let business = await Business.findOne({ borrower_id: application.borrower_id })
             //verify state is supported (ie it's not PR, guam etc)
             if(!(business.address.state in config.commercial_state_limits)) {
-                return res.status(404).json({ msg: 'Territory not supported' });
+                const error = getError("state_not_supported")
+                return res.status(error.error_status).json({ 
+                    error_type: error.error_type,
+                    error_code: error.error_code,
+                    error_message: error.error_message
+                })
             } 
 
             // verify Pier has limits for the state
             if(Object.keys(config.commercial_state_limits.get(business.address.state)).length === 0) {
-                return res.status(404).json({ msg: 'Pier does not currently support loans to this state' });
+                const error = getError("state_not_supported")
+                return res.status(error.error_status).json({ 
+                    error_type: error.error_type,
+                    error_code: error.error_code,
+                    error_message: error.error_message
+                })
             }
             
             // verify if either type 1 or type 2 supports the offer
@@ -164,7 +222,12 @@ router.patch('/:id/approve', [auth, offerValidationRules()], async (req, res) =>
                     res.json(application)
                 } else {
                     // otherwise reject
-                    return res.status(404).json({ msg: 'Loan offer terms not supported. See state coverage list' });
+                    const error = getError("unsupported_offer_terms")
+                    return res.status(error.error_status).json({ 
+                        error_type: error.error_type,
+                        error_code: error.error_code,
+                        error_message: error.error_message
+                    })
                 }
         } else {
             // if it's consumer then
@@ -213,8 +276,13 @@ router.patch('/:id/approve', [auth, offerValidationRules()], async (req, res) =>
         }
         
     } catch(err) {
-        console.error(err.message);
-        res.status(500).send('Server error');
+        console.error(err);
+        const error = getError("internal_server_error")
+        return res.status(error.error_status).json({ 
+            error_type: error.error_type,
+            error_code: error.error_code,
+            error_message: error.error_message
+        })
     }
 })
 
@@ -226,15 +294,31 @@ router.get('/:id', [auth], async (req, res) => {
     try {
         const application = await Application.findOne({ application_id: req.params.id });
         if(!application || application.client_id !== req.client_id) {
-            return res.status(404).json({ msg: 'Application not found' });
+            const error = getError("application_not_found")
+            return res.status(error.error_status).json({ 
+                error_type: error.error_type,
+                error_code: error.error_code,
+                error_message: error.error_message
+            })
         }
         res.json(application);
     } catch(err) {
         console.error(err.message);
         if(err.kind === 'ObjectId') {
-            return res.status(404).json({ msg: 'Application id does not exist' });
+            const error = getError("invalid_application_id")
+            return res.status(error.error_status).json({ 
+                error_type: error.error_type,
+                error_code: error.error_code,
+                error_message: error.error_message
+            })
         }
-        res.status(500).send('Server Error');
+        console.error(err);
+        const error = getError("internal_server_error")
+        return res.status(error.error_status).json({ 
+            error_type: error.error_type,
+            error_code: error.error_code,
+            error_message: error.error_message
+        })
     }
 })
 
@@ -246,8 +330,13 @@ router.get('/', [auth], async (req, res) => {
         const applications = await Application.find({ client_id: req.client_id });
         res.json(applications);
     } catch(err) {
-        console.error(err.message);
-        res.status(500).send('Server Error');
+        console.error(err);
+        const error = getError("internal_server_error")
+        return res.status(error.error_status).json({ 
+            error_type: error.error_type,
+            error_code: error.error_code,
+            error_message: error.error_message
+        })
     }
 })
 

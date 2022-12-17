@@ -15,7 +15,13 @@ router.post('/', [auth, consumerValidationRules()], async (req, res) => {
     
     const errors = validationResult(req);
     if(!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array()});
+        const response = {
+            error_type: "invalid_input",
+            error_code: 400,
+            error_message: "A value provided in the body is incorrect. See error_detail for more",
+            error_detail: errors.array()
+        }
+        return res.status(400).json(response);
     }
 
     try {
@@ -109,7 +115,13 @@ router.patch('/:id', [auth, consumerValidationRules()], async (req, res) => {
         // validations
         const errors = validationResult(req);
         if(!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array()});
+            const response = {
+                error_type: "invalid_input",
+                error_code: 400,
+                error_message: "A value provided in the body is incorrect. See error_detail for more",
+                error_detail: errors.array()
+            }
+            return res.status(400).json(response);
         }
         // update and return
         const { address,
