@@ -71,6 +71,9 @@ router.post('/', [auth, consumerValidationRules()], async (req, res) => {
         
         await consumer.save();
 
+        consumer = await Consumer.findOne({ ssn, client_id })
+            .select('-_id -__v -client_id');
+
         res.json(consumer);
 
     } catch (err) {
@@ -144,6 +147,9 @@ router.patch('/:id', [auth, consumerValidationRules()], async (req, res) => {
 
         await consumer.save()
 
+        consumer = await Consumer.findOne({ borrower_id: req.params.id })
+        .select('-_id -__v -client_id');
+
         return res.json(consumer)
 
     } catch (err) {
@@ -166,7 +172,7 @@ router.patch('/:id', [auth, consumerValidationRules()], async (req, res) => {
 });
 
 
-// @route     GET business borrower by id
+// @route     GET consumer borrower by id
 // @desc      Retrieve a business borrower's details
 // @access    Public
 router.get('/:id', [auth], async (req, res) => {
@@ -183,7 +189,8 @@ router.get('/:id', [auth], async (req, res) => {
             })
         }
 
-        const consumer = await Consumer.findOne({ borrower_id: req.params.id });
+        var consumer = await Consumer.findOne({ borrower_id: req.params.id })
+            .select('-_id -__v');
         if(!consumer || consumer.client_id !== req.client_id) {
             const error = getError("borrower_not_found")
             return res.status(error.error_status).json({ 
@@ -192,6 +199,7 @@ router.get('/:id', [auth], async (req, res) => {
                 error_message: error.error_message
             })
         }
+        consumer.client_id = undefined
         res.json(consumer);
     } catch(err) {
         console.error(err.message);
@@ -217,7 +225,8 @@ router.get('/:id', [auth], async (req, res) => {
 // @access    Public
 router.get('/', [auth], async (req, res) => {
     try {
-        const consumers = await Consumer.find({ client_id: req.client_id });
+        const consumers = await Consumer.find({ client_id: req.client_id })
+            .select('-_id -__v -client_id');
         res.json(consumers);
     } catch(err) {
         const error = getError("internal_server_error")

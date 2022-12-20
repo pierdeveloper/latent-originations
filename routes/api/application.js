@@ -19,7 +19,7 @@ router.post('/', [auth, applicationValidationRules()], async (req, res) => {
     if(!errors.isEmpty()) {
         const response = {
             error_type: "invalid_input",
-            error_code: 400,
+            error_code: "invalid_input",
             error_message: "A value provided in the body is incorrect. See error_detail for more",
             error_detail: errors.array()
         }
@@ -48,6 +48,9 @@ router.post('/', [auth, applicationValidationRules()], async (req, res) => {
         })
         
         await application.save()
+
+        application = await Application.findOne({ application_id })
+            .select('-_id -__v -client_id');
         res.json(application);
 
     } catch (err) {
@@ -69,7 +72,7 @@ router.patch('/:id/reject', [auth, rejectionValidationRules()], async (req, res)
     if(!errors.isEmpty()) {
         const response = {
             error_type: "invalid_input",
-            error_code: 400,
+            error_code: "invalid_input",
             error_message: "A value provided in the body is incorrect. See error_detail for more",
             error_detail: errors.array()
         }
@@ -105,6 +108,8 @@ router.patch('/:id/reject', [auth, rejectionValidationRules()], async (req, res)
         application.rejection = rejectionFields
         application.status = 'rejected'
         await application.save()
+        application = await Application.findOne({ application_id: req.params.id })
+            .select('-_id -__v -client_id');
         res.json(application)
 
     } catch(err) {
@@ -127,7 +132,7 @@ router.patch('/:id/approve', [auth, offerValidationRules()], async (req, res) =>
     if(!errors.isEmpty()) {
         const response = {
             error_type: "invalid_input",
-            error_code: 400,
+            error_code: "invalid_input",
             error_message: "A value provided in the body is incorrect. See error_detail for more",
             error_detail: errors.array()
         }
@@ -219,6 +224,10 @@ router.patch('/:id/approve', [auth, offerValidationRules()], async (req, res) =>
                     application.offer = offerFields
                     application.status = 'approved'
                     await application.save()
+
+                    application = await Application.findOne({ application_id: req.params.id })
+                        .select('-_id -__v -client_id');
+                    
                     res.json(application)
                 } else {
                     // otherwise reject
@@ -263,6 +272,8 @@ router.patch('/:id/approve', [auth, offerValidationRules()], async (req, res) =>
                     application.offer = offerFields
                     application.status = 'approved'
                     await application.save()
+                    application = await Application.findOne({ application_id: req.params.id })
+                        .select('-_id -__v -client_id');
                     res.json(application)
                 } else {
                     // otherwise reject
@@ -292,7 +303,9 @@ router.patch('/:id/approve', [auth, offerValidationRules()], async (req, res) =>
 // @access    Public
 router.get('/:id', [auth], async (req, res) => {
     try {
-        const application = await Application.findOne({ application_id: req.params.id });
+        const application = await Application.findOne({ application_id: req.params.id })
+            .select('-_id -__v');
+            console.log(application)
         if(!application || application.client_id !== req.client_id) {
             const error = getError("application_not_found")
             return res.status(error.error_status).json({ 
@@ -301,6 +314,7 @@ router.get('/:id', [auth], async (req, res) => {
                 error_message: error.error_message
             })
         }
+        application.client_id = undefined;
         res.json(application);
     } catch(err) {
         console.error(err.message);
@@ -327,7 +341,8 @@ router.get('/:id', [auth], async (req, res) => {
 // @access    Public
 router.get('/', [auth], async (req, res) => {
     try {
-        const applications = await Application.find({ client_id: req.client_id });
+        const applications = await Application.find({ client_id: req.client_id })
+            .select('-_id -__v -client_id');
         res.json(applications);
     } catch(err) {
         console.error(err);

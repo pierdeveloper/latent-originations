@@ -13,7 +13,7 @@ const businessValidationRules = () => {
         check('address.zip', 'Zip code must be 5 digits')
             .isNumeric().isLength({min:5, max:5}),
         check('address.state', "State must be valid 2-digit US state abbreviation")
-            .isIn(config.states),
+            .isIn(config.commercial_state_limits),
         check('beneficial_owners.*.address.line_1', 'Address line 1 max length is 256 chars')
             .isLength({max:256}),
         check('beneficial_owners.*.address.line_2', 'Address line 2 max length is 256 chars')
@@ -23,7 +23,7 @@ const businessValidationRules = () => {
         check('beneficial_owners.*.address.zip', 'Zip code must be 5 digits')
             .isNumeric().isLength({min:5, max:5}),
         check('beneficial_owners.*.address.state', "State must be valid 2-digit US state abbreviation")
-            .isIn(config.states),
+            .isIn(config.commercial_state_limits),
         check('beneficial_owners.*.date_of_birth', 'Date of Birth format must conform to yyyy-mm-dd')
             .isDate({format:"yyyy-mm-dd", strictMode:true}),
         check('beneficial_owners.*.email', 'Email must be a valid email')

@@ -1,3 +1,5 @@
+
+const { getError } = require('../../helpers/errors.js');
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const auth = require('../../middleware/auth');
@@ -29,7 +31,7 @@ router.post('/loan_agreement', [auth], async (req, res) => {
 
         }
         if(application.status !== 'approved') {
-            const error = getError("document_cannot_be_signed")
+            const error = getError("document_cannot_be_created")
             return res.status(error.error_status).json({ 
                 error_type: error.error_type,
                 error_code: error.error_code,
@@ -206,6 +208,7 @@ router.post('/loan_agreement', [auth], async (req, res) => {
 
                     })
                     loan_document.save()
+
                     res.json(loan_document);
                 });
                 
@@ -256,6 +259,8 @@ router.patch('/loan_agreement/:id/sign', [auth], async (req, res) => {
         application.status = 'accepted'
         await application.save()
 
+        loan_agreement = await Document.findOne({ document_id: req.params.id })
+            .select('-_id -__v -client_id')
         res.json(loan_agreement)
     } catch(err) {
         console.error(err.message);
@@ -273,7 +278,8 @@ router.patch('/loan_agreement/:id/sign', [auth], async (req, res) => {
 // @access    Public
 router.get('/:id', [auth], async (req, res) => {
     try {
-        const document = await Document.findOne({ document_id: req.params.id });
+        const document = await Document.findOne({ document_id: req.params.id })
+            .select('-_id -__v');
         if(!document || document.client_id !== req.client_id) {
             const error = getError("document_not_found")
             return res.status(error.error_status).json({ 
@@ -282,6 +288,7 @@ router.get('/:id', [auth], async (req, res) => {
                 error_message: error.error_message
             })
         }
+        document.client_id = undefined;
         res.json(document);
     } catch(err) {
         console.error(err.message);
@@ -307,7 +314,8 @@ router.get('/:id', [auth], async (req, res) => {
 // @access    Public
 router.get('/', [auth], async (req, res) => {
     try {
-        const documents = await Document.find({ client_id: req.client_id });
+        const documents = await Document.find({ client_id: req.client_id })
+            .select('-_id -__v -client_id');
         res.json(documents);
     } catch(err) {
         const error = getError("internal_server_error")

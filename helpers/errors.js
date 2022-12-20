@@ -51,13 +51,19 @@ const errors = {
     },
     document_not_found: {
         error_code: "document_not_found",
-        error_message: "The borrower resource does not exist",
+        error_message: "The document resource does not exist",
         error_status: 404,
         error_type: "document_error"
     },
     invalid_document_id: {
         error_code: "invalid_document_id",
-        error_message: "The borrower_id specified is invalid",
+        error_message: "The document_id specified is invalid",
+        error_status: 400,
+        error_type: "document_error"
+    },
+    document_cannot_be_created: {
+        error_code: "document_cannot_be_created",
+        error_message: "The application must have a status of pending to create a document for it",
         error_status: 400,
         error_type: "document_error"
     },

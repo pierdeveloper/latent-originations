@@ -75,6 +75,9 @@ router.post('/', [auth, businessValidationRules()], async (req, res) => {
         
         await business.save();
 
+        business = await Business.findOne({ ein, client_id })
+            .select('-_id -__v -client_id');
+
         res.json(business);
 
     } catch (err) {
@@ -151,6 +154,9 @@ router.patch('/:id', [auth, businessValidationRules()], async (req, res) => {
 
         await business.save()
 
+        business = await Business.findOne({ borrower_id: req.params.id })
+            .select('-_id -__v -client_id');
+
         return res.json(business)
 
     } catch (err) {
@@ -190,7 +196,8 @@ router.get('/:id', [auth], async (req, res) => {
             })
         }
 
-        const business = await Business.findOne({ borrower_id: req.params.id });
+        const business = await Business.findOne({ borrower_id: req.params.id })
+            .select('-_id -__v');
         if(!business || business.client_id !== req.client_id) {
             const error = getError("borrower_not_found")
             return res.status(error.error_status).json({ 
@@ -199,6 +206,7 @@ router.get('/:id', [auth], async (req, res) => {
                 error_message: error.error_message
             })
         }
+        business.client_id = undefined;
         res.json(business);
     } catch(err) {
         console.error(err.message);
@@ -224,7 +232,8 @@ router.get('/:id', [auth], async (req, res) => {
 // @access    Public
 router.get('/', [auth], async (req, res) => {
     try {
-        const businesses = await Business.find({ client_id: req.client_id });
+        const businesses = await Business.find({ client_id: req.client_id })
+            .select('-_id -__v -client_id');
         res.json(businesses);
     } catch(err) {
         const error = getError("internal_server_error")
