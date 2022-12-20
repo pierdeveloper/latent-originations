@@ -106,6 +106,9 @@ router.post('/loan_agreement', [auth], async (req, res) => {
                     method: 'GET',
                     headers: header,
                 };
+
+                var waitTill = new Date(new Date().getTime() + 4 * 1000);
+                while(waitTill > new Date()){}
         
                 request(options, (err, response, body) => {
                     if(res.statusCode !== 200) {
@@ -181,14 +184,17 @@ router.post('/loan_agreement', [auth], async (req, res) => {
                 }
 
                 const submission_id = body_json.submission.id
-
+                console.log(`submission_id is ${submission_id}`)
                 const options = {
                     url: `https://api.docspring.com/api/v1/submissions/${submission_id}`,
                     method: 'GET',
                     headers: header,
                 };
+                var waitTill = new Date(new Date().getTime() + 4 * 1000);
+                while(waitTill > new Date()){}
         
                 request(options, (err, response, body) => {
+                    console.log('requesting document url)')
                     if(res.statusCode !== 200) {
                         const error = getError("document_creation_failed")
                         return res.status(error.error_status).json({ 
@@ -204,7 +210,8 @@ router.post('/loan_agreement', [auth], async (req, res) => {
                         application_id: application_id,
                         document_id: document_id,
                         document_url: doc_url,
-                        client_id: req.client_id
+                        client_id: req.client_id,
+                        type: "consumer_line_of_credit_agreement"
 
                     })
                     loan_document.save()

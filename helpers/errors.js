@@ -63,7 +63,7 @@ const errors = {
     },
     document_cannot_be_created: {
         error_code: "document_cannot_be_created",
-        error_message: "The application must have a status of pending to create a document for it",
+        error_message: "Can only create loan agreements for approved applicaions",
         error_status: 400,
         error_type: "document_error"
     },
