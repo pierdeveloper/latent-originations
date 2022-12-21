@@ -6,8 +6,8 @@ const router = express.Router();
 // @access    Public
 router.get('/', async (req, res) => {
     try {
-        const message = "Welcome to the desert.. of the real"
-        res(message);
+        const message = "🚧 The fastest way to ship credit products is coming soon... 🚧"
+        res.json(message);
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');

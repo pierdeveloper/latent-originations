@@ -18,6 +18,7 @@ app.use('/api/applications', require('./routes/api/application'));
 app.use('/api/documents', require('./routes/api/document'));
 app.use('/api/coverage', require('./routes/api/coverage'));
 app.use('/api/customers', require('./routes/api/customer'));
+app.use('/', require('./routes/api/temp-landing'));
 
 // Serve static assets in production
 
