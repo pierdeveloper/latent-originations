@@ -12,10 +12,11 @@ app.use(express.json({ extended: false }));
 
 // Define Routes
 app.use('/api', require('./routes/api/auth'));
+app.use('/api/borrowers', require('./routes/api/borrower'));
 app.use('/api/borrowers/business', require('./routes/api/business'));
 app.use('/api/borrowers/consumer', require('./routes/api/consumer'))
 app.use('/api/applications', require('./routes/api/application'));
-app.use('/api/documents', require('./routes/api/document'));
+app.use('/api/loan_agreements', require('./routes/api/document'));
 app.use('/api/coverage', require('./routes/api/coverage'));
 app.use('/api/customers', require('./routes/api/customer'));
 app.use('/', require('./routes/api/temp-landing'));

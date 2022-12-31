@@ -8,7 +8,8 @@ const ConsumerSchema = new mongoose.Schema({
         },
         line_2: {
             type: String,
-            required: false
+            required: false,
+            default: null
         },
         city: {
             type: String,

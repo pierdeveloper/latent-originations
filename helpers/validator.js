@@ -38,8 +38,8 @@ const businessValidationRules = () => {
             .isNumeric().isLength({min:10, max:10}),
         check('business_name', 'Business name max length is 256 chars')
             .isLength({max:256}),
-        check('business_type','Business type must be one of corporation, llc, partnership, sole_proprietorship')
-            .isIn(['corporation', 'llc', 'partnership', 'sole_proprietorship']),
+        check('business_type','Business type must be one of CORPORATION, LLC, PARTNERSHIP, SOLE_PROPRIETORSHIP')
+            .isIn(['CORPORATION', 'LLC', 'PARTNERSHIP', 'SOLE_PROPRIETORSHIP']),
         check('dba_name', 'DBA name max length is 256 chars')
             .isLength({max:256}),
         check('ein', 'EIN must be 9 digits')
@@ -77,8 +77,8 @@ const consumerValidationRules = () => {
   
   const applicationValidationRules = () => {
     return [
-        check('credit_type', 'Credit type must be either loan, revolving_line_of_credit or closed_line_of_credit')
-            .isIn(['loan', 'revolving_line_of_credit', 'closed_line_of_credit'])
+        check('credit_type', 'Credit type must be either LOAN, REVOLVING_LINE_OF_CREDIT or CLOSED_LINE_OF_CREDIT')
+            .isIn(['LOAN', 'REVOLVING_LINE_OF_CREDIT', 'CLOSED_LINE_OF_CREDIT'])
     ]
   }
 
@@ -92,8 +92,8 @@ const consumerValidationRules = () => {
             .isInt({min:0}),
         check('offer.late_payment_fee', "late payment fee must be an integer between 0 and 50000")
             .isInt({min:0, max:50000}),
-        check('offer.repayment_frequency', 'Repayment frequency must be one of: weekly, biweekly, monthly')
-            .isIn(['weekly', 'biweekly', 'monthly'])
+        check('offer.repayment_frequency', 'Repayment frequency must be one of: WEEKLY, BIWEEKLY, MONTHLY')
+            .isIn(['WEEKLY', 'BIWEEKLY', 'MONTHLY'])
     ]
   }
 

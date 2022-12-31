@@ -18,8 +18,8 @@ router.post('/', [auth, applicationValidationRules()], async (req, res) => {
     const errors = validationResult(req);
     if(!errors.isEmpty()) {
         const response = {
-            error_type: "invalid_input",
-            error_code: "invalid_input",
+            error_type: "APPLICATION_ERROR",
+            error_code: "INVALID_INPUT",
             error_message: "A value provided in the body is incorrect. See error_detail for more",
             error_detail: errors.array()
         }
@@ -29,10 +29,10 @@ router.post('/', [auth, applicationValidationRules()], async (req, res) => {
     try {
         const client_id = req.client_id;
         const { borrower_id, credit_type  } = req.body
-
         // check that borrower exists
         let borrower = await Borrower.findOne({ id: borrower_id })
         if(!borrower || borrower.client_id !== req.client_id) {
+            const error = getError("borrower_not_found")
             return res.status(error.error_status).json({ 
                 error_type: error.error_type,
                 error_code: error.error_code,
@@ -67,12 +67,12 @@ router.post('/', [auth, applicationValidationRules()], async (req, res) => {
 // @route PATCH applications/reject
 // @desc Reject credit application
 // @access Public
-router.patch('/:id/reject', [auth, rejectionValidationRules()], async (req, res) => {
+router.post('/:id/reject', [auth, rejectionValidationRules()], async (req, res) => {
     const errors = validationResult(req);
     if(!errors.isEmpty()) {
         const response = {
-            error_type: "invalid_input",
-            error_code: "invalid_input",
+            error_type: "APPLICATION_ERROR",
+            error_code: "INVALID_INPUT",
             error_message: "A value provided in the body is incorrect. See error_detail for more",
             error_detail: errors.array()
         }
@@ -96,8 +96,8 @@ router.patch('/:id/reject', [auth, rejectionValidationRules()], async (req, res)
             })
         }
 
-        if(application.status !== "pending") {
-            const error = getError("application_cannot_be_approved")
+        if(application.status !== "PENDING") {
+            const error = getError("application_cannot_be_rejected")
             return res.status(error.error_status).json({ 
                 error_type: error.error_type,
                 error_code: error.error_code,
@@ -106,7 +106,8 @@ router.patch('/:id/reject', [auth, rejectionValidationRules()], async (req, res)
         }
 
         application.rejection = rejectionFields
-        application.status = 'rejected'
+        application.status = 'REJECTED'
+        application.decisioned_on = Date.now();
         await application.save()
         application = await Application.findOne({ application_id: req.params.id })
             .select('-_id -__v -client_id');
@@ -126,13 +127,13 @@ router.patch('/:id/reject', [auth, rejectionValidationRules()], async (req, res)
 // @route PATCH application
 // @desc Approve credit application
 // @access Public
-router.patch('/:id/approve', [auth, offerValidationRules()], async (req, res) => {
+router.post('/:id/approve', [auth, offerValidationRules()], async (req, res) => {
 
     const errors = validationResult(req);
     if(!errors.isEmpty()) {
         const response = {
-            error_type: "invalid_input",
-            error_code: "invalid_input",
+            error_type: "APPLICATION_ERROR",
+            error_code: "INVALID_INPUT",
             error_message: "A value provided in the body is incorrect. See error_detail for more",
             error_detail: errors.array()
         }
@@ -160,7 +161,7 @@ router.patch('/:id/approve', [auth, offerValidationRules()], async (req, res) =>
             })
         }
 
-        if(application.status !== "pending") {
+        if(application.status !== "PENDING") {
             const error = getError("application_cannot_be_approved")
             return res.status(error.error_status).json({ 
                 error_type: error.error_type,
@@ -222,7 +223,8 @@ router.patch('/:id/approve', [auth, offerValidationRules()], async (req, res) =>
                 )) {
                     // accept approval if offer meets type 1 or type 2
                     application.offer = offerFields
-                    application.status = 'approved'
+                    application.status = 'APPROVED'
+                    application.decisioned_on = Date.now();
                     await application.save()
 
                     application = await Application.findOne({ application_id: req.params.id })
@@ -270,7 +272,8 @@ router.patch('/:id/approve', [auth, offerValidationRules()], async (req, res) =>
                 offer.interest_rate <= type_1.max_apr )) {
                     // accept approval if offer meets type 1
                     application.offer = offerFields
-                    application.status = 'approved'
+                    application.status = 'APPROVED'
+                    application.decisioned_on = Date.now();
                     await application.save()
                     application = await Application.findOne({ application_id: req.params.id })
                         .select('-_id -__v -client_id');

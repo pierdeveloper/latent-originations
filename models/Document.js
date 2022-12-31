@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const DocumentSchema = new mongoose.Schema({
     status: {
         type: String,
-        default: "pending_signature"
+        default: "PENDING_SIGNATURE"
     },
     client_id: {
         type: String,
@@ -13,13 +13,9 @@ const DocumentSchema = new mongoose.Schema({
         type: Date,
         default: Date.now
     },
-    document_id: {
+    loan_agreement_id: {
         type: String,
         required: true
-    },
-    type: {
-        type: String,
-        default: "commercial_line_of_credit_agreement"
     },
     application_id: {
         type: String,
@@ -27,7 +23,7 @@ const DocumentSchema = new mongoose.Schema({
     },
     signature_timestamp: {
         type: Date,
-        required: false
+        default: null
     },
     document_url: {
         type: String,

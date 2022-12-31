@@ -15,7 +15,7 @@ const Application = require('../../models/Application');
 // @route     POST document
 // @desc      Create a loan agreement pdf for user
 // @access    Public
-router.post('/loan_agreement', [auth], async (req, res) => {
+router.post('/', [auth], async (req, res) => {
     try {
 
         // get application and borrower info
@@ -30,7 +30,7 @@ router.post('/loan_agreement', [auth], async (req, res) => {
             })
 
         }
-        if(application.status !== 'approved') {
+        if(application.status !== 'APPROVED') {
             const error = getError("document_cannot_be_created")
             return res.status(error.error_status).json({ 
                 error_type: error.error_type,
@@ -121,10 +121,10 @@ router.post('/loan_agreement', [auth], async (req, res) => {
                     }
                     const get_body_json = JSON.parse(body)
                     const doc_url = get_body_json.download_url
-                    const document_id = 'doc_' + uuidv4().replace(/-/g, '');
+                    const loan_agreement_id = 'doc_' + uuidv4().replace(/-/g, '');
                     const loan_document = new Document({
                         application_id: application_id,
-                        document_id: document_id,
+                        loan_agreement_id: loan_agreement_id,
                         document_url: doc_url,
                         client_id: req.client_id
 
@@ -205,17 +205,15 @@ router.post('/loan_agreement', [auth], async (req, res) => {
                     }
                     const get_body_json = JSON.parse(body)
                     const doc_url = get_body_json.download_url
-                    const document_id = 'doc_' + uuidv4().replace(/-/g, '');
+                    const loan_agreement_id = 'doc_' + uuidv4().replace(/-/g, '');
                     const loan_document = new Document({
                         application_id: application_id,
-                        document_id: document_id,
+                        loan_agreement_id: loan_agreement_id,
                         document_url: doc_url,
-                        client_id: req.client_id,
-                        type: "consumer_line_of_credit_agreement"
+                        client_id: req.client_id
 
                     })
                     loan_document.save()
-
                     res.json(loan_document);
                 });
                 
@@ -236,12 +234,12 @@ router.post('/loan_agreement', [auth], async (req, res) => {
 // @route PATCH document
 // @desc Sign loan agreement
 // @access Public
-router.patch('/loan_agreement/:id/sign', [auth], async (req, res) => {
+router.post('/:id/sign', [auth], async (req, res) => {
     // change loan doc status to signed
     // add time stamp of signuate
     // update application status 
     try {
-        let loan_agreement = await Document.findOne({ document_id: req.params.id });
+        let loan_agreement = await Document.findOne({ loan_agreement_id: req.params.id });
         if(!loan_agreement || loan_agreement.client_id !== req.client_id) {
             const error = getError("document_not_found")
             return res.status(error.error_status).json({ 
@@ -250,7 +248,7 @@ router.patch('/loan_agreement/:id/sign', [auth], async (req, res) => {
                 error_message: error.error_message
             })
         }
-        if(loan_agreement.status !== 'pending_signature') {
+        if(loan_agreement.status !== 'PENDING_SIGNATURE') {
             const error = getError("document_cannot_be_signed")
             return res.status(error.error_status).json({ 
                 error_type: error.error_type,
@@ -259,14 +257,14 @@ router.patch('/loan_agreement/:id/sign', [auth], async (req, res) => {
             })
         }
         loan_agreement.signature_timestamp = Date.now()
-        loan_agreement.status = "signed"
+        loan_agreement.status = "SIGNED"
         await loan_agreement.save();
 
         let application = await Application.findOne({ application_id: loan_agreement.application_id })
-        application.status = 'accepted'
+        application.status = 'ACCEPTED'
         await application.save()
 
-        loan_agreement = await Document.findOne({ document_id: req.params.id })
+        loan_agreement = await Document.findOne({ loan_agreement_id: req.params.id })
             .select('-_id -__v -client_id')
         res.json(loan_agreement)
     } catch(err) {

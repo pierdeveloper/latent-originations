@@ -8,7 +8,7 @@ const BusinessSchema = new mongoose.Schema({
         },
         line_2: {
             type: String,
-            required: false
+            default: null
         },
         city: {
             type: String,
@@ -32,7 +32,7 @@ const BusinessSchema = new mongoose.Schema({
                 },
                 line_2: {
                     type: String,
-                    required: false
+                    default: null
                 },
                 city: {
                     type: String,

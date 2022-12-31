@@ -18,6 +18,10 @@ const ApplicationSchema = new mongoose.Schema({
         type: Date,
         default: Date.now
     },
+    decisioned_on: {
+        type: Date,
+        required: false
+    },
     credit_type: {
         type: String,
         required: true
@@ -61,7 +65,7 @@ const ApplicationSchema = new mongoose.Schema({
     status: {
         type: String,
         required: false,
-        default: "pending"
+        default: "PENDING"
     }
 
 });
