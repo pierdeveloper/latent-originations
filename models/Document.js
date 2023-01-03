@@ -13,7 +13,7 @@ const DocumentSchema = new mongoose.Schema({
         type: Date,
         default: Date.now
     },
-    loan_agreement_id: {
+    id: {
         type: String,
         required: true
     },

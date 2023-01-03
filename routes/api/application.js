@@ -41,7 +41,7 @@ router.post('/', [auth, applicationValidationRules()], async (req, res) => {
         }
         const application_id = 'app_' + uuidv4().replace(/-/g, '');
         let application = new Application({
-            application_id,
+            id: application_id,
             borrower_id,
             client_id,
             credit_type
@@ -49,7 +49,7 @@ router.post('/', [auth, applicationValidationRules()], async (req, res) => {
         
         await application.save()
 
-        application = await Application.findOne({ application_id })
+        application = await Application.findOne({ id: application_id })
             .select('-_id -__v -client_id');
         res.json(application);
 
@@ -86,7 +86,7 @@ router.post('/:id/reject', [auth, rejectionValidationRules()], async (req, res) 
     rejectionFields.reason_message = config.rejection_reasons.get(rejection_reason)
 
     try {
-        let application = await Application.findOne({ application_id: req.params.id });
+        let application = await Application.findOne({ id: req.params.id });
         if(!application || application.client_id !== req.client_id) {
             const error = getError("application_not_found")
             return res.status(error.error_status).json({ 
@@ -109,7 +109,7 @@ router.post('/:id/reject', [auth, rejectionValidationRules()], async (req, res) 
         application.status = 'REJECTED'
         application.decisioned_on = Date.now();
         await application.save()
-        application = await Application.findOne({ application_id: req.params.id })
+        application = await Application.findOne({ id: req.params.id })
             .select('-_id -__v -client_id');
         res.json(application)
 
@@ -151,7 +151,7 @@ router.post('/:id/approve', [auth, offerValidationRules()], async (req, res) => 
     offerFields.late_payment_fee = offer.late_payment_fee
 
     try {
-        let application = await Application.findOne({ application_id: req.params.id});
+        let application = await Application.findOne({ id: req.params.id});
         if (!application || application.client_id !== req.client_id) {
             const error = getError("application_not_found")
             return res.status(error.error_status).json({ 
@@ -184,7 +184,7 @@ router.post('/:id/approve', [auth, offerValidationRules()], async (req, res) => 
 
         // if it's business then
         if(borrower.type === 'business') {
-            let business = await Business.findOne({ borrower_id: application.borrower_id })
+            let business = await Business.findOne({ id: application.borrower_id })
             //verify state is supported (ie it's not PR, guam etc)
             if(!(business.address.state in config.commercial_state_limits)) {
                 const error = getError("state_not_supported")
@@ -208,18 +208,22 @@ router.post('/:id/approve', [auth, offerValidationRules()], async (req, res) => 
             // verify if either type 1 or type 2 supports the offer
             const type_1 = config.commercial_state_limits.get(business.address.state).type_1
             const type_2 = config.commercial_state_limits.get(business.address.state).type_2
-
+            console.log(type_1)
+            console.log(type_2)
+            console.log(offer)
+            console.log(business)
+            const business_type = business.business_type.toLowerCase()
             //type 1
             if ((offer.amount >= type_1.amount.min && 
                 offer.amount <= type_1.amount.max &&
                 offer.interest_rate <= type_1.max_apr &&
-                type_1.supported_business_types.includes(business.business_type)) ||
+                type_1.supported_business_types.includes(business_type)) ||
                 // type 2
                 (
                     offer.amount >= type_2?.amount.min &&
                     offer.amount <= type_2?.amount.max &&
                     offer.interest_rate <= type_2?.max_apr &&
-                    type_2?.supported_business_types.includes(business.business_type)
+                    type_2?.supported_business_types.includes(business_type)
                 )) {
                     // accept approval if offer meets type 1 or type 2
                     application.offer = offerFields
@@ -227,12 +231,13 @@ router.post('/:id/approve', [auth, offerValidationRules()], async (req, res) => 
                     application.decisioned_on = Date.now();
                     await application.save()
 
-                    application = await Application.findOne({ application_id: req.params.id })
+                    application = await Application.findOne({ id: req.params.id })
                         .select('-_id -__v -client_id');
                     
                     res.json(application)
                 } else {
                     // otherwise reject
+                    console.log('its insupported')
                     const error = getError("unsupported_offer_terms")
                     return res.status(error.error_status).json({ 
                         error_type: error.error_type,
@@ -242,7 +247,7 @@ router.post('/:id/approve', [auth, offerValidationRules()], async (req, res) => 
                 }
         } else {
             // if it's consumer then
-            let consumer = await Consumer.findOne({ borrower_id: application.borrower_id })
+            let consumer = await Consumer.findOne({ id: application.borrower_id })
             //verify state is supported (ie it's not PR, guam etc)
             if(!(consumer.address.state in config.consumer_state_limits)) {
                 const error = getError("state_not_supported")
@@ -275,7 +280,7 @@ router.post('/:id/approve', [auth, offerValidationRules()], async (req, res) => 
                     application.status = 'APPROVED'
                     application.decisioned_on = Date.now();
                     await application.save()
-                    application = await Application.findOne({ application_id: req.params.id })
+                    application = await Application.findOne({ id: req.params.id })
                         .select('-_id -__v -client_id');
                     res.json(application)
                 } else {
@@ -306,7 +311,7 @@ router.post('/:id/approve', [auth, offerValidationRules()], async (req, res) => 
 // @access    Public
 router.get('/:id', [auth], async (req, res) => {
     try {
-        const application = await Application.findOne({ application_id: req.params.id })
+        const application = await Application.findOne({ id: req.params.id })
             .select('-_id -__v');
             console.log(application)
         if(!application || application.client_id !== req.client_id) {

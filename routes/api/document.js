@@ -20,7 +20,7 @@ router.post('/', [auth], async (req, res) => {
 
         // get application and borrower info
         const { application_id } = req.body
-        const application = await Application.findOne({ application_id });
+        const application = await Application.findOne({ id: application_id });
         if(!application || application.client_id !== req.client_id) {
             const error = getError("application_not_found")
             return res.status(error.error_status).json({ 
@@ -51,7 +51,7 @@ router.post('/', [auth], async (req, res) => {
 
         // for business applicant
         if(borrower.type === 'business') {
-            const business = await Business.findOne({ borrower_id: application.borrower_id})     
+            const business = await Business.findOne({ id: application.borrower_id})     
 
             // create docspring submission with applicant data
             const username = config.get('docspring-id');
@@ -124,7 +124,7 @@ router.post('/', [auth], async (req, res) => {
                     const loan_agreement_id = 'doc_' + uuidv4().replace(/-/g, '');
                     const loan_document = new Document({
                         application_id: application_id,
-                        loan_agreement_id: loan_agreement_id,
+                        id: loan_agreement_id,
                         document_url: doc_url,
                         client_id: req.client_id
 
@@ -136,7 +136,7 @@ router.post('/', [auth], async (req, res) => {
             });
         } else {
             // for consumer applicants
-            const consumer = await Consumer.findOne({ borrower_id: application.borrower_id})     
+            const consumer = await Consumer.findOne({ id: application.borrower_id})     
 
             // create docspring submission with applicant data
             const username = config.get('docspring-id');
@@ -208,7 +208,7 @@ router.post('/', [auth], async (req, res) => {
                     const loan_agreement_id = 'doc_' + uuidv4().replace(/-/g, '');
                     const loan_document = new Document({
                         application_id: application_id,
-                        loan_agreement_id: loan_agreement_id,
+                        id: loan_agreement_id,
                         document_url: doc_url,
                         client_id: req.client_id
 
@@ -239,7 +239,7 @@ router.post('/:id/sign', [auth], async (req, res) => {
     // add time stamp of signuate
     // update application status 
     try {
-        let loan_agreement = await Document.findOne({ loan_agreement_id: req.params.id });
+        let loan_agreement = await Document.findOne({ id: req.params.id });
         if(!loan_agreement || loan_agreement.client_id !== req.client_id) {
             const error = getError("document_not_found")
             return res.status(error.error_status).json({ 
@@ -260,11 +260,11 @@ router.post('/:id/sign', [auth], async (req, res) => {
         loan_agreement.status = "SIGNED"
         await loan_agreement.save();
 
-        let application = await Application.findOne({ application_id: loan_agreement.application_id })
+        let application = await Application.findOne({ id: loan_agreement.application_id })
         application.status = 'ACCEPTED'
         await application.save()
 
-        loan_agreement = await Document.findOne({ loan_agreement_id: req.params.id })
+        loan_agreement = await Document.findOne({ id: req.params.id })
             .select('-_id -__v -client_id')
         res.json(loan_agreement)
     } catch(err) {
@@ -283,7 +283,7 @@ router.post('/:id/sign', [auth], async (req, res) => {
 // @access    Public
 router.get('/:id', [auth], async (req, res) => {
     try {
-        const document = await Document.findOne({ document_id: req.params.id })
+        const document = await Document.findOne({ id: req.params.id })
             .select('-_id -__v');
         if(!document || document.client_id !== req.client_id) {
             const error = getError("document_not_found")

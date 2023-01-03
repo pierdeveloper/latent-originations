@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
 const ApplicationSchema = new mongoose.Schema({
-    application_id: {
+    id: {
         type: String,
         required: true
     },

@@ -73,7 +73,7 @@ const BusinessSchema = new mongoose.Schema({
             }
         }
     ],
-    borrower_id: {
+    id: {
         type: String,
         required: true
     },

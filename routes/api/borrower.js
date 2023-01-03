@@ -62,7 +62,7 @@ router.post('/business', [auth, businessValidationRules()], async (req, res) => 
         business = new Business({
             address,
             beneficial_owners,
-            borrower_id,
+            id: borrower_id,
             business_contact,
             business_name,
             business_type,
@@ -76,7 +76,7 @@ router.post('/business', [auth, businessValidationRules()], async (req, res) => 
         
         await business.save();
 
-        business = await Business.findOne({ ein, client_id })
+        business = await Business.findOne({ id: borrower_id, client_id })
             .select('-_id -__v -client_id');
 
         res.json(business);
@@ -110,9 +110,8 @@ router.patch('/business/:id', [auth, businessValidationRules()], async (req, res
             })
         }
         // find the business 
-        let business = await Business.findOne({ borrower_id: req.params.id });
+        let business = await Business.findOne({ id: req.params.id });
         if (!business || business.client_id !== req.client_id) {
-            console.log('business not found');
             const error = getError("borrower_not_found")
             return res.status(error.error_status).json({ 
                 error_type: error.error_type,
@@ -153,7 +152,7 @@ router.patch('/business/:id', [auth, businessValidationRules()], async (req, res
 
         await business.save()
 
-        business = await Business.findOne({ borrower_id: req.params.id })
+        business = await Business.findOne({ id: req.params.id })
             .select('-_id -__v -client_id');
 
         return res.json(business)
@@ -227,7 +226,7 @@ router.post('/consumer', [auth, consumerValidationRules()], async (req, res) => 
         // create business and set the borrower_id on it
         consumer = new Consumer({
             address,
-            borrower_id,
+            id: borrower_id,
             date_of_birth,
             email,
             first_name,
@@ -240,7 +239,7 @@ router.post('/consumer', [auth, consumerValidationRules()], async (req, res) => 
         
         await consumer.save();
 
-        consumer = await Consumer.findOne({ ssn, client_id })
+        consumer = await Consumer.findOne({ id: borrower_id, client_id })
             .select('-_id -__v -client_id');
 
         res.json(consumer);
@@ -274,7 +273,7 @@ router.patch('/consumer/:id', [auth, consumerValidationRules()], async (req, res
             })
         }
         // find the consumer 
-        let consumer = await Consumer.findOne({ borrower_id: req.params.id });
+        let consumer = await Consumer.findOne({ id: req.params.id });
         if (!consumer || consumer.client_id !== req.client_id) {
             console.log('consumer not found');
             const error = getError("borrower_not_found")
@@ -314,7 +313,7 @@ router.patch('/consumer/:id', [auth, consumerValidationRules()], async (req, res
 
         await consumer.save()
 
-        consumer = await Consumer.findOne({ borrower_id: req.params.id })
+        consumer = await Consumer.findOne({ id: req.params.id })
         .select('-_id -__v -client_id');
 
         return res.json(consumer)
@@ -360,7 +359,7 @@ router.get('/:id', [auth], async (req, res) => {
         console.log(borrower)
 
         if (borrower.type === 'consumer') {
-            var consumer = await Consumer.findOne({ borrower_id: req.params.id })
+            var consumer = await Consumer.findOne({ id: req.params.id })
                 .select('-_id -__v');
             if(!consumer || consumer.client_id !== req.client_id) {
                 const error = getError("borrower_not_found")
@@ -374,7 +373,7 @@ router.get('/:id', [auth], async (req, res) => {
             res.json(consumer);
 
         } else { // it's a business borrower
-            const business = await Business.findOne({ borrower_id: req.params.id })
+            const business = await Business.findOne({ id: req.params.id })
                 .select('-_id -__v');
             if(!business || business.client_id !== req.client_id) {
                 const error = getError("borrower_not_found")

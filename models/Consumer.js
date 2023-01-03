@@ -24,7 +24,7 @@ const ConsumerSchema = new mongoose.Schema({
             required: true
         },  
     },
-    borrower_id: {
+    id: {
         type: String,
         required: true
     },
