@@ -182,7 +182,6 @@ router.patch('/business/:id', [auth, businessValidationRules()], async (req, res
 // @desc      Create a consumer user
 // @access    Public
 router.post('/consumer', [auth, consumerValidationRules()], async (req, res) => {
-    
     const errors = validationResult(req);
     if(!errors.isEmpty()) {
         const response = {
