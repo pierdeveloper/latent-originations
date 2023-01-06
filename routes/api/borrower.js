@@ -8,6 +8,7 @@ const Borrower = require('../../models/Borrower');
 const Consumer = require('../../models/Consumer');
 const { validationResult } = require('express-validator');
 const { businessValidationRules, consumerValidationRules } = require('../../helpers/validator.js');
+const { rateLimiter } = require('../../middleware/rateLimiter')
 
 // @route     POST user
 // @desc      Create a business user

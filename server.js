@@ -1,6 +1,7 @@
 const express = require('express');
 const connectDB = require('./config/db.js');
 const path = require('path');
+const rateLimit = require("express-rate-limit");
 
 const app = express();
 
@@ -9,6 +10,14 @@ connectDB();
 
 // Init Middleware
 app.use(express.json({ extended: false }));
+
+// Init rate limiting middleware
+const limiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minute
+    max: 1000, // limit each IP to 1000 requests per windowMs
+    message: "Too many requests from this IP, please try again in a minute"
+  });
+app.use(limiter);
 
 // Define Routes
 app.use('/api', require('./routes/api/auth'));
@@ -22,6 +31,7 @@ app.use('/', require('./routes/api/temp-landing'));
 // Serve static assets in production
 
 if(process.env.NODE_ENV === 'production') {
+    app.enable("trust proxy") // for express-rate-limit on heroku
     // Set static folder
     app.use(express.static('client/build'));
     app.use('*', express.static('client/build')); // << this is what i'm trying to resolve ISE issues

@@ -107,8 +107,8 @@ router.get('/:id', async (req, res) => {
     }
 });
 
-// @route     GET business borrowers
-// @desc      List all business borrowers
+// @route     GET customers
+// @desc      List all customers
 // @access    PRIVATE
 router.get('/admin/:adminKey', async (req, res) => {
     if(req.params.adminKey !== 'pier-admin-key-1000') {

@@ -1,12 +1,18 @@
 const config = require('config');
 const basicAuth = require('express-basic-auth')
 const Customer = require('../models/Customer');
+const { getError } = require('../helpers/errors.js');
 
 module.exports = async function(req, res, next) {
 
     const auth = req.headers.authorization
     if(!auth) {
-        return res.status(401).json({ msg: 'Authorization failed. Supply an auth header' });
+        const error = getError("unauthorized")
+        return res.status(error.error_status).json({ 
+            error_type: error.error_type,
+            error_code: error.error_code,
+            error_message: error.error_message
+        })  
     }
     const encoded = auth.split(" ");
 
@@ -22,20 +28,35 @@ module.exports = async function(req, res, next) {
     const secret = decodedString.substring(1);
 
     if(secret.length > 200) {
-        return res.status(401).json({ msg: 'Authorization failed' });
+        const error = getError("unauthorized")
+        return res.status(error.error_status).json({ 
+            error_type: error.error_type,
+            error_code: error.error_code,
+            error_message: error.error_message
+        })  
     }
 
     try {
         const customer = await Customer.findOne({ secret: secret });
         if(!customer) {
-            return res.status(401).json({ msg: 'Authorization failed' });
+            const error = getError("unauthorized")
+            return res.status(error.error_status).json({ 
+                error_type: error.error_type,
+                error_code: error.error_code,
+                error_message: error.error_message
+            })  
         }
         req.client_id = customer.client_id
         next();
     } catch(err) {
         console.error(err.message);
         if(err.kind === 'ObjectId') {
-            return res.status(401).json({ msg: 'Authorization failed' });
+            const error = getError("unauthorized")
+            return res.status(error.error_status).json({ 
+                error_type: error.error_type,
+                error_code: error.error_code,
+                error_message: error.error_message
+            })  
         }
         res.status(500).send('Server Error');
     }

@@ -56,34 +56,34 @@ const errors = {
         error_type: "APPLICATION_ERROR"
     },
     document_not_found: {
-        error_code: "DOCUMENT_NOT_FOUND",
-        error_message: "The document resource does not exist",
+        error_code: "LOAN_AGREEMENT_NOT_FOUND",
+        error_message: "The loan agreement resource does not exist",
         error_status: 404,
-        error_type: "DOCUMENT_ERROR"
+        error_type: "LOAN_AGREEMENT_ERROR"
     },
     invalid_document_id: {
-        error_code: "INVALID_DOCUMENT_ID",
-        error_message: "The document_id specified is invalid",
+        error_code: "INVALID_LOAN_AGREEMENT_ID",
+        error_message: "The loan_agreement_id specified is invalid",
         error_status: 400,
-        error_type: "DOCUMENT_ERROR"
+        error_type: "LOAN_AGREEMENT_ERROR"
     },
     document_cannot_be_created: {
-        error_code: "DOCUMENT_CANNOT_BE_CREATED",
-        error_message: "Can only create loan agreements for APPROVED applicaions",
+        error_code: "LOAN_AGREEMENT_CANNOT_BE_CREATED",
+        error_message: "Can only create loan agreements for APPROVED applications",
         error_status: 400,
-        error_type: "DOCUMENT_ERROR"
+        error_type: "LOAN_AGREEMENT_ERROR"
     },
     document_cannot_be_signed: {
-        error_code: "DOCUMENT_CANNOT_BE_SIGNED",
-        error_message: "The document's status must be PENDING in order to sign it",
+        error_code: "LOAN_AGREEMENT_CANNOT_BE_SIGNED",
+        error_message: "The loan agreement's status must be PENDING in order to sign it",
         error_status: 400,
-        error_type: "DOCUMENT_ERROR"
+        error_type: "LOAN_AGREEMENT_ERROR"
     },
     document_creation_failed: {
-        error_code: "DOCUMENT_CREATION_FAILED",
-        error_message: "The document could not be created. Please retry",
+        error_code: "LOAN_AGREEMENT_CREATION_FAILED",
+        error_message: "The loan agremeent could not be created. Please retry",
         error_status: 400,
-        error_type: "DOCUMENT_ERROR"
+        error_type: "LOAN_AGREEMENT_ERROR"
     },
     state_not_supported: {
         error_code: "STATE_NOT_SUPPORTED",
@@ -96,6 +96,12 @@ const errors = {
         error_message: "The requested offer terms are not supported for this state",
         error_status: 400,
         error_type: "APPLICATION_ERROR"
+    },
+    unauthorized: {
+        error_code: "UNAUTHORIZED",
+        error_message: "The API key is invalid. Make sure your API key is prefixed with a colon",
+        error_status: 401,
+        error_type: "INVALID_REQUEST_ERROR"
     }
 }
 

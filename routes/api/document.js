@@ -90,6 +90,8 @@ router.post('/', [auth], async (req, res) => {
 
             request(post_options, (err, response, body) => {
                 const body_json = JSON.parse(body)
+                console.log('submission creation bodice')
+                console.log(body_json);
                 if(body_json.status !== "success") {
                     const error = getError("document_creation_failed")
                     return res.status(error.error_status).json({ 
@@ -107,11 +109,12 @@ router.post('/', [auth], async (req, res) => {
                     headers: header,
                 };
 
+                // give docspring a few seconds to populate submission url
                 var waitTill = new Date(new Date().getTime() + 4 * 1000);
                 while(waitTill > new Date()){}
         
                 request(options, (err, response, body) => {
-                    if(res.statusCode !== 200) {
+                    if(response.statusCode !== 200) {
                         const error = getError("document_creation_failed")
                         return res.status(error.error_status).json({ 
                             error_type: error.error_type,
@@ -119,8 +122,11 @@ router.post('/', [auth], async (req, res) => {
                             error_message: error.error_message
                         })
                     }
+
                     const get_body_json = JSON.parse(body)
-                    const doc_url = get_body_json.download_url
+                    console.log('submission retrieval bodice');
+                    console.log(get_body_json)
+                    const doc_url = get_body_json.permanent_download_url
                     const loan_agreement_id = 'doc_' + uuidv4().replace(/-/g, '');
                     const loan_document = new Document({
                         application_id: application_id,
@@ -195,7 +201,7 @@ router.post('/', [auth], async (req, res) => {
         
                 request(options, (err, response, body) => {
                     console.log('requesting document url)')
-                    if(res.statusCode !== 200) {
+                    if(response.statusCode !== 200) {
                         const error = getError("document_creation_failed")
                         return res.status(error.error_status).json({ 
                             error_type: error.error_type,
@@ -204,7 +210,7 @@ router.post('/', [auth], async (req, res) => {
                         })
                     }
                     const get_body_json = JSON.parse(body)
-                    const doc_url = get_body_json.download_url
+                    const doc_url = get_body_json.permanent_download_url
                     const loan_agreement_id = 'doc_' + uuidv4().replace(/-/g, '');
                     const loan_document = new Document({
                         application_id: application_id,
