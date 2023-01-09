@@ -37,7 +37,8 @@ router.post('/business', [auth, businessValidationRules()], async (req, res) => 
             ein, 
             incorporation_date, 
             kyc_completion_date,
-            phone } = req.body
+            phone,
+            state_of_incorporation } = req.body
 
         let business = await Business.findOne({ ein, client_id })
 
@@ -72,7 +73,8 @@ router.post('/business', [auth, businessValidationRules()], async (req, res) => 
             ein,
             incorporation_date,
             kyc_completion_date,
-            phone
+            phone,
+            state_of_incorporation
         });
         
         await business.save();
@@ -139,7 +141,8 @@ router.patch('/business/:id', [auth, businessValidationRules()], async (req, res
             dba_name, 
             incorporation_date, 
             kyc_completion_date,
-            phone } = req.body
+            phone,
+            state_of_incorporation } = req.body
         
         if(address) business.address = address;
         if(beneficial_owners) business.beneficial_owners = beneficial_owners;
@@ -150,6 +153,7 @@ router.patch('/business/:id', [auth, businessValidationRules()], async (req, res
         if(incorporation_date) business.incorporation_date = incorporation_date;
         if(kyc_completion_date) business.kyc_completion_date = kyc_completion_date;
         if(phone) business.phone = phone;
+        if(state_of_incorporation) business.state_of_incorporation = state_of_incorporation;
 
         await business.save()
 

@@ -128,7 +128,7 @@ router.post('/:id/reject', [auth, rejectionValidationRules()], async (req, res) 
 // @desc Approve credit application
 // @access Public
 router.post('/:id/approve', [auth, offerValidationRules()], async (req, res) => {
-
+    // validate offer params
     const errors = validationResult(req);
     if(!errors.isEmpty()) {
         const response = {
@@ -142,13 +142,38 @@ router.post('/:id/approve', [auth, offerValidationRules()], async (req, res) => 
 
     const { offer } = req.body
 
+    console.log(offer);
+    // build offer object
     const offerFields = {};
-    offerFields.amount = offer.amount,
-    offerFields.interest_rate = offer.interest_rate,
-    offerFields.repayment_frequency = offer.repayment_frequency,
-    offerFields.interest_free_period = offer.interest_free_period,
-    offerFields.is_revolving = offer.is_revolving,
-    offerFields.late_payment_fee = offer.late_payment_fee
+    offerFields.amount = offer.amount;
+    offerFields.apr = offer.apr;
+    offerFields.interest_rate = offer.interest_rate;
+    offerFields.late_payment_fee = offer.late_payment_fee;
+    offerFields.grace_period = offer.grace_period;
+    offerFields.origination_fee = offer.origination_fee;
+    offerFields.term = offer.term;
+
+    if(offer.hasOwnProperty("annual_fee")) {
+        offerFields.annual_fee = offer.annual_fee
+    }
+    if(offer.hasOwnProperty("billing_cycle")) {
+        offerFields.billing_cycle = offer.billing_cycle
+    }
+    if(offer.hasOwnProperty("grace_period_interest_rate")) {
+        offerFields.grace_period_interest_rate = offer.grace_period_interest_rate
+    } else {
+        offerFields.grace_period_interest_rate = 0 // default value
+    }
+    if(offer.hasOwnProperty("introductory_offer_interest_rate")) {
+        offerFields.introductory_offer_interest_rate = offer.introductory_offer_interest_rate
+    }
+    if(offer.hasOwnProperty("introductory_offer_interest_rate_term")) {
+        offerFields.introductory_offer_interest_rate_term = offer.introductory_offer_interest_rate_term
+    }
+    if(offer.hasOwnProperty("repayment_frequency")) {
+        offerFields.repayment_frequency = offer.repayment_frequency
+    }
+
 
     try {
         let application = await Application.findOne({ id: req.params.id});
@@ -208,10 +233,7 @@ router.post('/:id/approve', [auth, offerValidationRules()], async (req, res) => 
             // verify if either type 1 or type 2 supports the offer
             const type_1 = config.commercial_state_limits.get(business.address.state).type_1
             const type_2 = config.commercial_state_limits.get(business.address.state).type_2
-            console.log(type_1)
-            console.log(type_2)
-            console.log(offer)
-            console.log(business)
+
             const business_type = business.business_type.toLowerCase()
             //type 1
             if ((offer.amount >= type_1.amount.min && 

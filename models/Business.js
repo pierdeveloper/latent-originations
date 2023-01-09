@@ -63,6 +63,10 @@ const BusinessSchema = new mongoose.Schema({
                 type: String,
                 required: true
             },
+            percent_ownership: {
+                type: Number,
+                required: true
+            },
             phone: {
                 type: String,
                 required: true
@@ -132,6 +136,10 @@ const BusinessSchema = new mongoose.Schema({
         required: true
     },
     phone: {
+        type: String,
+        required: true
+    },
+    state_of_incorporation: {
         type: String,
         required: true
     }
