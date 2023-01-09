@@ -26,6 +26,8 @@ module.exports = async function(req, res, next) {
     let decodedString = bufferObj.toString("utf8");
     
     const secret = decodedString.substring(1);
+    console.log('auth secret is..')
+    console.log(secret)
 
     if(secret.length > 200) {
         const error = getError("unauthorized")

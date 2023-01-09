@@ -268,15 +268,21 @@ router.patch('/consumer/:id', [auth, consumerValidationRules()], async (req, res
     //TODO - check for SSN uniqueness on update call
     try {
         //lookup borrower
+        console.log('client id is..')
+        console.log(req.client_id)
         let borrower = await Borrower.findOne({ id: req.params.id })
         if(!borrower || borrower.client_id !== req.client_id) {
+            console.log('the dude aint found');
             const error = getError("borrower_not_found")
             return res.status(error.error_status).json({ 
                 error_type: error.error_type,
                 error_code: error.error_code,
                 error_message: error.error_message
             })
-        }
+        } else { console.log('foudn consumer borrower!')}
+
+
+
         // find the consumer 
         let consumer = await Consumer.findOne({ id: req.params.id });
         if (!consumer || consumer.client_id !== req.client_id) {
@@ -288,6 +294,7 @@ router.patch('/consumer/:id', [auth, consumerValidationRules()], async (req, res
                 error_message: error.error_message
             })
         }
+
         // validations
         const errors = validationResult(req);
         if(!errors.isEmpty()) {
