@@ -116,8 +116,8 @@ const consumerValidationRules = () => {
             .isInt({min:0}),
         check('offer.repayment_frequency', 'Repayment frequency must be one of: WEEKLY, BIWEEKLY, MONTHLY')
             .isIn(['WEEKLY', 'BIWEEKLY', 'MONTHLY']).optional({nullable: true}),
-        check('offer.term', 'Term must be an integer >= 0 and <= 120')
-            .isInt({min:0, max:120}),
+        check('offer.term', 'Term must be an integer >= 6 and <= 120')
+            .isInt({min:6, max:120}),
     ]
   }
 

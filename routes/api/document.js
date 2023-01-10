@@ -85,6 +85,13 @@ router.post('/', [auth], async (req, res) => {
             doc_data_fields.officer_name = `${business.business_contact.first_name} ${business.business_contact.last_name}`;
             doc_data_fields.officer_title = `${business.business_contact.title}`;
             doc_data_fields.officer_address = `${business.address.line_1} ${business.address_line_2} ${business.address.city} ${business.address.state} ${business.address.zip}`;
+            doc_data_fields.officer_name_2 = " ";
+            doc_data_fields.officer_title_2 = " ";
+            doc_data_fields.entity_name_2 = " ";
+            doc_data_fields.signature_date = " ";
+            doc_data_fields.signature = " ";
+            doc_data_fields.whitespace = true;
+
 
             const body_params = {
                 data: doc_data_fields,
@@ -152,84 +159,74 @@ router.post('/', [auth], async (req, res) => {
                 
             });
         } else {
-            if (application.credit_type === 'REVOLVING_LINE_OF_CREDIT') {
-                // for consumer applicants for LOC
-                const consumer = await Consumer.findOne({ id: application.borrower_id})     
-                console.log(consumer)
-                console.log('attempting to call docspring..')
-                // create docspring submission with applicant data
-                const username = config.get('docspring-id');
-                const pw = config.get('docspring-secret');
-                const auth = 'Basic ' + Buffer.from(username + ':' + pw).toString('base64');
-                const header = {'user-agent': 'node.js', 'Authorization': auth}
+            // for consumer applicants for LOC
+            const consumer = await Consumer.findOne({ id: application.borrower_id})     
 
+            // create docspring submission with applicant data
+            const username = config.get('docspring-id');
+            const pw = config.get('docspring-secret');
+            const auth = 'Basic ' + Buffer.from(username + ':' + pw).toString('base64');
+            const header = {'user-agent': 'node.js', 'Authorization': auth}
 
-                const offer = application.offer
-                const address_line_2 = consumer.address.line_2 ?? ""
-                const today = new Date();
-                const dateOptions = { year: 'numeric', month: 'long', day: 'numeric' } 
-                const formatter = new Intl.NumberFormat('en-US', {
-                    style: 'currency',
-                    currency: 'USD',
-                });
-                const doc_data_fields = {}
-                doc_data_fields.date = today.toLocaleDateString('en-us', dateOptions);
-                doc_data_fields.account_number = `${application_id}`;
-                doc_data_fields.amount = `${formatter.format(offer.amount / 100)}`;
-                doc_data_fields.apr = `${offer.apr / 100}%`;
-                doc_data_fields.annual_fee = `${formatter.format(offer.annual_fee / 100)}`
-                doc_data_fields.origination_fee = `${formatter.format(offer.origination_fee / 100)}`
-                doc_data_fields.late_payment_fee = `${formatter.format(offer.late_payment_fee / 100)}`;
-                doc_data_fields.address = `${consumer.address.line_1} ${consumer.address.line_2} ${consumer.address.city} ${consumer.address.state} ${consumer.address.zip}`;
-                doc_data_fields.name = `${consumer.first_name} ${consumer.last_name}`;
-                doc_data_fields.email = `${consumer.email}`;
+            const offer = application.offer
+            const address_line_2 = consumer.address.line_2 ?? ""
+            const today = new Date();
+            const dateOptions = { year: 'numeric', month: 'long', day: 'numeric' } 
+            const formatter = new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+            });
 
-                /*
-                const username = config.get('docspring-id');
-                const pw = config.get('docspring-secret');
-                const auth = 'Basic ' + Buffer.from(username + ':' + pw).toString('base64');
-                const header = {'user-agent': 'node.js', 'Authorization': auth}
-                
-                const offer = application.offer
-                const address_line_2 = consumer.address.line_2 ?? ""
-                const credit_limit = (offer.amount / 100).toLocaleString('en-US', {
-                    style: 'currency',
-                    currency: 'USD'
-                })
-                const today = new Date();
-                const dateOptions = { year: 'numeric', month: 'long', day: 'numeric' } 
-                const doc_data_fields = {}
-                doc_data_fields.date = today.toLocaleDateString('en-us', dateOptions);
-                doc_data_fields.account_number = `${application_id}`;
-                doc_data_fields.amount = `${formatter.format(offer.amount / 100)}`;
-                doc_data_fields.apr = `${offer.interest_rate / 100}%`;
-                doc_data_fields.late_payment_fee = `${formatter.format(offer.late_payment_fee / 100)}`;
-                doc_data_fields.annual_fee = `${formatter.format(offer.annual_fee / 100)}`;
-                doc_data_fields.origination_fee = `${formatter.format(offer.origination_fee / 100)}`;
-                doc_data_fields.name = `${consumer.first_name} ${consumer.last_name}`;
-                doc_data_fields.address = `${consumer.address.line_1} ${consumer.address.line_2} ${consumer.address.city} ${consumer.address.state} ${consumer.address.zip}`;
-                doc_data_fields.email = `${consumer.email}`;
-    */
-                console.log('data fields')
-                console.log(doc_data_fields)
-                
-                const body_params = {
-                    data: doc_data_fields,
-                    test: true,
-                    editable: false
+            const doc_data_fields = {}
+            doc_data_fields.date = today.toLocaleDateString('en-us', dateOptions);
+            doc_data_fields.account_number = `${application_id}`;
+            doc_data_fields.amount = `${formatter.format(offer.amount / 100)}`;
+            doc_data_fields.apr = `${offer.apr / 100}%`;
+            doc_data_fields.annual_fee = `${formatter.format(offer.annual_fee / 100)}`
+            doc_data_fields.origination_fee = `${formatter.format(offer.origination_fee / 100)}`
+            doc_data_fields.late_payment_fee = `${formatter.format(offer.late_payment_fee / 100)}`;
+            doc_data_fields.address = `${consumer.address.line_1} ${consumer.address.line_2} ${consumer.address.city} ${consumer.address.state} ${consumer.address.zip}`;
+            doc_data_fields.name = `${consumer.first_name} ${consumer.last_name}`;
+            doc_data_fields.email = `${consumer.email}`;
+            
+            const body_params = {
+                data: doc_data_fields,
+                test: true,
+                editable: false
+            }
+
+            const post_options = {
+                url: `https://api.docspring.com/api/v1/templates/tpl_m5cpPsgcqxk2RzM2cN/submissions`,
+                method: 'POST',
+                headers: header,
+                body: JSON.stringify(body_params)
+            }
+
+            request(post_options, (err, response, body) => {
+                const body_json = JSON.parse(body)
+                console.log(body)
+                if(body_json.status !== "success") {
+                    const error = getError("document_creation_failed")
+                    return res.status(error.error_status).json({ 
+                        error_type: error.error_type,
+                        error_code: error.error_code,
+                        error_message: error.error_message
+                    })
                 }
 
-                const post_options = {
-                    url: `https://api.docspring.com/api/v1/templates/tpl_m5cpPsgcqxk2RzM2cN/submissions`,
-                    method: 'POST',
+                const submission_id = body_json.submission.id
+                console.log(`submission_id is ${submission_id}`)
+                const options = {
+                    url: `https://api.docspring.com/api/v1/submissions/${submission_id}`,
+                    method: 'GET',
                     headers: header,
-                    body: JSON.stringify(body_params)
-                }
-
-                request(post_options, (err, response, body) => {
-                    const body_json = JSON.parse(body)
-                    console.log(body)
-                    if(body_json.status !== "success") {
+                };
+                var waitTill = new Date(new Date().getTime() + 4 * 1000);
+                while(waitTill > new Date()){}
+        
+                request(options, (err, response, body) => {
+                    console.log('requesting document url)')
+                    if(response.statusCode !== 200) {
                         const error = getError("document_creation_failed")
                         return res.status(error.error_status).json({ 
                             error_type: error.error_type,
@@ -237,47 +234,21 @@ router.post('/', [auth], async (req, res) => {
                             error_message: error.error_message
                         })
                     }
+                    const get_body_json = JSON.parse(body)
+                    const doc_url = get_body_json.permanent_download_url
+                    const loan_agreement_id = 'doc_' + uuidv4().replace(/-/g, '');
+                    const loan_document = new Document({
+                        application_id: application_id,
+                        id: loan_agreement_id,
+                        document_url: doc_url,
+                        client_id: req.client_id
 
-                    const submission_id = body_json.submission.id
-                    console.log(`submission_id is ${submission_id}`)
-                    const options = {
-                        url: `https://api.docspring.com/api/v1/submissions/${submission_id}`,
-                        method: 'GET',
-                        headers: header,
-                    };
-                    var waitTill = new Date(new Date().getTime() + 4 * 1000);
-                    while(waitTill > new Date()){}
-            
-                    request(options, (err, response, body) => {
-                        console.log('requesting document url)')
-                        if(response.statusCode !== 200) {
-                            const error = getError("document_creation_failed")
-                            return res.status(error.error_status).json({ 
-                                error_type: error.error_type,
-                                error_code: error.error_code,
-                                error_message: error.error_message
-                            })
-                        }
-                        const get_body_json = JSON.parse(body)
-                        const doc_url = get_body_json.permanent_download_url
-                        const loan_agreement_id = 'doc_' + uuidv4().replace(/-/g, '');
-                        const loan_document = new Document({
-                            application_id: application_id,
-                            id: loan_agreement_id,
-                            document_url: doc_url,
-                            client_id: req.client_id
-
-                        })
-                        loan_document.save()
-                        res.json(loan_document);
-                    });
-                    
+                    })
+                    loan_document.save()
+                    res.json(loan_document);
                 });
-            }
-            else {
-                console.log('placeholder for consumer loan doc creations...')
-            }
-            
+                
+            });
         }
 
     } catch (err) {
@@ -291,6 +262,66 @@ router.post('/', [auth], async (req, res) => {
     }
     
 });
+
+/*
+
+function inputs: template id, doc fields
+returns: docspring_document_body
+
+*/
+
+const createDocSpringSubmission = (template_id, doc_data_fields) => {
+    const body_params = {
+        data: doc_data_fields,
+        test: true,
+        editable: false
+    }
+
+    const post_options = {
+        url: `https://api.docspring.com/api/v1/templates/${template_id}/submissions`,
+        method: 'POST',
+        headers: header,
+        body: JSON.stringify(body_params)
+    }
+
+    request(post_options, (err, response, body) => {
+        const body_json = JSON.parse(body)
+        console.log(body)
+        if(body_json.status !== "success") {
+            const error = getError("document_creation_failed")
+            return res.status(error.error_status).json({ 
+                error_type: error.error_type,
+                error_code: error.error_code,
+                error_message: error.error_message
+            })
+        }
+
+        const submission_id = body_json.submission.id
+        console.log(`submission_id is ${submission_id}`)
+        const options = {
+            url: `https://api.docspring.com/api/v1/submissions/${submission_id}`,
+            method: 'GET',
+            headers: header,
+        };
+        var waitTill = new Date(new Date().getTime() + 4 * 1000);
+        while(waitTill > new Date()){}
+
+        request(options, (err, response, body) => {
+            console.log('requesting document url)')
+            if(response.statusCode !== 200) {
+                const error = getError("document_creation_failed")
+                return res.status(error.error_status).json({ 
+                    error_type: error.error_type,
+                    error_code: error.error_code,
+                    error_message: error.error_message
+                })
+            }
+            return JSON.parse(body)
+        });
+        
+    });
+    return // docspring bodice
+  }
 
 // @route PATCH document
 // @desc Sign loan agreement
