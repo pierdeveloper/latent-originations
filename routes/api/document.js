@@ -11,6 +11,7 @@ const config = require('config');
 const request = require('request');
 const Application = require('../../models/Application');
 const res = require('express/lib/response.js');
+const { consumerValidationRules } = require('../../helpers/validator.js');
 
 
 // @route     POST document
@@ -42,6 +43,8 @@ router.post('/', [auth], async (req, res) => {
             })
         }
 
+        const offer = application.offer
+
         let borrower = await Borrower.findOne({ id: application.borrower_id })
 
         if(!borrower || borrower.client_id !== req.client_id) {
@@ -53,11 +56,13 @@ router.post('/', [auth], async (req, res) => {
             })
         }
 
-        // for business applicant
+        // Prep docspring fields to be created
+        const doc_data_fields = {}
+        let template_id = ""
+
+        // DS data fields for business
         if(borrower.type === 'business') {
             const business = await Business.findOne({ id: application.borrower_id})     
-            
-            const offer = application.offer
             const address_line_2 = business.address.line_2 ?? ""
             const today = new Date();
             const dateOptions = { year: 'numeric', month: 'long', day: 'numeric' } 
@@ -65,7 +70,7 @@ router.post('/', [auth], async (req, res) => {
                 style: 'currency',
                 currency: 'USD',
               });
-            const doc_data_fields = {}
+
             doc_data_fields.date = today.toLocaleDateString('en-us', dateOptions);
             doc_data_fields.account_number = `${application_id}`;
             doc_data_fields.annual_fee = `${formatter.format(offer.annual_fee / 100)}`
@@ -88,66 +93,12 @@ router.post('/', [auth], async (req, res) => {
             doc_data_fields.signature = " ";
             doc_data_fields.whitespace = true;
 
-            // Create submission
-            const template_id = "tpl_CbSMf49ckCdT6fLNYh";
-            const docspring_pending_submission = await createDocSpringSubmission(template_id, doc_data_fields)
-            
-            // If it's not created properly then error
-            if(docspring_pending_submission.status !== "success") {
-                const error = getError("document_creation_failed")
-                return res.status(error.error_status).json({ 
-                    error_type: error.error_type,
-                    error_code: error.error_code,
-                    error_message: error.error_message
-                })
-            }
-            // Artificial latency for ds to prepare submission
-            var waitTill = new Date(new Date().getTime() + 4 * 1000);
-            while(waitTill > new Date()){}
-
-            // Get the submission
-            const submission_id = docspring_pending_submission.submission.id
-            const docspring_submission = await getDocSpringSubmission(submission_id)
-            const doc_url = docspring_submission.permanent_download_url
-
-            // If doc doesn't have a url then error
-            if (doc_url === null) {
-                const error = getError("document_creation_failed")
-                return res.status(error.error_status).json({ 
-                    error_type: error.error_type,
-                    error_code: error.error_code,
-                    error_message: error.error_message
-                })
-            }
-
-            // Create loan agreement and save
-            const loan_agreement_id = 'doc_' + uuidv4().replace(/-/g, '');
-            let loan_document = new Document({
-                application_id: application_id,
-                id: loan_agreement_id,
-                document_url: doc_url,
-                client_id: req.client_id
-
-            })
-            await loan_document.save()
-
-            // Response
-            loan_document = await Document.findOne({ id: loan_agreement_id, client_id })
-                .select('-_id -__v -client_id');
-            res.json(loan_document);
-
-
+            template_id = "tpl_CbSMf49ckCdT6fLNYh";
+        
         } else {
+            // DS data fields for consumer
             // for consumer applicants for LOC
             const consumer = await Consumer.findOne({ id: application.borrower_id})     
-
-            // create docspring submission with applicant data
-            const username = config.get('docspring-id');
-            const pw = config.get('docspring-secret');
-            const auth = 'Basic ' + Buffer.from(username + ':' + pw).toString('base64');
-            const header = {'user-agent': 'node.js', 'Authorization': auth}
-
-            const offer = application.offer
             const address_line_2 = consumer.address.line_2 ?? ""
             const today = new Date();
             const dateOptions = { year: 'numeric', month: 'long', day: 'numeric' } 
@@ -156,7 +107,6 @@ router.post('/', [auth], async (req, res) => {
                 currency: 'USD',
             });
 
-            const doc_data_fields = {}
             doc_data_fields.date = today.toLocaleDateString('en-us', dateOptions);
             doc_data_fields.account_number = `${application_id}`;
             doc_data_fields.amount = `${formatter.format(offer.amount / 100)}`;
@@ -167,56 +117,62 @@ router.post('/', [auth], async (req, res) => {
             doc_data_fields.address = `${consumer.address.line_1} ${consumer.address.line_2} ${consumer.address.city} ${consumer.address.state} ${consumer.address.zip}`;
             doc_data_fields.name = `${consumer.first_name} ${consumer.last_name}`;
             doc_data_fields.email = `${consumer.email}`;
+            doc_data_fields.name_2 = " ";
+            doc_data_fields.date_2 = " ";
+            doc_data_fields.signature = " ";
+            doc_data_fields.whitespace = true;
             
             // Create submission
-            const template_id = "tpl_m5cpPsgcqxk2RzM2cN";
-            const docspring_pending_submission = await createDocSpringSubmission(template_id, doc_data_fields)
-            
-            // If it's not created properly then error
-            if(docspring_pending_submission.status !== "success") {
-                const error = getError("document_creation_failed")
-                return res.status(error.error_status).json({ 
-                    error_type: error.error_type,
-                    error_code: error.error_code,
-                    error_message: error.error_message
-                })
-            }
-            // Artificial latency for ds to prepare submission
-            var waitTill = new Date(new Date().getTime() + 4 * 1000);
-            while(waitTill > new Date()){}
-
-            // Get the submission
-            const submission_id = docspring_pending_submission.submission.id
-            const docspring_submission = await getDocSpringSubmission(submission_id)
-            const doc_url = docspring_submission.permanent_download_url
-
-            // If doc doesn't have a url then error
-            if (doc_url === null) {
-                const error = getError("document_creation_failed")
-                return res.status(error.error_status).json({ 
-                    error_type: error.error_type,
-                    error_code: error.error_code,
-                    error_message: error.error_message
-                })
-            }
-
-            // Create loan agreement and save
-            const loan_agreement_id = 'doc_' + uuidv4().replace(/-/g, '');
-            let loan_document = new Document({
-                application_id: application_id,
-                id: loan_agreement_id,
-                document_url: doc_url,
-                client_id: req.client_id
-
-            })
-            await loan_document.save()
-
-            // Response
-            loan_document = await Document.findOne({ id: loan_agreement_id, client_id })
-                .select('-_id -__v -client_id');
-            res.json(loan_document);
+            template_id = "tpl_m5cpPsgcqxk2RzM2cN";
 
         }
+
+        // Create DS submission
+        const docspring_pending_submission = await createDocSpringSubmission(template_id, doc_data_fields)
+        
+        // If it's not created properly then error
+        if(docspring_pending_submission.status !== "success") {
+            const error = getError("document_creation_failed")
+            return res.status(error.error_status).json({ 
+                error_type: error.error_type,
+                error_code: error.error_code,
+                error_message: error.error_message
+            })
+        }
+        // Artificial latency for ds to prepare submission
+        var waitTill = new Date(new Date().getTime() + 4 * 1000);
+        while(waitTill > new Date()){}
+
+        // Get the submission
+        const submission_id = docspring_pending_submission.submission.id
+        const docspring_submission = await getDocSpringSubmission(submission_id)
+        const doc_url = docspring_submission.permanent_download_url
+
+        // If doc doesn't have a url then error
+        if (doc_url === null) {
+            const error = getError("document_creation_failed")
+            return res.status(error.error_status).json({ 
+                error_type: error.error_type,
+                error_code: error.error_code,
+                error_message: error.error_message
+            })
+        }
+
+        // Create loan agreement and save
+        const loan_agreement_id = 'doc_' + uuidv4().replace(/-/g, '');
+        let loan_document = new Document({
+            application_id: application_id,
+            id: loan_agreement_id,
+            document_url: doc_url,
+            client_id: req.client_id
+
+        })
+        await loan_document.save()
+
+        // Response
+        loan_document = await Document.findOne({ id: loan_agreement_id, client_id })
+            .select('-_id -__v -client_id');
+        res.json(loan_document);
 
     } catch (err) {
         console.log(err.error)
@@ -275,15 +231,12 @@ const createDocSpringSubmission = async (template_id, doc_data_fields) => {
 
   }
 
-// @route PATCH document
+// @route POST document
 // @desc Sign loan agreement
 // @access Public
 router.post('/:id/sign', [auth], async (req, res) => {
-    // change loan doc status to signed
-    // add time stamp of signuate
-    // update application status 
-    try {
 
+    try {
 
         // Confirm existing loan agreement exists
         let loan_agreement = await Document.findOne({ id: req.params.id });
@@ -309,34 +262,126 @@ router.post('/:id/sign', [auth], async (req, res) => {
         // Pull up relevant application
         let application = await Application.findOne({ id: loan_agreement.application_id })
 
+        const offer = application.offer;
+
         // Pull up relevant borrower
         const borrower = await Borrower.findOne({ id: application.borrower_id })
         
+        // Prep docspring fields to be created
         const doc_data_fields = {}
+        let template_id = ""
 
+        // DS data fields for business
         if(borrower.type === 'business') {
-            const business = await Business.findOne({ id: application.borrower_id })
+            const business = await Business.findOne({ id: application.borrower_id})     
+            const address_line_2 = business.address.line_2 ?? ""
+            const today = new Date();
+            const dateOptions = { year: 'numeric', month: 'long', day: 'numeric' } 
+            const formatter = new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+              });
+
+            doc_data_fields.date = today.toLocaleDateString('en-us', dateOptions);
+            doc_data_fields.account_number = `${application.id}`;
+            doc_data_fields.annual_fee = `${formatter.format(offer.annual_fee / 100)}`
+            doc_data_fields.origination_fee = `${formatter.format(offer.origination_fee / 100)}`
+            doc_data_fields.credit_limit = `${formatter.format(offer.amount / 100)}`;
+            doc_data_fields.apr = `${offer.apr / 100}%`;
+            doc_data_fields.late_payment_fee = `${formatter.format(offer.late_payment_fee / 100)}`;
+            doc_data_fields.entity_name = `${business.business_name}`;
+            doc_data_fields.entity_type = `${business.business_type}`;
+            doc_data_fields.ein = `${business.ein}`;
+            doc_data_fields.address = `${business.address.line_1} ${business.address.line_2} ${business.address.city} ${business.address.state} ${business.address.zip}`;
+            doc_data_fields.phone = `${business.phone}`;
+            doc_data_fields.officer_name = `${business.business_contact.first_name} ${business.business_contact.last_name}`;
+            doc_data_fields.officer_title = `${business.business_contact.title}`;
+            doc_data_fields.officer_address = `${business.address.line_1} ${business.address_line_2} ${business.address.city} ${business.address.state} ${business.address.zip}`;
+            doc_data_fields.officer_name_2 = `${business.business_contact.first_name} ${business.business_contact.last_name}`;
+            doc_data_fields.officer_title_2 = `${business.business_contact.title}`;
+            doc_data_fields.entity_name_2 = `${business.business_name}`;
+            doc_data_fields.signature_date = today.toLocaleDateString('en-us', dateOptions);
+            doc_data_fields.signature = `${business.business_contact.first_name} ${business.business_contact.last_name}`;
+            doc_data_fields.whitespace = true;
+
+            template_id = "tpl_CbSMf49ckCdT6fLNYh";
+        
+        } else {
+            // DS data fields for consumer
+            // for consumer applicants for LOC
+            const consumer = await Consumer.findOne({ id: application.borrower_id})     
+            const address_line_2 = consumer.address.line_2 ?? ""
+            const today = new Date();
+            const dateOptions = { year: 'numeric', month: 'long', day: 'numeric' } 
+            const formatter = new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+            });
+
+            doc_data_fields.date = today.toLocaleDateString('en-us', dateOptions);
+            doc_data_fields.account_number = `${application.id}`;
+            doc_data_fields.amount = `${formatter.format(offer.amount / 100)}`;
+            doc_data_fields.apr = `${offer.apr / 100}%`;
+            doc_data_fields.annual_fee = `${formatter.format(offer.annual_fee / 100)}`
+            doc_data_fields.origination_fee = `${formatter.format(offer.origination_fee / 100)}`
+            doc_data_fields.late_payment_fee = `${formatter.format(offer.late_payment_fee / 100)}`;
+            doc_data_fields.address = `${consumer.address.line_1} ${consumer.address.line_2} ${consumer.address.city} ${consumer.address.state} ${consumer.address.zip}`;
+            doc_data_fields.name = `${consumer.first_name} ${consumer.last_name}`;
+            doc_data_fields.email = `${consumer.email}`;
+            doc_data_fields.name_2 = `${consumer.first_name} ${consumer.last_name}`;
+            doc_data_fields.date_2 = today.toLocaleDateString('en-us', dateOptions);
+            doc_data_fields.signature = `${consumer.first_name} ${consumer.last_name}`;
+            doc_data_fields.whitespace = true;
+            
+            // Create submission
+            template_id = "tpl_m5cpPsgcqxk2RzM2cN";
+
         }
 
-        // Build the doc data fields
+        // Create new signed DS submission
+        const docspring_pending_submission = await createDocSpringSubmission(template_id, doc_data_fields)
+        
+        // If it's not created properly then error
+        if(docspring_pending_submission.status !== "success") {
+            const error = getError("document_creation_failed")
+            return res.status(error.error_status).json({ 
+                error_type: error.error_type,
+                error_code: error.error_code,
+                error_message: error.error_message
+            })
+        }
+        // Artificial latency for ds to prepare submission
+        var waitTill = new Date(new Date().getTime() + 4 * 1000);
+        while(waitTill > new Date()){}
 
-        // create a new doc with fields
+        // Get the submission
+        const submission_id = docspring_pending_submission.submission.id
+        const docspring_submission = await getDocSpringSubmission(submission_id)
+        const doc_url = docspring_submission.permanent_download_url
 
-        // get the signed doc
+        // If doc doesn't have a url then error
+        if (doc_url === null) {
+            const error = getError("document_creation_failed")
+            return res.status(error.error_status).json({ 
+                error_type: error.error_type,
+                error_code: error.error_code,
+                error_message: error.error_message
+            })
+        }
 
         // update loan agreement object
         loan_agreement.signature_timestamp = Date.now()
         loan_agreement.status = "SIGNED"
-        // TODO: update url to new one
+        loan_agreement.document_url = doc_url
         await loan_agreement.save();
 
-        
+        // update application
         application.status = 'ACCEPTED'
         await application.save()
 
-        loan_agreement = await Document.findOne({ id: req.params.id })
-            .select('-_id -__v -client_id')
-        res.json(loan_agreement)
+        loan_agreement = await Document.findOne({ id: loan_agreement.id })
+            .select('-_id -__v -client_id');
+        res.json(loan_agreement);
     } catch(err) {
         console.error(err.message);
         const error = getError("internal_server_error")
