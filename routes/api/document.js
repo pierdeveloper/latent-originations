@@ -1,4 +1,4 @@
-
+const axios = require('axios').default;
 const { getError } = require('../../helpers/errors.js');
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
@@ -10,6 +10,7 @@ const Document = require('../../models/Document');
 const config = require('config');
 const request = require('request');
 const Application = require('../../models/Application');
+const res = require('express/lib/response.js');
 
 
 // @route     POST document
@@ -19,9 +20,10 @@ router.post('/', [auth], async (req, res) => {
     try {
 
         // get application and borrower info
-        const { application_id } = req.body
+        const { application_id } = req.body;
+        const client_id = req.client_id;
         const application = await Application.findOne({ id: application_id });
-        console.log(application)
+
         if(!application || application.client_id !== req.client_id) {
             const error = getError("application_not_found")
             return res.status(error.error_status).json({ 
@@ -41,7 +43,7 @@ router.post('/', [auth], async (req, res) => {
         }
 
         let borrower = await Borrower.findOne({ id: application.borrower_id })
-        console.log(borrower)
+
         if(!borrower || borrower.client_id !== req.client_id) {
             const error = getError("borrower_not_found")
             return res.status(error.error_status).json({ 
@@ -54,12 +56,6 @@ router.post('/', [auth], async (req, res) => {
         // for business applicant
         if(borrower.type === 'business') {
             const business = await Business.findOne({ id: application.borrower_id})     
-
-            // create docspring submission with applicant data
-            const username = config.get('docspring-id');
-            const pw = config.get('docspring-secret');
-            const auth = 'Basic ' + Buffer.from(username + ':' + pw).toString('base64');
-            const header = {'user-agent': 'node.js', 'Authorization': auth}
             
             const offer = application.offer
             const address_line_2 = business.address.line_2 ?? ""
@@ -92,72 +88,55 @@ router.post('/', [auth], async (req, res) => {
             doc_data_fields.signature = " ";
             doc_data_fields.whitespace = true;
 
+            // Create submission
+            const template_id = "tpl_CbSMf49ckCdT6fLNYh";
+            const docspring_pending_submission = await createDocSpringSubmission(template_id, doc_data_fields)
+            
+            // If it's not created properly then error
+            if(docspring_pending_submission.status !== "success") {
+                const error = getError("document_creation_failed")
+                return res.status(error.error_status).json({ 
+                    error_type: error.error_type,
+                    error_code: error.error_code,
+                    error_message: error.error_message
+                })
+            }
+            // Artificial latency for ds to prepare submission
+            var waitTill = new Date(new Date().getTime() + 4 * 1000);
+            while(waitTill > new Date()){}
 
-            const body_params = {
-                data: doc_data_fields,
-                test: true,
-                editable: false
+            // Get the submission
+            const submission_id = docspring_pending_submission.submission.id
+            const docspring_submission = await getDocSpringSubmission(submission_id)
+            const doc_url = docspring_submission.permanent_download_url
+
+            // If doc doesn't have a url then error
+            if (doc_url === null) {
+                const error = getError("document_creation_failed")
+                return res.status(error.error_status).json({ 
+                    error_type: error.error_type,
+                    error_code: error.error_code,
+                    error_message: error.error_message
+                })
             }
 
-            const post_options = {
-                url: `https://api.docspring.com/api/v1/templates/tpl_CbSMf49ckCdT6fLNYh/submissions`,
-                method: 'POST',
-                headers: header,
-                body: JSON.stringify(body_params)
-            }
+            // Create loan agreement and save
+            const loan_agreement_id = 'doc_' + uuidv4().replace(/-/g, '');
+            let loan_document = new Document({
+                application_id: application_id,
+                id: loan_agreement_id,
+                document_url: doc_url,
+                client_id: req.client_id
 
-            request(post_options, (err, response, body) => {
-                const body_json = JSON.parse(body)
-                console.log('submission creation bodice')
-                console.log(body_json);
-                if(body_json.status !== "success") {
-                    const error = getError("document_creation_failed")
-                    return res.status(error.error_status).json({ 
-                        error_type: error.error_type,
-                        error_code: error.error_code,
-                        error_message: error.error_message
-                    })
-                }
+            })
+            await loan_document.save()
 
-                const submission_id = body_json.submission.id
+            // Response
+            loan_document = await Document.findOne({ id: loan_agreement_id, client_id })
+                .select('-_id -__v -client_id');
+            res.json(loan_document);
 
-                const options = {
-                    url: `https://api.docspring.com/api/v1/submissions/${submission_id}`,
-                    method: 'GET',
-                    headers: header,
-                };
 
-                // give docspring a few seconds to populate submission url
-                var waitTill = new Date(new Date().getTime() + 4 * 1000);
-                while(waitTill > new Date()){}
-        
-                request(options, (err, response, body) => {
-                    if(response.statusCode !== 200) {
-                        const error = getError("document_creation_failed")
-                        return res.status(error.error_status).json({ 
-                            error_type: error.error_type,
-                            error_code: error.error_code,
-                            error_message: error.error_message
-                        })
-                    }
-
-                    const get_body_json = JSON.parse(body)
-                    console.log('submission retrieval bodice');
-                    console.log(get_body_json)
-                    const doc_url = get_body_json.permanent_download_url
-                    const loan_agreement_id = 'doc_' + uuidv4().replace(/-/g, '');
-                    const loan_document = new Document({
-                        application_id: application_id,
-                        id: loan_agreement_id,
-                        document_url: doc_url,
-                        client_id: req.client_id
-
-                    })
-                    loan_document.save()
-                    res.json(loan_document);
-                });
-                
-            });
         } else {
             // for consumer applicants for LOC
             const consumer = await Consumer.findOne({ id: application.borrower_id})     
@@ -189,66 +168,54 @@ router.post('/', [auth], async (req, res) => {
             doc_data_fields.name = `${consumer.first_name} ${consumer.last_name}`;
             doc_data_fields.email = `${consumer.email}`;
             
-            const body_params = {
-                data: doc_data_fields,
-                test: true,
-                editable: false
+            // Create submission
+            const template_id = "tpl_m5cpPsgcqxk2RzM2cN";
+            const docspring_pending_submission = await createDocSpringSubmission(template_id, doc_data_fields)
+            
+            // If it's not created properly then error
+            if(docspring_pending_submission.status !== "success") {
+                const error = getError("document_creation_failed")
+                return res.status(error.error_status).json({ 
+                    error_type: error.error_type,
+                    error_code: error.error_code,
+                    error_message: error.error_message
+                })
+            }
+            // Artificial latency for ds to prepare submission
+            var waitTill = new Date(new Date().getTime() + 4 * 1000);
+            while(waitTill > new Date()){}
+
+            // Get the submission
+            const submission_id = docspring_pending_submission.submission.id
+            const docspring_submission = await getDocSpringSubmission(submission_id)
+            const doc_url = docspring_submission.permanent_download_url
+
+            // If doc doesn't have a url then error
+            if (doc_url === null) {
+                const error = getError("document_creation_failed")
+                return res.status(error.error_status).json({ 
+                    error_type: error.error_type,
+                    error_code: error.error_code,
+                    error_message: error.error_message
+                })
             }
 
-            const post_options = {
-                url: `https://api.docspring.com/api/v1/templates/tpl_m5cpPsgcqxk2RzM2cN/submissions`,
-                method: 'POST',
-                headers: header,
-                body: JSON.stringify(body_params)
-            }
+            // Create loan agreement and save
+            const loan_agreement_id = 'doc_' + uuidv4().replace(/-/g, '');
+            let loan_document = new Document({
+                application_id: application_id,
+                id: loan_agreement_id,
+                document_url: doc_url,
+                client_id: req.client_id
 
-            request(post_options, (err, response, body) => {
-                const body_json = JSON.parse(body)
-                console.log(body)
-                if(body_json.status !== "success") {
-                    const error = getError("document_creation_failed")
-                    return res.status(error.error_status).json({ 
-                        error_type: error.error_type,
-                        error_code: error.error_code,
-                        error_message: error.error_message
-                    })
-                }
+            })
+            await loan_document.save()
 
-                const submission_id = body_json.submission.id
-                console.log(`submission_id is ${submission_id}`)
-                const options = {
-                    url: `https://api.docspring.com/api/v1/submissions/${submission_id}`,
-                    method: 'GET',
-                    headers: header,
-                };
-                var waitTill = new Date(new Date().getTime() + 4 * 1000);
-                while(waitTill > new Date()){}
-        
-                request(options, (err, response, body) => {
-                    console.log('requesting document url)')
-                    if(response.statusCode !== 200) {
-                        const error = getError("document_creation_failed")
-                        return res.status(error.error_status).json({ 
-                            error_type: error.error_type,
-                            error_code: error.error_code,
-                            error_message: error.error_message
-                        })
-                    }
-                    const get_body_json = JSON.parse(body)
-                    const doc_url = get_body_json.permanent_download_url
-                    const loan_agreement_id = 'doc_' + uuidv4().replace(/-/g, '');
-                    const loan_document = new Document({
-                        application_id: application_id,
-                        id: loan_agreement_id,
-                        document_url: doc_url,
-                        client_id: req.client_id
+            // Response
+            loan_document = await Document.findOne({ id: loan_agreement_id, client_id })
+                .select('-_id -__v -client_id');
+            res.json(loan_document);
 
-                    })
-                    loan_document.save()
-                    res.json(loan_document);
-                });
-                
-            });
         }
 
     } catch (err) {
@@ -263,64 +230,49 @@ router.post('/', [auth], async (req, res) => {
     
 });
 
+
 /*
-
-function inputs: template id, doc fields
-returns: docspring_document_body
-
+    DOC SPRING HELPERS
 */
+const createDocSpringSubmission = async (template_id, doc_data_fields) => {
+    // create docspring submission with applicant data
+    console.log('running docspring creation job')
 
-const createDocSpringSubmission = (template_id, doc_data_fields) => {
+    const username = config.get('docspring-id');
+    const pw = config.get('docspring-secret');
+    const auth = 'Basic ' + Buffer.from(username + ':' + pw).toString('base64');
+    
+    const header = {'user-agent': 'node.js', 'Authorization': auth}
+
     const body_params = {
         data: doc_data_fields,
         test: true,
         editable: false
     }
 
-    const post_options = {
-        url: `https://api.docspring.com/api/v1/templates/${template_id}/submissions`,
-        method: 'POST',
-        headers: header,
-        body: JSON.stringify(body_params)
-    }
+    const response = await axios.post(
+        `https://api.docspring.com/api/v1/templates/${template_id}/submissions`,
+        JSON.stringify(body_params), 
+        { headers: header }
+    );
+    return response.data;
+  }
 
-    request(post_options, (err, response, body) => {
-        const body_json = JSON.parse(body)
-        console.log(body)
-        if(body_json.status !== "success") {
-            const error = getError("document_creation_failed")
-            return res.status(error.error_status).json({ 
-                error_type: error.error_type,
-                error_code: error.error_code,
-                error_message: error.error_message
-            })
-        }
+  const getDocSpringSubmission = async (submission_id) => {
+    console.log('running docspring fetch job');
+    const username = config.get('docspring-id');
+    const pw = config.get('docspring-secret');
+    const auth = 'Basic ' + Buffer.from(username + ':' + pw).toString('base64');
+    const header = {'user-agent': 'node.js', 'Authorization': auth}
+    const url = `https://api.docspring.com/api/v1/submissions/${submission_id}`;
+    
+    const response = await axios.get(
+        url,
+        { headers: header }
+    );
 
-        const submission_id = body_json.submission.id
-        console.log(`submission_id is ${submission_id}`)
-        const options = {
-            url: `https://api.docspring.com/api/v1/submissions/${submission_id}`,
-            method: 'GET',
-            headers: header,
-        };
-        var waitTill = new Date(new Date().getTime() + 4 * 1000);
-        while(waitTill > new Date()){}
+    return response.data;
 
-        request(options, (err, response, body) => {
-            console.log('requesting document url)')
-            if(response.statusCode !== 200) {
-                const error = getError("document_creation_failed")
-                return res.status(error.error_status).json({ 
-                    error_type: error.error_type,
-                    error_code: error.error_code,
-                    error_message: error.error_message
-                })
-            }
-            return JSON.parse(body)
-        });
-        
-    });
-    return // docspring bodice
   }
 
 // @route PATCH document
@@ -331,6 +283,9 @@ router.post('/:id/sign', [auth], async (req, res) => {
     // add time stamp of signuate
     // update application status 
     try {
+
+
+        // Confirm existing loan agreement exists
         let loan_agreement = await Document.findOne({ id: req.params.id });
         if(!loan_agreement || loan_agreement.client_id !== req.client_id) {
             const error = getError("document_not_found")
@@ -340,6 +295,8 @@ router.post('/:id/sign', [auth], async (req, res) => {
                 error_message: error.error_message
             })
         }
+
+        // Confirm loan agreement can be signed
         if(loan_agreement.status !== 'PENDING_SIGNATURE') {
             const error = getError("document_cannot_be_signed")
             return res.status(error.error_status).json({ 
@@ -348,11 +305,32 @@ router.post('/:id/sign', [auth], async (req, res) => {
                 error_message: error.error_message
             })
         }
+
+        // Pull up relevant application
+        let application = await Application.findOne({ id: loan_agreement.application_id })
+
+        // Pull up relevant borrower
+        const borrower = await Borrower.findOne({ id: application.borrower_id })
+        
+        const doc_data_fields = {}
+
+        if(borrower.type === 'business') {
+            const business = await Business.findOne({ id: application.borrower_id })
+        }
+
+        // Build the doc data fields
+
+        // create a new doc with fields
+
+        // get the signed doc
+
+        // update loan agreement object
         loan_agreement.signature_timestamp = Date.now()
         loan_agreement.status = "SIGNED"
+        // TODO: update url to new one
         await loan_agreement.save();
 
-        let application = await Application.findOne({ id: loan_agreement.application_id })
+        
         application.status = 'ACCEPTED'
         await application.save()
 
