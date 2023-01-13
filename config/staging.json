@@ -1,5 +1,5 @@
 {
-    "mongoURI": "mongodb+srv://ahegevall:Pperry11@cluster-origin.4vqqaxg.mongodb.net/?retryWrites=true&w=majority",
+    "mongoURI": "mongodb+srv://ahegevall:<password>@pier-staging.qe7kk.mongodb.net/?retryWrites=true&w=majority",
     "docspring-id": "api_test_zDfQcMNPX3hEJtFYx3",
     "docspring-secret": "m6DSrJz7fscMDf2g5KxDRCzEbDtTJef4RrYrdfMJFc",
     "envo": "staging",
