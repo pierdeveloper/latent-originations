@@ -8,6 +8,7 @@ const Borrower = require('../../models/Borrower');
 const Consumer = require('../../models/Consumer');
 const { validationResult } = require('express-validator');
 const { businessValidationRules, consumerValidationRules } = require('../../helpers/validator.js');
+const config = require('config');
 
 
 // @route     POST user
@@ -246,6 +247,11 @@ router.post('/consumer', [auth, consumerValidationRules()], async (req, res) => 
 
         consumer = await Consumer.findOne({ id: borrower_id, client_id })
             .select('-_id -__v -client_id');
+
+        
+        console.log(`NODE_ENV: ${process.env.NODE_ENV}`);
+        const envo = config.get('envo');
+        console.log(`config envo value: ${envo}`);
 
         res.json(consumer);
 
