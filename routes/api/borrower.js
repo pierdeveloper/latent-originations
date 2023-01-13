@@ -8,7 +8,8 @@ const Borrower = require('../../models/Borrower');
 const Consumer = require('../../models/Consumer');
 const { validationResult } = require('express-validator');
 const { businessValidationRules, consumerValidationRules } = require('../../helpers/validator.js');
-const { rateLimiter } = require('../../middleware/rateLimiter')
+const { rateLimiter } = require('../../middleware/rateLimiter');
+const config = require('config');
 
 // @route     POST user
 // @desc      Create a business user
@@ -247,7 +248,7 @@ router.post('/consumer', [auth, consumerValidationRules()], async (req, res) => 
         consumer = await Consumer.findOne({ id: borrower_id, client_id })
             .select('-_id -__v -client_id');
 
-        res.json({ msg: 'aww yeah!'});
+        res.json({ msg: 'aww yeah!', environment: config.get('environment')});
 
     } catch (err) {
         console.log(err);
