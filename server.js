@@ -30,7 +30,7 @@ app.use('/', require('./routes/api/temp-landing'));
 
 // Serve static assets in production
 
-if(process.env.NODE_ENV === 'production') {
+if(process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'staging') {
     app.enable("trust proxy") // for express-rate-limit on heroku
     // Set static folder
     app.use(express.static('client/build'));
@@ -42,5 +42,5 @@ if(process.env.NODE_ENV === 'production') {
 }
 
 const PORT = process.env.PORT || 5001;
-
+console.log(`nodejs environment: ${process.env.NODE_ENV}`);
 app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
