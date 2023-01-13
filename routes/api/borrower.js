@@ -247,6 +247,8 @@ router.post('/consumer', [auth, consumerValidationRules()], async (req, res) => 
         consumer = await Consumer.findOne({ id: borrower_id, client_id })
             .select('-_id -__v -client_id');
 
+        consumer.first_name = "DONKEY BUTT"
+
         res.json(consumer);
 
     } catch (err) {
