@@ -2,7 +2,6 @@ const express = require('express');
 const connectDB = require('./config/db.js');
 const path = require('path');
 const rateLimit = require("express-rate-limit");
-const config = require('./config.js');
 
 const app = express();
 
@@ -42,8 +41,6 @@ if(process.env.NODE_ENV === 'production') {
     });
 }
 
-//const PORT = process.env.PORT || 5001;
-const PORT = config.PORT;
-const HOST = config.HOST;
+const PORT = process.env.PORT || 5001;
 
-app.listen(PORT, HOST, () => console.log(`Server started on http://${HOST}:${PORT}`));
+app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
