@@ -8,10 +8,9 @@ const router = express.Router();
 const Borrower = require('../../models/Borrower');
 const Document = require('../../models/Document');
 const config = require('config');
-const request = require('request');
 const Application = require('../../models/Application');
-const res = require('express/lib/response.js');
-const { consumerValidationRules } = require('../../helpers/validator.js');
+
+
 
 
 // @route     POST document
@@ -202,7 +201,7 @@ const createDocSpringSubmission = async (template_id, doc_data_fields) => {
 
     const body_params = {
         data: doc_data_fields,
-        test: true,
+        test: config.get('docspring-test'),
         editable: false
     }
 
