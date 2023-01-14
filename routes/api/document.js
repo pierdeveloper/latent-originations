@@ -11,8 +11,6 @@ const config = require('config');
 const Application = require('../../models/Application');
 
 
-
-
 // @route     POST document
 // @desc      Create a loan agreement pdf for user
 // @access    Public

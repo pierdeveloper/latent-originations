@@ -1,4 +1,5 @@
 const express = require('express');
+const consumer = require('../../helpers/coverage/consumer');
 const router = express.Router();
 
 // @route     GET api

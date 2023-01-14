@@ -2,7 +2,6 @@ const express = require('express');
 const { getError } = require('../../helpers/errors.js');
 const { v4: uuidv4 } = require('uuid');
 const auth = require('../../middleware/auth');
-const config = require('config');
 const router = express.Router();
 const Borrower = require('../../models/Borrower');
 const Application = require('../../models/Application');
@@ -10,6 +9,9 @@ const { validationResult } = require('express-validator');
 const { applicationValidationRules, 
         offerValidationRules,
         rejectionValidationRules } = require('../../helpers/validator.js');
+const consumer_state_limits = require('../../helpers/coverage/consumer.json');
+const commercial_state_limits = require('../../helpers/coverage/commercial.json');
+const valid_rejection_reasons = require('../../helpers/rejectionReasons.json');
 
 // @route     POST application
 // @desc      Create a credit application
@@ -83,7 +85,7 @@ router.post('/:id/reject', [auth, rejectionValidationRules()], async (req, res) 
 
     const rejectionFields = {}
     rejectionFields.reason = rejection_reason
-    rejectionFields.reason_message = config.rejection_reasons.get(rejection_reason)
+    rejectionFields.reason_message = valid_rejection_reasons[rejection_reason]
 
     try {
         let application = await Application.findOne({ id: req.params.id });
@@ -142,7 +144,6 @@ router.post('/:id/approve', [auth, offerValidationRules()], async (req, res) => 
 
     const { offer } = req.body
 
-    console.log(offer);
     // build offer object
     const offerFields = {};
     offerFields.amount = offer.amount;
@@ -211,7 +212,7 @@ router.post('/:id/approve', [auth, offerValidationRules()], async (req, res) => 
         if(borrower.type === 'business') {
             let business = await Business.findOne({ id: application.borrower_id })
             //verify state is supported (ie it's not PR, guam etc)
-            if(!(business.address.state in config.commercial_state_limits)) {
+            if(!(business.address.state in commercial_state_limits)) {
                 const error = getError("state_not_supported")
                 return res.status(error.error_status).json({ 
                     error_type: error.error_type,
@@ -220,8 +221,10 @@ router.post('/:id/approve', [auth, offerValidationRules()], async (req, res) => 
                 })
             } 
 
+            const state = commercial_state_limits[business.address.state]
+
             // verify Pier has limits for the state
-            if(Object.keys(config.commercial_state_limits.get(business.address.state)).length === 0) {
+            if(Object.keys(state).length === 0) {
                 const error = getError("state_not_supported")
                 return res.status(error.error_status).json({ 
                     error_type: error.error_type,
@@ -231,21 +234,23 @@ router.post('/:id/approve', [auth, offerValidationRules()], async (req, res) => 
             }
             
             // verify if either type 1 or type 2 supports the offer
-            const type_1 = config.commercial_state_limits.get(business.address.state).type_1
-            const type_2 = config.commercial_state_limits.get(business.address.state).type_2
+            const limit_1 = state.limit_1
+            const limit_2 = state.limit_2
 
             const business_type = business.business_type.toLowerCase()
             //type 1
-            if ((offer.amount >= type_1.amount.min && 
-                offer.amount <= type_1.amount.max &&
-                offer.interest_rate <= type_1.max_apr &&
-                type_1.supported_business_types.includes(business_type)) ||
+            if ((offer.amount >= limit_1.amount.min && 
+                offer.amount <= limit_1.amount.max &&
+                offer.interest_rate <= limit_1.max_apr &&
+                offer.apr <= limit_1.max_apr &&
+                limit_1.business_types.includes(business_type)) ||
                 // type 2
                 (
-                    offer.amount >= type_2?.amount.min &&
-                    offer.amount <= type_2?.amount.max &&
-                    offer.interest_rate <= type_2?.max_apr &&
-                    type_2?.supported_business_types.includes(business_type)
+                    offer.amount >= limit_2?.amount.min &&
+                    offer.amount <= limit_2?.amount.max &&
+                    offer.interest_rate <= limit_2?.max_apr &&
+                    offer.apr <= limit_2?.max_apr &&
+                    limit_2?.business_types.includes(business_type)
                 )) {
                     // accept approval if offer meets type 1 or type 2
                     application.offer = offerFields
@@ -259,7 +264,6 @@ router.post('/:id/approve', [auth, offerValidationRules()], async (req, res) => 
                     res.json(application)
                 } else {
                     // otherwise reject
-                    console.log('its insupported')
                     const error = getError("unsupported_offer_terms")
                     return res.status(error.error_status).json({ 
                         error_type: error.error_type,
@@ -271,7 +275,7 @@ router.post('/:id/approve', [auth, offerValidationRules()], async (req, res) => 
             // if it's consumer then
             let consumer = await Consumer.findOne({ id: application.borrower_id })
             //verify state is supported (ie it's not PR, guam etc)
-            if(!(consumer.address.state in config.consumer_state_limits)) {
+            if(!(consumer.address.state in consumer_state_limits)) {
                 const error = getError("state_not_supported")
                 return res.status(error.error_status).json({ 
                     error_type: error.error_type,
@@ -280,23 +284,26 @@ router.post('/:id/approve', [auth, offerValidationRules()], async (req, res) => 
                 })
             } 
 
+            const state = consumer_state_limits[consumer.address.state]
+
             // verify Pier has limits for the state
-            if(Object.keys(config.consumer_state_limits.get(consumer.address.state)).length === 0) {
+            if(Object.keys(state).length === 0) {
                 const error = getError("state_not_supported")
                 return res.status(error.error_status).json({ 
                     error_type: error.error_type,
                     error_code: error.error_code,
                     error_message: error.error_message
                 })
-            }
+            } 
             
-            // verify if either type 1 or type 2 supports the offer
-            const type_1 = config.consumer_state_limits.get(consumer.address.state).type_1
+            // verify if either limit type 1 
+            const limit_1 = state.limit_1
+            console.log(`limit_1: ${limit_1}`)
 
-            //type 1
-            if ((offer.amount >= type_1.amount.min && 
-                offer.amount <= type_1.amount.max &&
-                offer.interest_rate <= type_1.max_apr )) {
+            if ((offer.amount >= limit_1.amount.min && 
+                offer.amount <= limit_1.amount.max &&
+                offer.apr <= limit_1.max_apr &&
+                offer.interest_rate <= limit_1.max_apr )) {
                     // accept approval if offer meets type 1
                     application.offer = offerFields
                     application.status = 'APPROVED'
@@ -305,15 +312,15 @@ router.post('/:id/approve', [auth, offerValidationRules()], async (req, res) => 
                     application = await Application.findOne({ id: req.params.id })
                         .select('-_id -__v -client_id');
                     res.json(application)
-                } else {
-                    // otherwise reject
-                    const error = getError("unsupported_offer_terms")
-                    return res.status(error.error_status).json({ 
-                        error_type: error.error_type,
-                        error_code: error.error_code,
-                        error_message: error.error_message
-                    })
-                }
+            } else {
+                // otherwise reject
+                const error = getError("unsupported_offer_terms")
+                return res.status(error.error_status).json({ 
+                    error_type: error.error_type,
+                    error_code: error.error_code,
+                    error_message: error.error_message
+                })
+            }
         }
         
     } catch(err) {

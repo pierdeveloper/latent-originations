@@ -1,5 +1,6 @@
 const { check, validationResult } = require('express-validator');
-const config = require('config');
+const states = require('../helpers/coverage/states.json');
+const rejection_reasons = require('../helpers/rejectionReasons.json');
 
 // Business borrower validation rules
 const businessValidationRules = () => {
@@ -13,7 +14,7 @@ const businessValidationRules = () => {
         check('address.zip', 'Zip code must be 5 digits')
             .isNumeric().isLength({min:5, max:5}),
         check('address.state', "State must be valid 2-digit US state abbreviation")
-            .isIn(config.commercial_state_limits),
+            .isIn(states.states),
         check('beneficial_owners.*.address.line_1', 'Address line 1 max length is 256 chars')
             .isLength({max:256}),
         check('beneficial_owners.*.address.line_2', 'Address line 2 max length is 256 chars')
@@ -23,7 +24,7 @@ const businessValidationRules = () => {
         check('beneficial_owners.*.address.zip', 'Zip code must be 5 digits')
             .isNumeric().isLength({min:5, max:5}),
         check('beneficial_owners.*.address.state', "State must be valid 2-digit US state abbreviation")
-            .isIn(config.commercial_state_limits),
+            .isIn(states.states),
         check('beneficial_owners.*.date_of_birth', 'Date of Birth format must conform to yyyy-mm-dd')
             .isDate({format:"yyyy-mm-dd", strictMode:true}),
         check('beneficial_owners.*.email', 'Email must be a valid email')
@@ -53,7 +54,7 @@ const businessValidationRules = () => {
         check('phone', 'Phone must be a 10-digit US number')
             .isNumeric().isLength({min:10, max:10}),
         check('state_of_incorporation', "State must be valid 2-digit US state abbreviation")
-            .isIn(config.commercial_state_limits)
+            .isIn(states.states)
     ]
   }
 
@@ -69,7 +70,7 @@ const consumerValidationRules = () => {
         check('address.zip', 'Zip code must be 5 digits')
             .isNumeric().isLength({min:5, max:5}),
         check('address.state', "State must be valid 2-digit US state abbreviation")
-            .isIn(config.consumer_state_limits),
+            .isIn(states.states),
         check('date_of_birth', 'Date of Birth format must conform to yyyy-mm-dd')
             .isDate({format:"yyyy-mm-dd", strictMode:true}),
         check('email', 'Email must be a valid email')
@@ -124,7 +125,7 @@ const consumerValidationRules = () => {
   const rejectionValidationRules = () => {
     return [
         check('rejection_reason', 'Rejection reason is not a valid reason')
-            .isIn(config.rejection_reasons)
+            .isIn(rejection_reasons)
     ]
   }
 

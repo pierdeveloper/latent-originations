@@ -1,0 +1,270 @@
+
+{
+    "AL": {
+        "limit_1": {
+            "amount": {
+                "min": 150000,
+                "max": 500000
+            },
+            "max_apr": 0
+        }
+    },
+    "AK": {
+        "limit_1": {
+            "amount": {
+                "min": 5000,
+                "max": 500000
+            },
+            "max_apr": 0
+        }
+    },
+    "AZ": {},
+    "AR": {
+        "limit_1": {
+            "amount": {
+                "min": 5000,
+                "max": 500000
+            },
+            "max_apr": 0
+        }
+    },
+    "CA": {},
+    "CO": {
+        "limit_1": {
+            "amount": {
+                "min": 5000,
+                "max": 500000
+            },
+            "max_apr": 0
+        }
+    },
+    "CT": {
+        "limit_1": {
+            "amount": {
+                "min": 5000,
+                "max": 500000
+            },
+            "max_apr": 0
+        }
+    },
+    "DE": {},
+    "DC": {
+        "limit_1": {
+            "amount": {
+                "min": 5000,
+                "max": 500000
+            },
+            "max_apr": 0
+        }
+    },
+    "FL": {
+        "limit_1": {
+            "amount": {
+                "min": 5000,
+                "max": 500000
+            },
+            "max_apr": 0
+        }
+    },
+    "GA": {
+        "limit_1": {
+            "amount": {
+                "min": 300000,
+                "max": 500000
+            },
+            "max_apr": 0
+        }
+    },
+    "HI": {
+        "limit_1": {
+            "amount": {
+                "min": 5000,
+                "max": 500000
+            },
+            "max_apr": 0
+        }
+    },
+    "ID": {},
+    "IL": {
+        "limit_1": {
+            "amount": {
+                "min": 5000,
+                "max": 500000
+            },
+            "max_apr": 0
+        }
+    },
+    "IN": {},
+    "IA": {
+        "limit_1": {
+            "amount": {
+                "min": 5000,
+                "max": 500000
+            },
+            "max_apr": 0
+        }
+    },
+    "KS": {
+        "limit_1": {
+            "amount": {
+                "min": 5000,
+                "max": 500000
+            },
+            "max_apr": 0
+        }
+    },
+    "KY": {},
+    "LA": {},
+    "ME": {
+        "limit_1": {
+            "amount": {
+                "min": 5000,
+                "max": 500000
+            },
+            "max_apr": 0
+        }
+    },
+    "MD": {},
+    "MA": {
+        "limit_1": {
+            "amount": {
+                "min": 5000,
+                "max": 500000
+            },
+            "max_apr": 0
+        }
+    },
+    "MI": {},
+    "MN": {
+        "limit_1": {
+            "amount": {
+                "min": 5000,
+                "max": 500000
+            },
+            "max_apr": 0
+        }
+    },
+    "MS": {},
+    "MO": {
+        "limit_1": {
+            "amount": {
+                "min": 5000,
+                "max": 500000
+            },
+            "max_apr": 0
+        }
+    },
+    "MT": {},
+    "NE": {
+        "limit_1": {
+            "amount": {
+                "min": 5000,
+                "max": 500000
+            },
+            "max_apr": 0
+        }
+    },
+    "NV": {},
+    "NH": {},
+    "NJ": {
+        "limit_1": {
+            "amount": {
+                "min": 5000,
+                "max": 500000
+            },
+            "max_apr": 0
+        }
+    },
+    "NM": {},
+    "NY": {
+        "limit_1": {
+            "amount": {
+                "min": 5000,
+                "max": 500000
+            },
+            "max_apr": 0
+        }
+    },
+    "NC": {
+        "limit_1": {
+            "amount": {
+                "min": 5000,
+                "max": 500000
+            },
+            "max_apr": 0
+        }
+    },
+    "ND": {},
+    "OH": {},
+    "OK": {
+        "limit_1": {
+            "amount": {
+                "min": 5000,
+                "max": 500000
+            },
+            "max_apr": 0
+        }
+    },
+    "OR": {
+        "limit_1": {
+            "amount": {
+                "min": 5000,
+                "max": 500000
+            },
+            "max_apr": 0
+        }
+    },
+    "PA": {},
+    "RI": {},
+    "SC": {
+        "limit_1": {
+            "amount": {
+                "min": 5000,
+                "max": 500000
+            },
+            "max_apr": 0
+        }
+    },
+    "SD": {},
+    "TN": {
+        "limit_1": {
+            "amount": {
+                "min": 5000,
+                "max": 500000
+            },
+            "max_apr": 0
+        }
+    },
+    "TX": {
+        "limit_1": {
+            "amount": {
+                "min": 5000,
+                "max": 500000
+            },
+            "max_apr": 0
+        }
+    },
+    "UT": {},
+    "VT": {},
+    "VA": {
+        "limit_1": {
+            "amount": {
+                "min": 5000,
+                "max": 500000
+            },
+            "max_apr": 0
+        }
+    },
+    "WA": {},
+    "WV": {
+        "limit_1": {
+            "amount": {
+                "min": 5000,
+                "max": 500000
+            },
+            "max_apr": 0
+        }
+    },
+    "WI": {},
+    "WY": {}
+}
