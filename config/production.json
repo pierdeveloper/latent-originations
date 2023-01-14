@@ -1,7 +1,7 @@
 {
-    "mongoURI": "mongodb+srv://ahegevall:Pperry11@cluster-origin.4vqqaxg.mongodb.net/?retryWrites=true&w=majority",
-    "docspring-id": "api_test_zDfQcMNPX3hEJtFYx3",
-    "docspring-secret": "m6DSrJz7fscMDf2g5KxDRCzEbDtTJef4RrYrdfMJFc",
+    "mongoURI": "mongodb+srv://ahegevall:Pperry11@pier-production-tempora.qe7kk.mongodb.net/?retryWrites=true&w=majority",
+    "docspring-id": "api_6r6MPkheLQDFeMfR39",
+    "docspring-secret": "HqatYXFDgSdREeHYJQsQgnh7GaKZ6SHxSP6bfayaqf",
     "envo": "production",
     "rejection_reasons": {
         "income_too_low" : "Income does not meet requirement",
