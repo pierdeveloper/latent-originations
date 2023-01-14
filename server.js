@@ -14,7 +14,7 @@ app.use(express.json({ extended: false }));
 // Init rate limiting middleware
 const limiter = rateLimit({
     windowMs: 60 * 1000, // 1 minute
-    max: 1000, // limit each IP to 1000 requests per windowMs
+    max: 200, // limit each IP to 200 requests per windowMs
     message: "Too many requests from this IP, please try again in a minute"
   });
 app.use(limiter);
@@ -30,7 +30,7 @@ app.use('/', require('./routes/api/temp-landing'));
 
 // Serve static assets in production
 
-if(process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'staging') {
+if(process.env.NODE_ENV === 'production' /*|| process.env.NODE_ENV === 'staging'*/) {
     app.enable("trust proxy") // for express-rate-limit on heroku
     // Set static folder
     app.use(express.static('client/build'));
