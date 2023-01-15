@@ -75,7 +75,7 @@ const errors = {
     },
     document_cannot_be_signed: {
         error_code: "LOAN_AGREEMENT_CANNOT_BE_SIGNED",
-        error_message: "The loan agreement's status must be PENDING in order to sign it",
+        error_message: "The loan agreement's status must be PENDING_SIGNATURE in order to sign it",
         error_status: 400,
         error_type: "LOAN_AGREEMENT_ERROR"
     },
