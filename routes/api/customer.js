@@ -29,15 +29,17 @@ router.post('/', customerValidationRules(), async (req, res) => {
         const client_id_uuid = uuidv4();
         const client_id = 'test_' + client_id_uuid.replace(/-/g, '');
         const secret_uuid = uuidv4();
-        const secret = 'test_' + secret_uuid.replace(/-/g, '');
+        const sandbox_secret = 'test_' + secret_uuid.replace(/-/g, '');
+        const production_enabled = false;
 
         customer = new Customer({
             client_id,
-            secret,
+            sandbox_secret,
             company_name,
             dba_name,
-            email
-        })
+            email,
+            production_enabled
+        })  
         
         await customer.save()
 
@@ -78,6 +80,49 @@ router.patch('/:id', async (req, res) => {
         )
 
         return res.json(customer)
+
+    } catch (err) {
+        console.error(err.message);
+        if(err.kind === 'ObjectId') {
+            return res.status(404).json({ msg: 'Invalid client id' });
+        }
+        res.status(500).send("Server Error");
+    }
+});
+
+// @route     PATCH customer/enable_production
+// @desc      Enable a customer for production
+// @access    PRIVATE
+
+router.patch('/:id/enable_production', async (req, res) => {
+    try {
+        //confirm node env is prod (need to block this in other envs)
+        if(process.env.NODE_ENV !== 'production') {
+            return res.status(404).send("This endpoint is only allowed in production")
+        }
+
+        // find the customer
+        let customer = await Customer.findOne({ client_id: req.params.id });
+        if (!customer) {
+            return res.status(404).json({ msg: 'Invalid client id' })
+        }
+
+        // verify admin key
+        const { admin_key } = req.body
+        if(admin_key !== "Z*gKq8bck2k-QCfF8ydTYwKB!RFCN9iYWXfELvmY!YrCLQV7_83jRhTcBvm6rme!.6kEji9.@*ZsHx3yZE7QiAycHMch") {
+            return res.status(404).send('Unauthorized')
+        }
+
+        // create key
+        const secret_uuid = uuidv4();
+        const production_secret = 'prod_' + secret_uuid.replace(/-/g, '');
+
+        // set and save
+        customer.production_secret = production_secret;
+        customer.production_enabled = true
+        await customer.save()
+    
+        return res.send('Production enabled for client!')
 
     } catch (err) {
         console.error(err.message);

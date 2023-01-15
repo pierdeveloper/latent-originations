@@ -5,9 +5,18 @@ const CustomerSchema = new mongoose.Schema({
         type: String,
         required: false
     },
-    secret: {
+    sandbox_secret: {
         type: String,
         required: false
+    },
+    production_secret: {
+        type: String,
+        required: false
+    },
+    production_enabled: {
+        type: Boolean,
+        required: true,
+        default: false
     },
     company_name: {
         type: String,
