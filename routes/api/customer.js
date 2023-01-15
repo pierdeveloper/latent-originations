@@ -9,6 +9,13 @@ const { customerValidationRules } = require('../../helpers/validator.js');
 // @desc      Create a Pier customer profile w/ api keys
 // @access    PRIVATE
 router.post('/', customerValidationRules(), async (req, res) => {
+    
+    // verify admin key
+    const { admin_key } = req.body
+    if(admin_key !== "Z*gKq8bck2k-QCfF8ydTYwKB!RFCN9iYWXfELvmY!YrCLQV7_83jRhTcBvm6rme!.6kEji9.@*ZsHx3yZE7QiAycHMch") {
+        return res.status(401).send('Unauthorized')
+    }
+    // Validate input
     const errors = validationResult(req);
     if(!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array()});
@@ -27,7 +34,7 @@ router.post('/', customerValidationRules(), async (req, res) => {
 
         // create api keys
         const client_id_uuid = uuidv4();
-        const client_id = 'test_' + client_id_uuid.replace(/-/g, '');
+        const client_id = client_id_uuid.replace(/-/g, '');
         const secret_uuid = uuidv4();
         const sandbox_secret = 'test_' + secret_uuid.replace(/-/g, '');
         const production_enabled = false;
@@ -52,11 +59,17 @@ router.post('/', customerValidationRules(), async (req, res) => {
 });
 
 // @route     PATCH customer
-// @desc      Update a customer by client id
+// @desc      Update a customer's details by client id. Note: does not support production enablement!
 // @access    PUBLIC
 
 router.patch('/:id', async (req, res) => {
     try {
+        // verify admin key
+        const { admin_key } = req.body
+        if(admin_key !== "Z*gKq8bck2k-QCfF8ydTYwKB!RFCN9iYWXfELvmY!YrCLQV7_83jRhTcBvm6rme!.6kEji9.@*ZsHx3yZE7QiAycHMch") {
+            return res.status(401).send('Unauthorized')
+        }
+
         // find the user
         let customer = await Customer.findOne({ client_id: req.params.id });
         if (!customer) {
@@ -98,7 +111,7 @@ router.patch('/:id/enable_production', async (req, res) => {
     try {
         //confirm node env is prod (need to block this in other envs)
         if(process.env.NODE_ENV !== 'production') {
-            return res.status(404).send("This endpoint is only allowed in production")
+            return res.status(403).send("This endpoint is only allowed in production")
         }
 
         // find the customer
@@ -110,7 +123,7 @@ router.patch('/:id/enable_production', async (req, res) => {
         // verify admin key
         const { admin_key } = req.body
         if(admin_key !== "Z*gKq8bck2k-QCfF8ydTYwKB!RFCN9iYWXfELvmY!YrCLQV7_83jRhTcBvm6rme!.6kEji9.@*ZsHx3yZE7QiAycHMch") {
-            return res.status(404).send('Unauthorized')
+            return res.status(401).send('Unauthorized')
         }
 
         // create key
@@ -138,6 +151,12 @@ router.patch('/:id/enable_production', async (req, res) => {
 // @access    PUBLIC
 router.get('/:id', async (req, res) => {
     try {
+        // verify admin key
+        const { admin_key } = req.body
+        if(admin_key !== "Z*gKq8bck2k-QCfF8ydTYwKB!RFCN9iYWXfELvmY!YrCLQV7_83jRhTcBvm6rme!.6kEji9.@*ZsHx3yZE7QiAycHMch") {
+            return res.status(401).send('Unauthorized')
+        }
+        // Get customer and return it
         const customer = await Customer.findOne({ client_id: req.params.id});
         if(!customer) {
             return res.status(404).json({ msg: 'Invalid client id' });
@@ -155,9 +174,11 @@ router.get('/:id', async (req, res) => {
 // @route     GET customers
 // @desc      List all customers
 // @access    PRIVATE
-router.get('/admin/:adminKey', async (req, res) => {
-    if(req.params.adminKey !== 'pier-admin-key-1000') {
-        res.status(401).send('Access Denied')
+router.get('/', async (req, res) => {
+    // verify admin key
+    const { admin_key } = req.body
+    if(admin_key !== "Z*gKq8bck2k-QCfF8ydTYwKB!RFCN9iYWXfELvmY!YrCLQV7_83jRhTcBvm6rme!.6kEji9.@*ZsHx3yZE7QiAycHMch") {
+        return res.status(403).send('Unauthorized')
     }
     try {
         const customers = await Customer.find();
@@ -174,6 +195,12 @@ router.get('/admin/:adminKey', async (req, res) => {
 
 router.delete('/:id', async (req, res) => {
     try {
+        // verify admin key
+        const { admin_key } = req.body
+        if(admin_key !== "Z*gKq8bck2k-QCfF8ydTYwKB!RFCN9iYWXfELvmY!YrCLQV7_83jRhTcBvm6rme!.6kEji9.@*ZsHx3yZE7QiAycHMch") {
+            return res.status(401).send('Unauthorized')
+        }
+
         const customer = await Customer.findOne({ client_id: req.params.id});
 
         if(!customer) {

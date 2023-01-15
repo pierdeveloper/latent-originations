@@ -38,17 +38,43 @@ module.exports = async function(req, res, next) {
     }
 
     try {
-        const customer = await Customer.findOne({ secret: secret });
-        if(!customer) {
-            const error = getError("unauthorized")
-            return res.status(error.error_status).json({ 
-                error_type: error.error_type,
-                error_code: error.error_code,
-                error_message: error.error_message
-            })  
+        // for production
+        if(process.env.NODE_ENV === 'production') {
+
+            // look up customer
+            const customer = await Customer.findOne({ production_secret: secret });
+
+            // confirm customer prod key is valid and customer is enabled for prod
+            if(!customer || customer.production_enabled === false) {
+                const error = getError("unauthorized")
+                return res.status(error.error_status).json({ 
+                    error_type: error.error_type,
+                    error_code: error.error_code,
+                    error_message: error.error_message
+                })  
+            }
+
+            // set client id and continue
+            req.client_id = customer.client_id
+        } else {
+        // for dev/staging/sandbox
+            // look up customer
+            const customer = await Customer.findOne({ sandbox_secret: secret });
+
+            if(!customer) {
+                const error = getError("unauthorized")
+                return res.status(error.error_status).json({ 
+                    error_type: error.error_type,
+                    error_code: error.error_code,
+                    error_message: error.error_message
+                })  
+            }
+            // set client id and continue
+            req.client_id = customer.client_id
         }
-        req.client_id = customer.client_id
+
         next();
+
     } catch(err) {
         console.error(err.message);
         if(err.kind === 'ObjectId') {
