@@ -134,7 +134,6 @@ router.post('/', [auth], async (req, res) => {
             
         }
 
-        
 
         // Create DS submission
         const docspring_pending_submission = await createDocSpringSubmission(template_id, doc_data_fields)
@@ -326,7 +325,7 @@ router.post('/:id/sign', [auth], async (req, res) => {
                 style: 'currency',
                 currency: 'USD',
             });
-
+/*
             doc_data_fields.date = today.toLocaleDateString('en-us', dateOptions);
             doc_data_fields.account_number = `${application.id}`;
             doc_data_fields.amount = `${formatter.format(offer.amount / 100)}`;
@@ -344,6 +343,33 @@ router.post('/:id/sign', [auth], async (req, res) => {
             
             // Create submission
             template_id = "tpl_m5cpPsgcqxk2RzM2cN";
+*/
+            doc_data_fields.date = today.toLocaleDateString('en-us', dateOptions);
+            doc_data_fields.account_number = `${application_id}`;
+            doc_data_fields.amount = `${formatter.format(offer.amount / 100)}`;
+            doc_data_fields.apr = `${offer.apr / 100}%`;
+            doc_data_fields.late_payment_fee = `${formatter.format(offer.late_payment_fee / 100)}`;
+            doc_data_fields.address = `${consumer.address.line_1} ${consumer.address.line_2} ${consumer.address.city} ${consumer.address.state} ${consumer.address.zip}`;
+            doc_data_fields.name = `${consumer.first_name} ${consumer.last_name}`;
+            doc_data_fields.email = `${consumer.email}`;
+            doc_data_fields.name_2 = `${consumer.first_name} ${consumer.last_name}`;
+            doc_data_fields.date_2 = today.toLocaleDateString('en-us', dateOptions);
+            doc_data_fields.signature = `${consumer.first_name} ${consumer.last_name}`;
+            
+
+            if(application.credit_type === "LOAN") {
+                doc_data_fields.amount_2 = `${formatter.format(offer.amount / 100)}`;
+                doc_data_fields.n_payments = offer.term;
+                doc_data_fields.amount_3 = `${formatter.format(offer.amount / 100)}`;
+                doc_data_fields.amount_4 = `${formatter.format(offer.amount / 100)}`;
+                doc_data_fields.amount_5 = `${formatter.format(offer.amount / 100)}`;
+                template_id = 'tpl_ep9zapmPQpaZbah4D3';
+            } else {
+                doc_data_fields.annual_fee = `${formatter.format(offer.annual_fee / 100)}`
+                doc_data_fields.origination_fee = `${formatter.format(offer.origination_fee / 100)}`
+                doc_data_fields.whitespace = true;
+                template_id = "tpl_m5cpPsgcqxk2RzM2cN";
+            }
 
         }
 
