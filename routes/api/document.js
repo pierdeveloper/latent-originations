@@ -103,7 +103,8 @@ router.post('/', [auth], async (req, res) => {
                 style: 'currency',
                 currency: 'USD',
             });
-
+            console.log(consumer)
+            console.log(offer)
 
             doc_data_fields.date = today.toLocaleDateString('en-us', dateOptions);
             doc_data_fields.account_number = `${application_id}`;
@@ -131,6 +132,7 @@ router.post('/', [auth], async (req, res) => {
                 doc_data_fields.whitespace = true;
                 template_id = "tpl_m5cpPsgcqxk2RzM2cN";
             }
+            console.log(doc_data_fields)
             
         }
 
@@ -345,7 +347,7 @@ router.post('/:id/sign', [auth], async (req, res) => {
             template_id = "tpl_m5cpPsgcqxk2RzM2cN";
 */
             doc_data_fields.date = today.toLocaleDateString('en-us', dateOptions);
-            doc_data_fields.account_number = `${application_id}`;
+            doc_data_fields.account_number = `${application.id}`;
             doc_data_fields.amount = `${formatter.format(offer.amount / 100)}`;
             doc_data_fields.apr = `${offer.apr / 100}%`;
             doc_data_fields.late_payment_fee = `${formatter.format(offer.late_payment_fee / 100)}`;
