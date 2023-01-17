@@ -103,9 +103,7 @@ router.post('/', [auth], async (req, res) => {
                 style: 'currency',
                 currency: 'USD',
             });
-            console.log(consumer)
-            console.log(offer)
-
+            
             doc_data_fields.date = today.toLocaleDateString('en-us', dateOptions);
             doc_data_fields.account_number = `${application_id}`;
             doc_data_fields.amount = `${formatter.format(offer.amount / 100)}`;
@@ -118,14 +116,25 @@ router.post('/', [auth], async (req, res) => {
             doc_data_fields.date_2 = " ";
             doc_data_fields.signature = " ";
             
-
+            // if loan
             if(application.credit_type === "LOAN") {
-                doc_data_fields.amount_2 = `${formatter.format(offer.amount / 100)}`;
+                doc_data_fields.finance_charge = `${formatter.format(offer.finance_charge / 100)}`
+                const total_payments = offer.finance_charge + offer.amount
+                doc_data_fields.total_payments = `${formatter.format(total_payments / 100)}`
                 doc_data_fields.n_payments = offer.term;
-                doc_data_fields.amount_3 = `${formatter.format(offer.amount / 100)}`;
-                doc_data_fields.amount_4 = `${formatter.format(offer.amount / 100)}`;
-                doc_data_fields.amount_5 = `${formatter.format(offer.amount / 100)}`;
-                template_id = 'tpl_ep9zapmPQpaZbah4D3';
+                const amount_of_payments = total_payments / offer.term;
+                doc_data_fields.amount_of_payments = `${formatter.format(amount_of_payments / 100)}`
+
+                let first_due_date = new Date();
+                first_due_date.setDate(today.getDate() + 30);
+                doc_data_fields.payment_schedule = `Monthly, starting ${first_due_date.toLocaleDateString('en-us', dateOptions)}`
+                doc_data_fields.prepayment_penalty = `${formatter.format(0)}`
+                doc_data_fields.amount_to_you = `${formatter.format(offer.amount / 100)}`
+                doc_data_fields.amount_to_others = `${formatter.format(0)}`
+                doc_data_fields.total_financed = `${formatter.format(offer.amount / 100)}`
+                doc_data_fields.interest_rate = `${offer.interest_rate / 100}%`;
+                template_id = 'tpl_kSQ29kLkxL3ZbHg4t2';
+            // if line of credit
             } else {
                 doc_data_fields.annual_fee = `${formatter.format(offer.annual_fee / 100)}`
                 doc_data_fields.origination_fee = `${formatter.format(offer.origination_fee / 100)}`
@@ -133,7 +142,7 @@ router.post('/', [auth], async (req, res) => {
                 template_id = "tpl_m5cpPsgcqxk2RzM2cN";
             }
             console.log(doc_data_fields)
-            
+
         }
 
 
@@ -360,12 +369,22 @@ router.post('/:id/sign', [auth], async (req, res) => {
             
 
             if(application.credit_type === "LOAN") {
-                doc_data_fields.amount_2 = `${formatter.format(offer.amount / 100)}`;
+                doc_data_fields.finance_charge = `${formatter.format(offer.finance_charge / 100)}`
+                const total_payments = offer.finance_charge + offer.amount
+                doc_data_fields.total_payments = `${formatter.format(total_payments / 100)}`
                 doc_data_fields.n_payments = offer.term;
-                doc_data_fields.amount_3 = `${formatter.format(offer.amount / 100)}`;
-                doc_data_fields.amount_4 = `${formatter.format(offer.amount / 100)}`;
-                doc_data_fields.amount_5 = `${formatter.format(offer.amount / 100)}`;
-                template_id = 'tpl_ep9zapmPQpaZbah4D3';
+                const amount_of_payments = total_payments / offer.term;
+                doc_data_fields.amount_of_payments = `${formatter.format(amount_of_payments / 100)}`
+
+                let first_due_date = new Date();
+                first_due_date.setDate(today.getDate() + 30);
+                doc_data_fields.payment_schedule = `Monthly, starting ${first_due_date.toLocaleDateString('en-us', dateOptions)}`
+                doc_data_fields.prepayment_penalty = `${formatter.format(0)}`
+                doc_data_fields.amount_to_you = `${formatter.format(offer.amount / 100)}`
+                doc_data_fields.amount_to_others = `${formatter.format(0)}`
+                doc_data_fields.total_financed = `${formatter.format(offer.amount / 100)}`
+                doc_data_fields.interest_rate = `${offer.interest_rate / 100}%`;
+                template_id = 'tpl_kSQ29kLkxL3ZbHg4t2';
             } else {
                 doc_data_fields.annual_fee = `${formatter.format(offer.annual_fee / 100)}`
                 doc_data_fields.origination_fee = `${formatter.format(offer.origination_fee / 100)}`

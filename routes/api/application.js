@@ -152,6 +152,7 @@ router.post('/:id/approve', [auth, offerValidationRules()], async (req, res) => 
     offerFields.late_payment_fee = offer.late_payment_fee;
     offerFields.grace_period = offer.grace_period;
     offerFields.origination_fee = offer.origination_fee;
+    offerFields.finance_charge = offer.finance_charge;
     offerFields.term = offer.term;
 
     if(offer.hasOwnProperty("annual_fee")) {

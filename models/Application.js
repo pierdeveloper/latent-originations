@@ -43,6 +43,10 @@ const ApplicationSchema = new mongoose.Schema({
             type: Number,
             required: false
         },
+        finance_charge: {
+            type: Number,
+            required: false
+        },
         grace_period: {
             type: Number,
             required: false
