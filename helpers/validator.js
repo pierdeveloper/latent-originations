@@ -84,10 +84,11 @@ const consumerValidationRules = () => {
   
   const applicationValidationRules = () => {
     return [
-        check('credit_type', 'Credit type must be either LOAN, REVOLVING_LINE_OF_CREDIT or CLOSED_LINE_OF_CREDIT')
-            .isIn(['LOAN', 'REVOLVING_LINE_OF_CREDIT', 'CLOSED_LINE_OF_CREDIT'])
+        check('credit_type', 'Credit type must be either installment_loan, revolving_line_of_credit or closed_line_of_credit')
+            .isIn(['installment_loan', 'revolving_line_of_credit', 'closed_line_of_credit'])
     ]
   }
+
 
   const offerValidationRules = () => {
     return [

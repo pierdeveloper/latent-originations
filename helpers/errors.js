@@ -7,6 +7,12 @@ const errors = {
         error_status: 500,
         error_type: "API_ERROR"
     }, 
+    unsupported_product: {
+        error_code: "PRODUCT_NOT_SUPPORTED",
+        error_message: "This product is not supported for your api keys",
+        error_status: 403,
+        error_type: "API_ERROR"
+    },
     duplicate_ein: {
         error_code: "DUPLICATE_EIN",
         error_message: "A borrower with that EIN already exists",
@@ -102,6 +108,36 @@ const errors = {
         error_message: "The API key is invalid. Make sure your API key is prefixed with a colon",
         error_status: 401,
         error_type: "INVALID_REQUEST_ERROR"
+    },
+    facility_already_exists: {
+        error_code: "FACILITY_ALREADY_EXISTS",
+        error_message: "A facility already exists for this loan agreement",
+        error_status: 400,
+        error_type: "FACILITY_ERROR"
+    },
+    facility_cannot_be_created: {
+        error_code: "FACILITY_CANNOT_BE_CREATED",
+        error_message: "The loan agreement must have a status of signed in order to create a facility for it",
+        error_status: 400,
+        error_type: "FACILITY_ERROR"
+    },
+    facility_not_found: {
+        error_code: "FACILITY_NOT_FOUND",
+        error_message: "The facility resoure does not exist",
+        error_status: 404,
+        error_type: "FACILITY_ERROR"
+    },
+    invalid_facility_id: {
+        error_code: "INVALID_FACILITY_ID",
+        error_message: "The facility_id specified is invalid",
+        error_status: 400,
+        error_type: "FACILITY_ERROR"
+    },
+    facility_cannot_be_closed: {
+        error_code: "FACILITY_CANNOT_BE_CLOSED",
+        error_message: "The facility is already closed",
+        error_status: 400,
+        error_type: "FACILITY_ERROR"
     }
 }
 

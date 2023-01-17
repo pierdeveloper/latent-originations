@@ -33,7 +33,7 @@ const FacilitySchema = new mongoose.Schema({
     status: {
         type: String,
         required: false,
-        default: "LIVE"
+        default: "active"
     },
     terms: {
         amount: {
@@ -88,10 +88,6 @@ const FacilitySchema = new mongoose.Schema({
         introductory_offer_interest_rate_term: {
             type: Number,
             required: false
-        },
-        isRevolving: {
-            type: Boolean,
-            required: true
         },
         late_payment_fee: {
             type: Number,

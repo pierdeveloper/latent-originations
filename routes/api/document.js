@@ -68,29 +68,38 @@ router.post('/', [auth], async (req, res) => {
                 currency: 'USD',
               });
 
-            doc_data_fields.date = today.toLocaleDateString('en-us', dateOptions);
-            doc_data_fields.account_number = `${application_id}`;
-            doc_data_fields.annual_fee = `${formatter.format(offer.annual_fee / 100)}`
-            doc_data_fields.origination_fee = `${formatter.format(offer.origination_fee / 100)}`
-            doc_data_fields.credit_limit = `${formatter.format(offer.amount / 100)}`;
-            doc_data_fields.apr = `${offer.apr / 100}%`;
-            doc_data_fields.late_payment_fee = `${formatter.format(offer.late_payment_fee / 100)}`;
-            doc_data_fields.entity_name = `${business.business_name}`;
-            doc_data_fields.entity_type = `${business.business_type}`;
-            doc_data_fields.ein = `${business.ein}`;
-            doc_data_fields.address = `${business.address.line_1} ${business.address.line_2} ${business.address.city} ${business.address.state} ${business.address.zip}`;
-            doc_data_fields.phone = `${business.phone}`;
-            doc_data_fields.officer_name = `${business.business_contact.first_name} ${business.business_contact.last_name}`;
-            doc_data_fields.officer_title = `${business.business_contact.title}`;
-            doc_data_fields.officer_address = `${business.address.line_1} ${business.address_line_2} ${business.address.city} ${business.address.state} ${business.address.zip}`;
-            doc_data_fields.officer_name_2 = " ";
-            doc_data_fields.officer_title_2 = " ";
-            doc_data_fields.entity_name_2 = " ";
-            doc_data_fields.signature_date = " ";
-            doc_data_fields.signature = " ";
-            doc_data_fields.whitespace = true;
+            if(application.credit_type === 'LOAN') {
+                const error = getError("unsupported_product")
+                return res.status(error.error_status).json({ 
+                    error_type: error.error_type,
+                    error_code: error.error_code,
+                    error_message: error.error_message
+                })
+            } else {
+                doc_data_fields.date = today.toLocaleDateString('en-us', dateOptions);
+                doc_data_fields.account_number = `${application_id}`;
+                doc_data_fields.annual_fee = `${formatter.format(offer.annual_fee / 100)}`
+                doc_data_fields.origination_fee = `${formatter.format(offer.origination_fee / 100)}`
+                doc_data_fields.credit_limit = `${formatter.format(offer.amount / 100)}`;
+                doc_data_fields.apr = `${offer.apr / 100}%`;
+                doc_data_fields.late_payment_fee = `${formatter.format(offer.late_payment_fee / 100)}`;
+                doc_data_fields.entity_name = `${business.business_name}`;
+                doc_data_fields.entity_type = `${business.business_type}`;
+                doc_data_fields.ein = `${business.ein}`;
+                doc_data_fields.address = `${business.address.line_1} ${business.address.line_2} ${business.address.city} ${business.address.state} ${business.address.zip}`;
+                doc_data_fields.phone = `${business.phone}`;
+                doc_data_fields.officer_name = `${business.business_contact.first_name} ${business.business_contact.last_name}`;
+                doc_data_fields.officer_title = `${business.business_contact.title}`;
+                doc_data_fields.officer_address = `${business.address.line_1} ${business.address_line_2} ${business.address.city} ${business.address.state} ${business.address.zip}`;
+                doc_data_fields.officer_name_2 = " ";
+                doc_data_fields.officer_title_2 = " ";
+                doc_data_fields.entity_name_2 = " ";
+                doc_data_fields.signature_date = " ";
+                doc_data_fields.signature = " ";
+                doc_data_fields.whitespace = true;
 
-            template_id = "tpl_CbSMf49ckCdT6fLNYh";
+                template_id = "tpl_CbSMf49ckCdT6fLNYh";
+            }
         
         } else {
             // DS data fields for consumer
@@ -336,25 +345,7 @@ router.post('/:id/sign', [auth], async (req, res) => {
                 style: 'currency',
                 currency: 'USD',
             });
-/*
-            doc_data_fields.date = today.toLocaleDateString('en-us', dateOptions);
-            doc_data_fields.account_number = `${application.id}`;
-            doc_data_fields.amount = `${formatter.format(offer.amount / 100)}`;
-            doc_data_fields.apr = `${offer.apr / 100}%`;
-            doc_data_fields.annual_fee = `${formatter.format(offer.annual_fee / 100)}`
-            doc_data_fields.origination_fee = `${formatter.format(offer.origination_fee / 100)}`
-            doc_data_fields.late_payment_fee = `${formatter.format(offer.late_payment_fee / 100)}`;
-            doc_data_fields.address = `${consumer.address.line_1} ${consumer.address.line_2} ${consumer.address.city} ${consumer.address.state} ${consumer.address.zip}`;
-            doc_data_fields.name = `${consumer.first_name} ${consumer.last_name}`;
-            doc_data_fields.email = `${consumer.email}`;
-            doc_data_fields.name_2 = `${consumer.first_name} ${consumer.last_name}`;
-            doc_data_fields.date_2 = today.toLocaleDateString('en-us', dateOptions);
-            doc_data_fields.signature = `${consumer.first_name} ${consumer.last_name}`;
-            doc_data_fields.whitespace = true;
-            
-            // Create submission
-            template_id = "tpl_m5cpPsgcqxk2RzM2cN";
-*/
+
             doc_data_fields.date = today.toLocaleDateString('en-us', dateOptions);
             doc_data_fields.account_number = `${application.id}`;
             doc_data_fields.amount = `${formatter.format(offer.amount / 100)}`;
