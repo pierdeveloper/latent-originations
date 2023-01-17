@@ -33,7 +33,7 @@ router.post('/', [auth], async (req, res) => {
         }
 
         // confirm loan_agreement status is SIGNED
-        if(loan_agreement.status !== 'SIGNED') {
+        if(loan_agreement.status !== 'signed') {
             const error = getError("facility_cannot_be_created")
             return res.status(error.error_status).json({ 
                 error_type: error.error_type,

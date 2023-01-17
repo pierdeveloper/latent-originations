@@ -98,7 +98,7 @@ router.post('/:id/reject', [auth, rejectionValidationRules()], async (req, res) 
             })
         }
 
-        if(application.status !== "PENDING") {
+        if(application.status !== "pending") {
             const error = getError("application_cannot_be_rejected")
             return res.status(error.error_status).json({ 
                 error_type: error.error_type,
@@ -108,7 +108,7 @@ router.post('/:id/reject', [auth, rejectionValidationRules()], async (req, res) 
         }
 
         application.rejection = rejectionFields
-        application.status = 'REJECTED'
+        application.status = 'rejected'
         application.decisioned_on = Date.now();
         await application.save()
         application = await Application.findOne({ id: req.params.id })
@@ -188,7 +188,7 @@ router.post('/:id/approve', [auth, offerValidationRules()], async (req, res) => 
             })
         }
 
-        if(application.status !== "PENDING") {
+        if(application.status !== "pending") {
             const error = getError("application_cannot_be_approved")
             return res.status(error.error_status).json({ 
                 error_type: error.error_type,
@@ -255,7 +255,7 @@ router.post('/:id/approve', [auth, offerValidationRules()], async (req, res) => 
                 )) {
                     // accept approval if offer meets type 1 or type 2
                     application.offer = offerFields
-                    application.status = 'APPROVED'
+                    application.status = 'approved'
                     application.decisioned_on = Date.now();
                     await application.save()
 
@@ -307,7 +307,7 @@ router.post('/:id/approve', [auth, offerValidationRules()], async (req, res) => 
                 offer.interest_rate <= limit_1.max_apr )) {
                     // accept approval if offer meets type 1
                     application.offer = offerFields
-                    application.status = 'APPROVED'
+                    application.status = 'approved'
                     application.decisioned_on = Date.now();
                     await application.save()
                     application = await Application.findOne({ id: req.params.id })

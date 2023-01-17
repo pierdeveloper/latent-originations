@@ -105,7 +105,7 @@ const ApplicationSchema = new mongoose.Schema({
     status: {
         type: String,
         required: false,
-        default: "PENDING"
+        default: "pending"
     }
 
 });

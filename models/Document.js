@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const DocumentSchema = new mongoose.Schema({
     status: {
         type: String,
-        default: "PENDING_SIGNATURE"
+        default: "pending_signature"
     },
     client_id: {
         type: String,

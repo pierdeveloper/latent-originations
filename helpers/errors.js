@@ -33,13 +33,13 @@ const errors = {
     },
     application_cannot_be_approved: {
         error_code: "APPLICATION_CANNOT_BE_APPROVED",
-        error_message: "The application's status must be PENDING in order to approve it",
+        error_message: "The application's status must be pending in order to approve it",
         error_status: 400,
         error_type: "APPLICATION_ERROR"
     },
     application_cannot_be_rejected: {
         error_code: "APPLICATION_CANNOT_BE_REJECTED",
-        error_message: "The application's status must be PENDING in order to reject it",
+        error_message: "The application's status must be pending in order to reject it",
         error_status: 400,
         error_type: "APPLICATION_ERROR"
     },
@@ -75,13 +75,13 @@ const errors = {
     },
     document_cannot_be_created: {
         error_code: "LOAN_AGREEMENT_CANNOT_BE_CREATED",
-        error_message: "Can only create loan agreements for APPROVED applications",
+        error_message: "Can only create loan agreements for approved applications",
         error_status: 400,
         error_type: "LOAN_AGREEMENT_ERROR"
     },
     document_cannot_be_signed: {
         error_code: "LOAN_AGREEMENT_CANNOT_BE_SIGNED",
-        error_message: "The loan agreement's status must be PENDING_SIGNATURE in order to sign it",
+        error_message: "The loan agreement's status must be pending_signature in order to sign it",
         error_status: 400,
         error_type: "LOAN_AGREEMENT_ERROR"
     },
@@ -156,6 +156,6 @@ function sendError(error_code) {
 }
  
 
-  module.exports = {
+module.exports = {
     getError
-  }
+}

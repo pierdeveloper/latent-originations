@@ -31,7 +31,7 @@ router.post('/', [auth], async (req, res) => {
             })
 
         }
-        if(application.status !== 'APPROVED') {
+        if(application.status !== 'approved') {
             const error = getError("document_cannot_be_created")
             return res.status(error.error_status).json({ 
                 error_type: error.error_type,
@@ -68,7 +68,7 @@ router.post('/', [auth], async (req, res) => {
                 currency: 'USD',
               });
 
-            if(application.credit_type === 'LOAN') {
+            if(application.credit_type === 'installment_loan') {
                 const error = getError("unsupported_product")
                 return res.status(error.error_status).json({ 
                     error_type: error.error_type,
@@ -126,7 +126,7 @@ router.post('/', [auth], async (req, res) => {
             doc_data_fields.signature = " ";
             
             // if loan
-            if(application.credit_type === "LOAN") {
+            if(application.credit_type === "installment_loan") {
                 doc_data_fields.finance_charge = `${formatter.format(offer.finance_charge / 100)}`
                 const total_payments = offer.finance_charge + offer.amount
                 doc_data_fields.total_payments = `${formatter.format(total_payments / 100)}`
@@ -278,7 +278,7 @@ router.post('/:id/sign', [auth], async (req, res) => {
         }
 
         // Confirm loan agreement can be signed
-        if(loan_agreement.status !== 'PENDING_SIGNATURE') {
+        if(loan_agreement.status !== 'pending_signature') {
             const error = getError("document_cannot_be_signed")
             return res.status(error.error_status).json({ 
                 error_type: error.error_type,
@@ -359,7 +359,7 @@ router.post('/:id/sign', [auth], async (req, res) => {
             doc_data_fields.signature = `${consumer.first_name} ${consumer.last_name}`;
             
 
-            if(application.credit_type === "LOAN") {
+            if(application.credit_type === "installment_loan") {
                 doc_data_fields.finance_charge = `${formatter.format(offer.finance_charge / 100)}`
                 const total_payments = offer.finance_charge + offer.amount
                 doc_data_fields.total_payments = `${formatter.format(total_payments / 100)}`
@@ -418,12 +418,12 @@ router.post('/:id/sign', [auth], async (req, res) => {
 
         // update loan agreement object
         loan_agreement.signature_timestamp = Date.now()
-        loan_agreement.status = "SIGNED"
+        loan_agreement.status = "signed"
         loan_agreement.document_url = doc_url
         await loan_agreement.save();
 
         // update application
-        application.status = 'ACCEPTED'
+        application.status = 'accepted'
         await application.save()
 
         loan_agreement = await Document.findOne({ id: loan_agreement.id })

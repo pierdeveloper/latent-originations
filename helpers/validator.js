@@ -41,8 +41,8 @@ const businessValidationRules = () => {
             .isNumeric().isLength({min:10, max:10}),
         check('business_name', 'Business name max length is 256 chars')
             .isLength({max:256}),
-        check('business_type','Business type must be one of CORPORATION, LLC, PARTNERSHIP, SOLE_PROPRIETORSHIP')
-            .isIn(['CORPORATION', 'LLC', 'PARTNERSHIP', 'SOLE_PROPRIETORSHIP']),
+        check('business_type','Business type must be one of corporation, llc, partnership, sole_proprietorship')
+            .isIn(['corporation', 'llc', 'partnership', 'sole_proprietorship']),
         check('dba_name', 'DBA name max length is 256 chars')
             .isLength({max:256}),
         check('ein', 'EIN must be 9 digits')
@@ -118,8 +118,8 @@ const consumerValidationRules = () => {
             .isInt({min:0, max:50000}),
         check('offer.origination_fee', 'Origination fee must be an integer greater than or equal to 0')
             .isInt({min:0}),
-        check('offer.repayment_frequency', 'Repayment frequency must be one of: WEEKLY, BIWEEKLY, MONTHLY')
-            .isIn(['WEEKLY', 'BIWEEKLY', 'MONTHLY']).optional({nullable: true}),
+        check('offer.repayment_frequency', 'Repayment frequency must be one of: weekly, biweekly, monthly')
+            .isIn(['weekly', 'biweekly', 'monthly']).optional({nullable: true}),
         check('offer.term', 'Term must be an integer >= 6 and <= 120')
             .isInt({min:6, max:120}),
     ]
