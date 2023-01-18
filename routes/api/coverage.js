@@ -3,6 +3,7 @@ const auth = require('../../middleware/auth');
 const router = express.Router();
 const consumer_state_limits = require('../../helpers/coverage/consumer.json');
 const commercial_state_limits = require('../../helpers/coverage/commercial.json');
+const { getError } = require('../../helpers/errors.js');
 
 // @route     GET commercial credit coverage
 // @desc      Retrieve list of commercial credit coverage by state

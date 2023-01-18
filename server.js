@@ -26,6 +26,7 @@ app.use('/api/applications', require('./routes/api/application'));
 app.use('/api/loan_agreements', require('./routes/api/document'));
 app.use('/api/facilities', require('./routes/api/facility'));
 app.use('/api/coverage', require('./routes/api/coverage'));
+app.use('/api/rejection_reasons', require('./routes/api/rejection_reasons'));
 app.use('/api/customers', require('./routes/api/customer'));
 app.use('/', require('./routes/api/temp-landing'));
 

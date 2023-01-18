@@ -88,15 +88,9 @@ const ApplicationSchema = new mongoose.Schema({
             required: false
         }
     },
-    rejection: {
-        reason: {
-            type: String,
-            required: false
-        },
-        reason_message: {
-            type: String,
-            required: false
-        }
+    rejection_reasons: {
+        type: Array,
+        required: false
     },
     requested_amount: {
         type: String,

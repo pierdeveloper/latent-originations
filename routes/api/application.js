@@ -81,11 +81,7 @@ router.post('/:id/reject', [auth, rejectionValidationRules()], async (req, res) 
         return res.status(400).json(response);
     }
 
-    const rejection_reason = req.body.rejection_reason
-
-    const rejectionFields = {}
-    rejectionFields.reason = rejection_reason
-    rejectionFields.reason_message = valid_rejection_reasons[rejection_reason]
+    const rejection_reasons = req.body.rejection_reasons
 
     try {
         let application = await Application.findOne({ id: req.params.id });
@@ -107,7 +103,7 @@ router.post('/:id/reject', [auth, rejectionValidationRules()], async (req, res) 
             })
         }
 
-        application.rejection = rejectionFields
+        application.rejection_reasons = rejection_reasons
         application.status = 'rejected'
         application.decisioned_on = Date.now();
         await application.save()

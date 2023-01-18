@@ -89,7 +89,6 @@ const consumerValidationRules = () => {
     ]
   }
 
-
   const offerValidationRules = () => {
     return [
         check('offer.amount', 'Amount must be an integer greater than or equal to 0')
@@ -127,7 +126,10 @@ const consumerValidationRules = () => {
 
   const rejectionValidationRules = () => {
     return [
-        check('rejection_reason', 'Rejection reason is not a valid reason')
+        check('rejection_reasons', 'rejection reasons must be a list of 1-4 reasons')
+            .isArray()
+            .custom(values => values.length <= 4),
+        check('rejection_reasons.*', 'Invalid rejection reason')
             .isIn(rejection_reasons)
     ]
   }
