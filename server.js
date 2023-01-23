@@ -13,7 +13,11 @@ app.use(express.json({ extended: false }));
 
 // Init logging
 const bunyan = require('bunyan');
-const log = bunyan.createLogger({name: 'pier-api'});
+const config = require('config');
+const log = bunyan.createLogger({
+    name: 'pier-api',
+    level: config.get('log-level')
+});
 app.use((req, res, next) => {
     log.info({req: req}, 'Incoming request');
     res.on('finish', () => {

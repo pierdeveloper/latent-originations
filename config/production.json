@@ -3,5 +3,6 @@
     "docspring-id": "api_6r6MPkheLQDFeMfR39",
     "docspring-secret": "HqatYXFDgSdREeHYJQsQgnh7GaKZ6SHxSP6bfayaqf",
     "docspring-test": false,
-    "envo": "production"
+    "envo": "production",
+    "log-level": "info"
 }
