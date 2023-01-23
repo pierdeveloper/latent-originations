@@ -2,6 +2,9 @@ const express = require('express');
 const connectDB = require('./config/db.js');
 const path = require('path');
 const rateLimit = require("express-rate-limit");
+const bunyan = require('bunyan');
+const config = require('config');
+const bodyParser = require('body-parser');
 
 const app = express();
 
@@ -12,8 +15,6 @@ connectDB();
 app.use(express.json({ extended: false }));
 
 // Init logging
-const bunyan = require('bunyan');
-const config = require('config');
 const log = bunyan.createLogger({
     name: 'pier-api',
     level: config.get('log-level')
@@ -33,6 +34,10 @@ const limiter = rateLimit({
     message: "Too many requests from this IP, please try again in a minute"
   });
 app.use(limiter);
+
+// Init body parser body limiter
+app.use(bodyParser.json({ limit: '100kb' }));
+app.use(bodyParser.urlencoded({ extended: true, limit: '100kb' }));
 
 // Define Routes
 app.use('/api', require('./routes/api/auth'));
