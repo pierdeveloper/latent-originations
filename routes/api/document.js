@@ -174,8 +174,8 @@ router.post('/', [auth], async (req, res) => {
         while(waitTill > new Date()){}
 
         // Get the submission
-        const submission_id = docspring_pending_submission.submission.id
-        const docspring_submission = await getDocSpringSubmission(submission_id)
+        const unsigned_submission_id = docspring_pending_submission.submission.id
+        const docspring_submission = await getDocSpringSubmission(unsigned_submission_id)
         const doc_url = docspring_submission.permanent_download_url
 
         // If doc doesn't have a url then error
@@ -194,14 +194,14 @@ router.post('/', [auth], async (req, res) => {
             application_id: application_id,
             id: loan_agreement_id,
             document_url: doc_url,
-            client_id: req.client_id
-
+            client_id: req.client_id,
+            unsigned_submission_id
         })
         await loan_document.save()
 
         // Response
         loan_document = await Document.findOne({ id: loan_agreement_id, client_id })
-            .select('-_id -__v -client_id');
+            .select('-_id -__v -client_id -unsigned_submission_id');
         
         console.log(loan_document); 
         res.json(loan_document);
@@ -408,8 +408,8 @@ router.post('/:id/sign', [auth], async (req, res) => {
         while(waitTill > new Date()){}
 
         // Get the submission
-        const submission_id = docspring_pending_submission.submission.id
-        const docspring_submission = await getDocSpringSubmission(submission_id)
+        const signed_submission_id = docspring_pending_submission.submission.id
+        const docspring_submission = await getDocSpringSubmission(signed_submission_id)
         const doc_url = docspring_submission.permanent_download_url
 
         // If doc doesn't have a url then error
@@ -426,6 +426,7 @@ router.post('/:id/sign', [auth], async (req, res) => {
         loan_agreement.signature_timestamp = Date.now()
         loan_agreement.status = "signed"
         loan_agreement.document_url = doc_url
+        loan_agreement.signed_submission_id = signed_submission_id;
         await loan_agreement.save();
 
         // update application
@@ -433,7 +434,7 @@ router.post('/:id/sign', [auth], async (req, res) => {
         await application.save()
 
         loan_agreement = await Document.findOne({ id: loan_agreement.id })
-            .select('-_id -__v -client_id');
+            .select('-_id -__v -client_id -unsigned_submission_id -signed_submission_id');
         
         console.log(loan_agreement); 
         res.json(loan_agreement);

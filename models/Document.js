@@ -13,6 +13,10 @@ const DocumentSchema = new mongoose.Schema({
         type: Date,
         default: Date.now
     },
+    document_url: {
+        type: String,
+        required: false
+    },
     id: {
         type: String,
         required: true
@@ -25,7 +29,11 @@ const DocumentSchema = new mongoose.Schema({
         type: Date,
         default: null
     },
-    document_url: {
+    unsigned_submission_id: {
+        type: String,
+        required: true
+    },
+    signed_submission_id: {
         type: String,
         required: false
     }
