@@ -15,6 +15,9 @@ const Application = require('../../models/Application');
 // @desc      Create a loan agreement pdf for user
 // @access    Public
 router.post('/', [auth], async (req, res) => {
+    console.log(req.headers)
+    console.log(req.body)
+
     try {
 
         // get application and borrower info
@@ -150,7 +153,6 @@ router.post('/', [auth], async (req, res) => {
                 doc_data_fields.whitespace = true;
                 template_id = "tpl_m5cpPsgcqxk2RzM2cN";
             }
-            console.log(doc_data_fields)
 
         }
 
@@ -200,6 +202,8 @@ router.post('/', [auth], async (req, res) => {
         // Response
         loan_document = await Document.findOne({ id: loan_agreement_id, client_id })
             .select('-_id -__v -client_id');
+        
+        console.log(loan_document); 
         res.json(loan_document);
 
     } catch (err) {
@@ -263,6 +267,8 @@ const createDocSpringSubmission = async (template_id, doc_data_fields) => {
 // @desc Sign loan agreement
 // @access Public
 router.post('/:id/sign', [auth], async (req, res) => {
+    console.log(req.headers)
+    console.log(req.body)
 
     try {
 
@@ -428,6 +434,8 @@ router.post('/:id/sign', [auth], async (req, res) => {
 
         loan_agreement = await Document.findOne({ id: loan_agreement.id })
             .select('-_id -__v -client_id');
+        
+        console.log(loan_agreement); 
         res.json(loan_agreement);
     } catch(err) {
         console.error(err.message);
@@ -444,6 +452,9 @@ router.post('/:id/sign', [auth], async (req, res) => {
 // @desc      Retrieve a document's details
 // @access    Public
 router.get('/:id', [auth], async (req, res) => {
+    console.log(req.headers)
+    console.log(req.body)
+
     try {
         const document = await Document.findOne({ id: req.params.id })
             .select('-_id -__v');
@@ -456,6 +467,8 @@ router.get('/:id', [auth], async (req, res) => {
             })
         }
         document.client_id = undefined;
+
+        console.log(document); 
         res.json(document);
     } catch(err) {
         console.error(err.message);
@@ -480,9 +493,14 @@ router.get('/:id', [auth], async (req, res) => {
 // @desc      List all documents
 // @access    Public
 router.get('/', [auth], async (req, res) => {
+    console.log(req.headers)
+    console.log(req.body)
+
     try {
         const documents = await Document.find({ client_id: req.client_id })
             .select('-_id -__v -client_id');
+        
+        console.log(documents); 
         res.json(documents);
     } catch(err) {
         const error = getError("internal_server_error")

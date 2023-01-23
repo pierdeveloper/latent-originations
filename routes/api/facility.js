@@ -15,6 +15,9 @@ const valid_rejection_reasons = require('../../helpers/rejectionReasons.json');
 // @desc      Create a credit facility
 // @access    Public
 router.post('/', [auth], async (req, res) => {
+    console.log(req.headers)
+    console.log(req.body)
+
     const client_id = req.client_id
     const { loan_agreement_id } = req.body
 
@@ -81,6 +84,8 @@ router.post('/', [auth], async (req, res) => {
         // Response
         facility = await Facility.findOne({ id: facility_id, client_id })
             .select('-_id -__v -client_id');
+        
+        console.log(facility); 
         res.json(facility);
         
     } catch (err) {
@@ -99,6 +104,8 @@ router.post('/', [auth], async (req, res) => {
 // @desc Close a facility
 // @access Public
 router.post('/:id/close', [auth], async (req, res) => {
+    console.log(req.headers)
+    console.log(req.body)
 
     try {
         let facility = await Facility.findOne({ id: req.params.id });
@@ -125,6 +132,8 @@ router.post('/:id/close', [auth], async (req, res) => {
         await facility.save()
         facility = await Facility.findOne({ id: req.params.id })
             .select('-_id -__v -client_id');
+        
+        console.log(facility); 
         res.json(facility)
 
     } catch(err) {
@@ -143,6 +152,9 @@ router.post('/:id/close', [auth], async (req, res) => {
 // @desc      Retrieve an facility's details
 // @access    Public
 router.get('/:id', [auth], async (req, res) => {
+    console.log(req.headers)
+    console.log(req.body)
+
     try {
         const facility = await Facility.findOne({ id: req.params.id })
             .select('-_id -__v');
@@ -155,6 +167,8 @@ router.get('/:id', [auth], async (req, res) => {
             })
         }
         facility.client_id = undefined;
+
+        console.log(facility); 
         res.json(facility);
     } catch(err) {
         console.error(err.message);
@@ -180,9 +194,14 @@ router.get('/:id', [auth], async (req, res) => {
 // @desc      List all facilities
 // @access    Public
 router.get('/', [auth], async (req, res) => {
+    console.log(req.headers)
+    console.log(req.body)
+
     try {
         const facilities = await Facility.find({ client_id: req.client_id })
             .select('-_id -__v -client_id');
+
+        console.log(facilities); 
         res.json(facilities);
     } catch(err) {
         console.error(err);

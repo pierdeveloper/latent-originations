@@ -17,6 +17,9 @@ const valid_rejection_reasons = require('../../helpers/rejectionReasons.json');
 // @desc      Create a credit application
 // @access    Public
 router.post('/', [auth, applicationValidationRules()], async (req, res) => {
+    console.log(req.headers)
+    console.log(req.body)
+
     const errors = validationResult(req);
     if(!errors.isEmpty()) {
         const response = {
@@ -53,6 +56,7 @@ router.post('/', [auth, applicationValidationRules()], async (req, res) => {
 
         application = await Application.findOne({ id: application_id })
             .select('-_id -__v -client_id');
+        console.log(application)
         res.json(application);
 
     } catch (err) {
@@ -70,6 +74,9 @@ router.post('/', [auth, applicationValidationRules()], async (req, res) => {
 // @desc Reject credit application
 // @access Public
 router.post('/:id/reject', [auth, rejectionValidationRules()], async (req, res) => {
+    console.log(req.headers)
+    console.log(req.body)
+
     const errors = validationResult(req);
     if(!errors.isEmpty()) {
         const response = {
@@ -109,6 +116,7 @@ router.post('/:id/reject', [auth, rejectionValidationRules()], async (req, res) 
         await application.save()
         application = await Application.findOne({ id: req.params.id })
             .select('-_id -__v -client_id');
+        console.log(application);
         res.json(application)
 
     } catch(err) {
@@ -126,6 +134,9 @@ router.post('/:id/reject', [auth, rejectionValidationRules()], async (req, res) 
 // @desc Approve credit application
 // @access Public
 router.post('/:id/approve', [auth, offerValidationRules()], async (req, res) => {
+    console.log(req.headers)
+    console.log(req.body)
+
     // validate offer params
     const errors = validationResult(req);
     if(!errors.isEmpty()) {
@@ -258,6 +269,7 @@ router.post('/:id/approve', [auth, offerValidationRules()], async (req, res) => 
                     application = await Application.findOne({ id: req.params.id })
                         .select('-_id -__v -client_id');
                     
+                    console.log(application);
                     res.json(application)
                 } else {
                     // otherwise reject
@@ -308,6 +320,8 @@ router.post('/:id/approve', [auth, offerValidationRules()], async (req, res) => 
                     await application.save()
                     application = await Application.findOne({ id: req.params.id })
                         .select('-_id -__v -client_id');
+                    
+                    console.log(application);
                     res.json(application)
             } else {
                 // otherwise reject
@@ -336,6 +350,9 @@ router.post('/:id/approve', [auth, offerValidationRules()], async (req, res) => 
 // @desc      Retrieve an application's details
 // @access    Public
 router.get('/:id', [auth], async (req, res) => {
+    console.log(req.headers)
+    console.log(req.body)
+
     try {
         const application = await Application.findOne({ id: req.params.id })
             .select('-_id -__v');
@@ -349,6 +366,8 @@ router.get('/:id', [auth], async (req, res) => {
             })
         }
         application.client_id = undefined;
+
+        console.log(application);
         res.json(application);
     } catch(err) {
         console.error(err.message);
@@ -374,9 +393,14 @@ router.get('/:id', [auth], async (req, res) => {
 // @desc      List all applications
 // @access    Public
 router.get('/', [auth], async (req, res) => {
+    console.log(req.headers)
+    console.log(req.body)
+
     try {
         const applications = await Application.find({ client_id: req.client_id })
             .select('-_id -__v -client_id');
+        
+        console.log(application);
         res.json(applications);
     } catch(err) {
         console.error(err);

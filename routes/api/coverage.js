@@ -9,8 +9,12 @@ const { getError } = require('../../helpers/errors.js');
 // @desc      Retrieve list of commercial credit coverage by state
 // @access    Public
 router.get('/commercial', [auth], async (req, res) => {
+    console.log(req.headers)
+    console.log(req.body)
+
     try {
         const states = commercial_state_limits;
+        console.log(states); 
         res.json(states);
     } catch(err) {
         const error = getError("internal_server_error")
@@ -26,8 +30,12 @@ router.get('/commercial', [auth], async (req, res) => {
 // @desc      Retrieve list of commercial credit coverage by state
 // @access    Public
 router.get('/consumer', [auth], async (req, res) => {
+    console.log(req.headers)
+    console.log(req.body)
+
     try {
         const states = consumer_state_limits;
+        console.log(states); 
         res.json(states);
     } catch(err) {
         const error = getError("internal_server_error")

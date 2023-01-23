@@ -14,6 +14,8 @@ const { businessValidationRules, consumerValidationRules } = require('../../help
 // @desc      Create a business user
 // @access    Public
 router.post('/business', [auth, businessValidationRules()], async (req, res) => {
+    console.log(req.headers)
+    console.log(req.body)
     
     const errors = validationResult(req);
     if(!errors.isEmpty()) {
@@ -82,6 +84,7 @@ router.post('/business', [auth, businessValidationRules()], async (req, res) => 
         business = await Business.findOne({ id: borrower_id, client_id })
             .select('-_id -__v -client_id');
 
+        console.log(business);            
         res.json(business);
 
     } catch (err) {
@@ -101,6 +104,8 @@ router.post('/business', [auth, businessValidationRules()], async (req, res) => 
 // @access    Public
 router.patch('/business/:id', [auth, businessValidationRules()], async (req, res) => {
     //TODO - check for EIN uniqueness on update call
+    console.log(req.headers)
+    console.log(req.body)
     try {
         //lookup borrower
         let borrower = await Borrower.findOne({ id: req.params.id })
@@ -159,8 +164,9 @@ router.patch('/business/:id', [auth, businessValidationRules()], async (req, res
 
         business = await Business.findOne({ id: req.params.id })
             .select('-_id -__v -client_id');
-
-        return res.json(business)
+        
+        console.log(business); 
+        res.json(business);
 
     } catch (err) {
         console.log(err)
@@ -186,6 +192,9 @@ router.patch('/business/:id', [auth, businessValidationRules()], async (req, res
 // @desc      Create a consumer user
 // @access    Public
 router.post('/consumer', [auth, consumerValidationRules()], async (req, res) => {
+    console.log(req.headers)
+    console.log(req.body)
+
     const errors = validationResult(req);
     if(!errors.isEmpty()) {
         const response = {
@@ -247,6 +256,7 @@ router.post('/consumer', [auth, consumerValidationRules()], async (req, res) => 
         consumer = await Consumer.findOne({ id: borrower_id, client_id })
             .select('-_id -__v -client_id');
 
+        console.log(consumer); 
         res.json(consumer);
 
     } catch (err) {
@@ -265,6 +275,8 @@ router.post('/consumer', [auth, consumerValidationRules()], async (req, res) => 
 // @desc      Update a consumer borrower
 // @access    Public
 router.patch('/consumer/:id', [auth, consumerValidationRules()], async (req, res) => {
+    console.log(req.headers)
+    console.log(req.body)
     //TODO - check for SSN uniqueness on update call
     try {
         //lookup borrower
@@ -328,6 +340,7 @@ router.patch('/consumer/:id', [auth, consumerValidationRules()], async (req, res
         consumer = await Consumer.findOne({ id: req.params.id })
         .select('-_id -__v -client_id');
 
+        console.log(consumer); 
         return res.json(consumer)
 
     } catch (err) {
@@ -354,6 +367,9 @@ router.patch('/consumer/:id', [auth, consumerValidationRules()], async (req, res
 // @desc      Retrieve a business or consumer's borrower's details
 // @access    Public
 router.get('/:id', [auth], async (req, res) => {
+    console.log(req.headers)
+    console.log(req.body)
+
     console.log('retreving borrwoer');
     try {
         //lookup borrower
@@ -368,7 +384,6 @@ router.get('/:id', [auth], async (req, res) => {
                 error_message: error.error_message
             })
         }
-        console.log(borrower)
 
         if (borrower.type === 'consumer') {
             var consumer = await Consumer.findOne({ id: req.params.id })
@@ -381,7 +396,9 @@ router.get('/:id', [auth], async (req, res) => {
                     error_message: error.error_message
                 })
             }
-            consumer.client_id = undefined
+            consumer.client_id = undefined;
+
+            console.log(consumer); 
             res.json(consumer);
 
         } else { // it's a business borrower
@@ -396,6 +413,8 @@ router.get('/:id', [auth], async (req, res) => {
                 })
             }
             business.client_id = undefined;
+
+            console.log(business); 
             res.json(business);
         }
 
@@ -423,6 +442,9 @@ router.get('/:id', [auth], async (req, res) => {
 // @desc      List all borrowers
 // @access    Public
 router.get('/', [auth], async (req, res) => {
+    console.log(req.headers)
+    console.log(req.body)
+
     try {
 
         const consumers = await Consumer.find({ client_id: req.client_id })
@@ -433,6 +455,7 @@ router.get('/', [auth], async (req, res) => {
 
         const borrowers = consumers.concat(businesses);
 
+        console.log(borrowers); 
         res.json(borrowers);
     } catch(err) {
         const error = getError("internal_server_error")

@@ -8,6 +8,9 @@ const { getError } = require('../../helpers/errors.js');
 // @desc      Retrieve list of acceptable rejection reasons for consumer credit
 // @access    Public
 router.get('/', [auth], async (req, res) => {
+    console.log(req.headers)
+    console.log(req.body)
+    
     try {
         const rejection_reasons = require('../../helpers/rejectionReasons.json');
         res.json(rejection_reasons);

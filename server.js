@@ -11,6 +11,9 @@ connectDB();
 // Init Middleware
 app.use(express.json({ extended: false }));
 
+// Init logging
+
+
 // Init rate limiting middleware
 const limiter = rateLimit({
     windowMs: 60 * 1000, // 1 minute
