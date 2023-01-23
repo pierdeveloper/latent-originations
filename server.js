@@ -5,6 +5,8 @@ const rateLimit = require("express-rate-limit");
 const bunyan = require('bunyan');
 const config = require('config');
 const bodyParser = require('body-parser');
+const helmet = require('helmet');
+
 
 const app = express();
 
@@ -38,6 +40,9 @@ app.use(limiter);
 // Init body parser body limiter
 app.use(bodyParser.json({ limit: '100kb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '100kb' }));
+
+// Init helmet
+app.use(helmet());
 
 // Define Routes
 app.use('/api', require('./routes/api/auth'));
