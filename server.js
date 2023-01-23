@@ -12,7 +12,15 @@ connectDB();
 app.use(express.json({ extended: false }));
 
 // Init logging
-
+const bunyan = require('bunyan');
+const log = bunyan.createLogger({name: 'pier-api'});
+app.use((req, res, next) => {
+    log.info({req: req}, 'Incoming request');
+    res.on('finish', () => {
+        log.info({res: res}, 'Outgoing response');
+    });
+    next();
+});
 
 // Init rate limiting middleware
 const limiter = rateLimit({
