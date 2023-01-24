@@ -37,6 +37,16 @@ const CustomerSchema = new mongoose.Schema({
     consumer_non_zero_enabled: {
         type: Boolean,
         default: false
+    },
+    coverage_pull_count: {
+        consumer: {
+            type: Number,
+            default: 0
+        },
+        commercial: {
+            type: Number,
+            default: 0
+        }
     }
 });
 

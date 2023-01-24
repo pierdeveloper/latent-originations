@@ -3,6 +3,7 @@ const auth = require('../../middleware/auth');
 const router = express.Router();
 const consumer_state_limits = require('../../helpers/coverage/consumer.json');
 const commercial_state_limits = require('../../helpers/coverage/commercial.json');
+const Customer = require('../../models/Customer');
 const { getError } = require('../../helpers/errors.js');
 
 // @route     GET commercial credit coverage
@@ -13,6 +14,12 @@ router.get('/commercial', [auth], async (req, res) => {
     console.log(req.body)
 
     try {
+        // pull up customer and increment coverage counter
+        let customer = await Customer.findOne({ client_id: req.client_id });
+        customer.coverage_pull_count.commercial++;
+        customer.save();
+
+        // return limits
         const states = commercial_state_limits;
         console.log(states); 
         res.json(states);
@@ -34,6 +41,11 @@ router.get('/consumer', [auth], async (req, res) => {
     console.log(req.body)
 
     try {
+        // pull up customer and increment coverage counter
+        let customer = await Customer.findOne({ client_id: req.client_id });
+        customer.coverage_pull_count.consumer++;
+        await customer.save();
+
         const states = consumer_state_limits;
         console.log(states); 
         res.json(states);
