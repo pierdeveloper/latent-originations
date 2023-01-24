@@ -33,6 +33,10 @@ const CustomerSchema = new mongoose.Schema({
     email: {
         type: String,
         required: true
+    },
+    consumer_non_zero_enabled: {
+        type: Boolean,
+        default: false
     }
 });
 

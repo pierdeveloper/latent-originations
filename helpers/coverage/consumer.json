@@ -6,7 +6,16 @@
                 "min": 150000,
                 "max": 500000
             },
-            "max_apr": 0
+            "max_apr": 0,
+            "max_origination_fee": 0
+        },
+        "limit_2": {
+            "amount": {
+                "min": 500000,
+                "max": 5000000
+            },
+            "max_apr": 3600,
+            "max_origination_fee": 100
         }
     },
     "AK": {
@@ -15,18 +24,53 @@
                 "min": 5000,
                 "max": 500000
             },
-            "max_apr": 0
+            "max_apr": 0,
+            "max_origination_fee": 0
+        },
+        "limit_2": {
+            "amount": {
+                "min": 1000000,
+                "max": 2500000
+            },
+            "max_apr": 1000,
+            "max_origination_fee": 100
         }
     },
-    "AZ": {},
+    "AZ": {
+        "limit_1": {
+            "amount": {
+                "min": 5000,
+                "max": 500000
+            },
+            "max_apr": 0,
+            "max_origination_fee": 0
+        },
+        "limit_2": {
+            "amount": {
+                "min": 1000000,
+                "max": 5000000
+            },
+            "max_apr": 3600,
+            "max_origination_fee": 100
+        }    
+    },
     "AR": {
         "limit_1": {
             "amount": {
                 "min": 5000,
                 "max": 500000
             },
-            "max_apr": 0
-        }
+            "max_apr": 0,
+            "max_origination_fee": 0
+        },
+        "limit_2": {
+            "amount": {
+                "min": 500000,
+                "max": 5000000
+            },
+            "max_apr": 1700,
+            "max_origination_fee": 100
+        }   
     },
     "CA": {},
     "CO": {
@@ -35,8 +79,17 @@
                 "min": 5000,
                 "max": 500000
             },
-            "max_apr": 0
-        }
+            "max_apr": 0,
+            "max_origination_fee": 0
+        },
+        "limit_2": {
+            "amount": {
+                "min": 500000,
+                "max": 5000000
+            },
+            "max_apr": 1200,
+            "max_origination_fee": 100
+        }  
     },
     "CT": {
         "limit_1": {
@@ -44,8 +97,17 @@
                 "min": 5000,
                 "max": 500000
             },
-            "max_apr": 0
-        }
+            "max_apr": 0,
+            "max_origination_fee": 0
+        },
+        "limit_2": {
+            "amount": {
+                "min": 500000,
+                "max": 1500000
+            },
+            "max_apr": 1200,
+            "max_origination_fee": 100
+        }  
     },
     "DE": {},
     "DC": {
@@ -54,8 +116,17 @@
                 "min": 5000,
                 "max": 500000
             },
-            "max_apr": 0
-        }
+            "max_apr": 0,
+            "max_origination_fee": 0
+        },
+        "limit_2": {
+            "amount": {
+                "min": 500000,
+                "max": 5000000
+            },
+            "max_apr": 3600,
+            "max_origination_fee": 100
+        } 
     },
     "FL": {
         "limit_1": {
@@ -63,8 +134,17 @@
                 "min": 5000,
                 "max": 500000
             },
-            "max_apr": 0
-        }
+            "max_apr": 0,
+            "max_origination_fee": 0
+        },
+        "limit_2": {
+            "amount": {
+                "min": 500000,
+                "max": 5000000
+            },
+            "max_apr": 1800,
+            "max_origination_fee": 100
+        } 
     },
     "GA": {
         "limit_1": {
@@ -72,8 +152,17 @@
                 "min": 300000,
                 "max": 500000
             },
-            "max_apr": 0
-        }
+            "max_apr": 0,
+            "max_origination_fee": 0
+        },
+        "limit_2": {
+            "amount": {
+                "min": 300001,
+                "max": 5000000
+            },
+            "max_apr": 3600,
+            "max_origination_fee": 100
+        } 
     },
     "HI": {
         "limit_1": {
@@ -81,8 +170,17 @@
                 "min": 5000,
                 "max": 500000
             },
-            "max_apr": 0
-        }
+            "max_apr": 0,
+            "max_origination_fee": 0
+        },
+        "limit_2": {
+            "amount": {
+                "min": 500000,
+                "max": 5000000
+            },
+            "max_apr": 1200,
+            "max_origination_fee": 100
+        } 
     },
     "ID": {},
     "IL": {
@@ -91,7 +189,8 @@
                 "min": 5000,
                 "max": 500000
             },
-            "max_apr": 0
+            "max_apr": 0,
+            "max_origination_fee": 0
         }
     },
     "IN": {},
@@ -101,8 +200,17 @@
                 "min": 5000,
                 "max": 500000
             },
-            "max_apr": 0
-        }
+            "max_apr": 0,
+            "max_origination_fee": 0
+        },
+        "limit_2": {
+            "amount": {
+                "min": 500000,
+                "max": 5000000
+            },
+            "max_apr": 2100,
+            "max_origination_fee": 100
+        } 
     },
     "KS": {
         "limit_1": {
@@ -110,8 +218,17 @@
                 "min": 5000,
                 "max": 500000
             },
-            "max_apr": 0
-        }
+            "max_apr": 0,
+            "max_origination_fee": 0
+        },
+        "limit_2": {
+            "amount": {
+                "min": 500000,
+                "max": 5000000
+            },
+            "max_apr": 1500,
+            "max_origination_fee": 100
+        } 
     },
     "KY": {},
     "LA": {},
@@ -121,8 +238,17 @@
                 "min": 5000,
                 "max": 500000
             },
-            "max_apr": 0
-        }
+            "max_apr": 0,
+            "max_origination_fee": 0
+        },
+        "limit_2": {
+            "amount": {
+                "min": 800000,
+                "max": 5000000
+            },
+            "max_apr": 1800,
+            "max_origination_fee": 100
+        } 
     },
     "MD": {},
     "MA": {
@@ -131,8 +257,17 @@
                 "min": 5000,
                 "max": 500000
             },
-            "max_apr": 0
-        }
+            "max_apr": 0,
+            "max_origination_fee": 0
+        },
+        "limit_2": {
+            "amount": {
+                "min": 500000,
+                "max": 5000000
+            },
+            "max_apr": 2000,
+            "max_origination_fee": 100
+        } 
     },
     "MI": {},
     "MN": {
@@ -141,8 +276,17 @@
                 "min": 5000,
                 "max": 500000
             },
-            "max_apr": 0
-        }
+            "max_apr": 0,
+            "max_origination_fee": 0
+        },
+        "limit_2": {
+            "amount": {
+                "min": 500000,
+                "max": 5000000
+            },
+            "max_apr": 800,
+            "max_origination_fee": 100
+        } 
     },
     "MS": {},
     "MO": {
@@ -151,8 +295,17 @@
                 "min": 5000,
                 "max": 500000
             },
-            "max_apr": 0
-        }
+            "max_apr": 0,
+            "max_origination_fee": 0
+        },
+        "limit_2": {
+            "amount": {
+                "min": 500000,
+                "max": 5000000
+            },
+            "max_apr": 3600,
+            "max_origination_fee": 100
+        } 
     },
     "MT": {},
     "NE": {
@@ -161,7 +314,8 @@
                 "min": 5000,
                 "max": 500000
             },
-            "max_apr": 0
+            "max_apr": 0,
+            "max_origination_fee": 0
         }
     },
     "NV": {},
@@ -172,8 +326,17 @@
                 "min": 5000,
                 "max": 500000
             },
-            "max_apr": 0
-        }
+            "max_apr": 0,
+            "max_origination_fee": 0
+        },
+        "limit_2": {
+            "amount": {
+                "min": 500000,
+                "max": 5000000
+            },
+            "max_apr": 1600,
+            "max_origination_fee": 100
+        } 
     },
     "NM": {},
     "NY": {
@@ -182,8 +345,17 @@
                 "min": 5000,
                 "max": 500000
             },
-            "max_apr": 0
-        }
+            "max_apr": 0,
+            "max_origination_fee": 0
+        },
+        "limit_2": {
+            "amount": {
+                "min": 500000,
+                "max": 5000000
+            },
+            "max_apr": 1600,
+            "max_origination_fee": 100
+        } 
     },
     "NC": {
         "limit_1": {
@@ -191,8 +363,17 @@
                 "min": 5000,
                 "max": 500000
             },
-            "max_apr": 0
-        }
+            "max_apr": 0,
+            "max_origination_fee": 0
+        },
+        "limit_2": {
+            "amount": {
+                "min": 500000,
+                "max": 2500000
+            },
+            "max_apr": 1600,
+            "max_origination_fee": 100
+        } 
     },
     "ND": {},
     "OH": {},
@@ -202,8 +383,17 @@
                 "min": 5000,
                 "max": 500000
             },
-            "max_apr": 0
-        }
+            "max_apr": 0,
+            "max_origination_fee": 0
+        },
+        "limit_2": {
+            "amount": {
+                "min": 500000,
+                "max": 5000000
+            },
+            "max_apr": 1000,
+            "max_origination_fee": 100
+        } 
     },
     "OR": {
         "limit_1": {
@@ -211,10 +401,36 @@
                 "min": 5000,
                 "max": 500000
             },
-            "max_apr": 0
-        }
+            "max_apr": 0,
+            "max_origination_fee": 0
+        },
+        "limit_2": {
+            "amount": {
+                "min": 500000,
+                "max": 5000000
+            },
+            "max_apr": 1200,
+            "max_origination_fee": 100
+        } 
     },
-    "PA": {},
+    "PA": {
+        "limit_1": {
+            "amount": {
+                "min": 5000,
+                "max": 500000
+            },
+            "max_apr": 0,
+            "max_origination_fee": 0
+        },
+        "limit_2": {
+            "amount": {
+                "min": 500000,
+                "max": 2500000
+            },
+            "max_apr": 600,
+            "max_origination_fee": 100
+        } 
+    },
     "RI": {},
     "SC": {
         "limit_1": {
@@ -222,8 +438,17 @@
                 "min": 5000,
                 "max": 500000
             },
-            "max_apr": 0
-        }
+            "max_apr": 0,
+            "max_origination_fee": 0
+        },
+        "limit_2": {
+            "amount": {
+                "min": 500000,
+                "max": 5000000
+            },
+            "max_apr": 1800,
+            "max_origination_fee": 100
+        } 
     },
     "SD": {},
     "TN": {
@@ -232,8 +457,17 @@
                 "min": 5000,
                 "max": 500000
             },
-            "max_apr": 0
-        }
+            "max_apr": 0,
+            "max_origination_fee": 0
+        },
+        "limit_2": {
+            "amount": {
+                "min": 500000,
+                "max": 5000000
+            },
+            "max_apr": 725,
+            "max_origination_fee": 100
+        } 
     },
     "TX": {
         "limit_1": {
@@ -241,10 +475,36 @@
                 "min": 5000,
                 "max": 500000
             },
-            "max_apr": 0
-        }
+            "max_apr": 0,
+            "max_origination_fee": 0
+        },
+        "limit_2": {
+            "amount": {
+                "min": 500000,
+                "max": 5000000
+            },
+            "max_apr": 1000,
+            "max_origination_fee": 100
+        } 
     },
-    "UT": {},
+    "UT": {
+        "limit_1": {
+            "amount": {
+                "min": 5000,
+                "max": 500000
+            },
+            "max_apr": 0,
+            "max_origination_fee": 0
+        },
+        "limit_2": {
+            "amount": {
+                "min": 500000,
+                "max": 5000000
+            },
+            "max_apr": 3600,
+            "max_origination_fee": 100
+        } 
+    },
     "VT": {},
     "VA": {
         "limit_1": {
@@ -252,8 +512,17 @@
                 "min": 5000,
                 "max": 500000
             },
-            "max_apr": 0
-        }
+            "max_apr": 0,
+            "max_origination_fee": 0
+        },
+        "limit_2": {
+            "amount": {
+                "min": 500000,
+                "max": 5000000
+            },
+            "max_apr": 1200,
+            "max_origination_fee": 100
+        } 
     },
     "WA": {},
     "WV": {
@@ -262,9 +531,35 @@
                 "min": 5000,
                 "max": 500000
             },
-            "max_apr": 0
-        }
+            "max_apr": 0,
+            "max_origination_fee": 0
+        },
+        "limit_2": {
+            "amount": {
+                "min": 500000,
+                "max": 5000000
+            },
+            "max_apr": 1800,
+            "max_origination_fee": 100
+        } 
     },
-    "WI": {},
+    "WI": {
+        "limit_1": {
+            "amount": {
+                "min": 5000,
+                "max": 500000
+            },
+            "max_apr": 0,
+            "max_origination_fee": 0
+        },
+        "limit_2": {
+            "amount": {
+                "min": 500000,
+                "max": 5000000
+            },
+            "max_apr": 1800,
+            "max_origination_fee": 100
+        } 
+    },
     "WY": {}
 }

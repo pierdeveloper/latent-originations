@@ -8,10 +8,12 @@ const Application = require('../../models/Application');
 const { validationResult } = require('express-validator');
 const { applicationValidationRules, 
         offerValidationRules,
-        rejectionValidationRules } = require('../../helpers/validator.js');
+        rejectionValidationRules, 
+        customerValidationRules} = require('../../helpers/validator.js');
 const consumer_state_limits = require('../../helpers/coverage/consumer.json');
 const commercial_state_limits = require('../../helpers/coverage/commercial.json');
 const valid_rejection_reasons = require('../../helpers/rejectionReasons.json');
+const Customer = require('../../models/Customer.js');
 
 // @route     POST application
 // @desc      Create a credit application
@@ -216,6 +218,9 @@ router.post('/:id/approve', [auth, offerValidationRules()], async (req, res) => 
             })
         }
 
+        // grab customer (for checking coverage limit access)
+        let customer = await Customer.findOne({client_id: req.client_id });
+
         // if it's business then
         if(borrower.type === 'business') {
             let business = await Business.findOne({ id: application.borrower_id })
@@ -307,12 +312,24 @@ router.post('/:id/approve', [auth, offerValidationRules()], async (req, res) => 
             
             // verify if either limit type 1 
             const limit_1 = state.limit_1
-            console.log(`limit_1: ${limit_1}`)
+            const limit_2 = state.limit_2
 
+
+            // check type 1
             if ((offer.amount >= limit_1.amount.min && 
                 offer.amount <= limit_1.amount.max &&
                 offer.apr <= limit_1.max_apr &&
-                offer.interest_rate <= limit_1.max_apr )) {
+                offer.origination_fee <= limit_1.max_origination_fee &&
+                offer.interest_rate <= limit_1.max_apr) ||
+                // check type 2
+                (
+                    offer.amount >= limit_2?.amount.min && 
+                    offer.amount <= limit_2?.amount.max &&
+                    offer.apr <= limit_2?.max_apr &&
+                    offer.interest_rate <= limit_2?.max_apr &&
+                    offer.origination_fee <= limit_2?.max_origination_fee &&
+                    customer.consumer_non_zero_enabled
+                )) {
                     // accept approval if offer meets type 1
                     application.offer = offerFields
                     application.status = 'approved'
