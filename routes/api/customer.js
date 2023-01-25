@@ -79,7 +79,8 @@ router.patch('/:id', async (req, res) => {
         // update and return
         const { company_name,
             dba_name,
-            email } = req.body
+            email,
+            consumer_non_zero_enabled } = req.body;
 
         const customerFields = {};
         if(company_name) customerFields.company_name = company_name;
