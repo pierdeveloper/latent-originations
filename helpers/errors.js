@@ -105,7 +105,7 @@ const errors = {
     },
     unauthorized: {
         error_code: "UNAUTHORIZED",
-        error_message: "The API key is invalid. Make sure your API key is prefixed with a colon",
+        error_message: "The API key is invalid. Make sure you are passing your client id and secret via an authorization header",
         error_status: 401,
         error_type: "INVALID_REQUEST_ERROR"
     },
