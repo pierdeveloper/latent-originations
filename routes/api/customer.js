@@ -121,16 +121,22 @@ router.patch('/:id/enable_production', async (req, res) => {
         }
 
         // verify admin key
-        const { admin_key } = req.body
+        const { admin_key, sandbox_client_id } = req.body
         if(admin_key !== "Z*gKq8bck2k-QCfF8ydTYwKB!RFCN9iYWXfELvmY!YrCLQV7_83jRhTcBvm6rme!.6kEji9.@*ZsHx3yZE7QiAycHMch") {
             return res.status(401).send('Unauthorized')
+        }
+
+        // check if customer already enabled for prod
+        if(customer.production_enabled) {
+            return res.status(400).json({ msg: 'Account already enabled for production'});
         }
 
         // create key
         const secret_uuid = uuidv4();
         const production_secret = 'prod_' + secret_uuid.replace(/-/g, '');
 
-        // set and save
+        // set production secret, enable flag and set client id to sandbox client id
+        customer.client_id = sandbox_client_id;
         customer.production_secret = production_secret;
         customer.production_enabled = true
         await customer.save()
