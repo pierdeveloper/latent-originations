@@ -138,7 +138,8 @@ router.patch('/:id/enable_production', async (req, res) => {
         // set production secret, enable flag and set client id to sandbox client id
         customer.client_id = sandbox_client_id;
         customer.production_secret = production_secret;
-        customer.production_enabled = true
+        customer.production_enabled = true;
+        customer.sandbox_secret = null;
         await customer.save()
     
         return res.send('Production enabled for client!')
