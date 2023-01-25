@@ -67,6 +67,12 @@ const errors = {
         error_status: 404,
         error_type: "LOAN_AGREEMENT_ERROR"
     },
+    document_already_exists: {
+        error_code: "LOAN_AGREEMENT_ALREADY_EXISTS",
+        error_message: "A pending loan agreement for this application already exists",
+        error_status: 400,
+        error_type: "LOAN_AGREEMENT_ERROR"
+    },
     invalid_document_id: {
         error_code: "INVALID_LOAN_AGREEMENT_ID",
         error_message: "The loan_agreement_id specified is invalid",

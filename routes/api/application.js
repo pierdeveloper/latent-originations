@@ -417,7 +417,7 @@ router.get('/', [auth], async (req, res) => {
         const applications = await Application.find({ client_id: req.client_id })
             .select('-_id -__v -client_id');
         
-        console.log(application);
+        console.log(applications);
         res.json(applications);
     } catch(err) {
         console.error(err);

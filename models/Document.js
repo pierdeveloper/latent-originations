@@ -39,4 +39,15 @@ const DocumentSchema = new mongoose.Schema({
     }
 });
 
+DocumentSchema.pre('save', function(next) {
+    if (this.isNew) {
+      this.createdAt = Date.now();
+      setTimeout(() => {
+        this.status = 'expired';
+        this.save();
+      }, 48 * 60 * 60 * 1000);
+    }
+    next();
+  });
+
 module.exports = Document = mongoose.model('document', DocumentSchema)

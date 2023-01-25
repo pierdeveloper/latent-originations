@@ -25,6 +25,7 @@ router.post('/', [auth], async (req, res) => {
         const client_id = req.client_id;
         const application = await Application.findOne({ id: application_id });
 
+        // verify it exists
         if(!application || application.client_id !== req.client_id) {
             const error = getError("application_not_found")
             return res.status(error.error_status).json({ 
@@ -34,6 +35,8 @@ router.post('/', [auth], async (req, res) => {
             })
 
         }
+
+        // check that the application status is approved
         if(application.status !== 'approved') {
             const error = getError("document_cannot_be_created")
             return res.status(error.error_status).json({ 
@@ -43,6 +46,19 @@ router.post('/', [auth], async (req, res) => {
             })
         }
 
+        // check that a live loan agreement doesn't already exist
+        const existing_loan_agreement = await Document.findOne({
+            application_id: application_id,
+            status: "pending_signature"
+        });
+        if(existing_loan_agreement) {
+            const error = getError("document_already_exists")
+            return res.status(error.error_status).json({ 
+                error_type: error.error_type,
+                error_code: error.error_code,
+                error_message: error.error_message
+            })
+        }
         const offer = application.offer
 
         let borrower = await Borrower.findOne({ id: application.borrower_id })
