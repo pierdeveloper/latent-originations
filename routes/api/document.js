@@ -9,6 +9,7 @@ const Borrower = require('../../models/Borrower');
 const Document = require('../../models/Document');
 const config = require('config');
 const Application = require('../../models/Application');
+const moment = require('moment');
 
 
 // @route     POST document
@@ -122,7 +123,6 @@ router.post('/', [auth], async (req, res) => {
         
         } else {
             // DS data fields for consumer
-            // for consumer applicants for LOC
             const consumer = await Consumer.findOne({ id: application.borrower_id})     
             const address_line_2 = consumer.address.line_2 ?? ""
             const today = new Date();
@@ -133,37 +133,53 @@ router.post('/', [auth], async (req, res) => {
             });
             
             doc_data_fields.date = today.toLocaleDateString('en-us', dateOptions);
-            doc_data_fields.account_number = `${application_id}`;
             doc_data_fields.amount = `${formatter.format(offer.amount / 100)}`;
-            doc_data_fields.apr = `${offer.apr / 100}%`;
-            doc_data_fields.late_payment_fee = `${formatter.format(offer.late_payment_fee / 100)}`;
-            doc_data_fields.address = `${consumer.address.line_1} ${consumer.address.line_2} ${consumer.address.city} ${consumer.address.state} ${consumer.address.zip}`;
+            doc_data_fields.apr = `${offer.interest_rate / 100}%`;
             doc_data_fields.name = `${consumer.first_name} ${consumer.last_name}`;
-            doc_data_fields.email = `${consumer.email}`;
             doc_data_fields.name_2 = " ";
             doc_data_fields.date_2 = " ";
             doc_data_fields.signature = " ";
             
             // if loan
             if(application.credit_type === "installment_loan") {
-                doc_data_fields.finance_charge = `${formatter.format(offer.finance_charge / 100)}`
-                const total_payments = offer.finance_charge + offer.amount
-                doc_data_fields.total_payments = `${formatter.format(total_payments / 100)}`
-                doc_data_fields.n_payments = offer.term;
-                const amount_of_payments = total_payments / offer.term;
-                doc_data_fields.amount_of_payments = `${formatter.format(amount_of_payments / 100)}`
+                doc_data_fields.address = `${consumer.address.line_1} ${address_line_2}`;
+                doc_data_fields.city_state_zip = `${consumer.address.city} ${consumer.address.state} ${consumer.address.zip}`;
+                // payment amount
+                const periodic_payment_amount = calculate_periodic_payment(
+                    offer.amount / 100,
+                    offer.term,
+                    12,
+                    offer.interest_rate / 10000
+                ).toFixed(2);
+                doc_data_fields.payment_amount = `${formatter.format(periodic_payment_amount)}`
+                doc_data_fields.payment_amount_2 = `${formatter.format(periodic_payment_amount)}`
+                doc_data_fields.n_payments = (offer.term - 1);
+                const finance_charge = (offer.term * periodic_payment_amount) - (offer.amount / 100);
+                doc_data_fields.finance_charge = `${formatter.format(finance_charge)}`; 
+                const total_of_payments = (offer.term * periodic_payment_amount);
+                doc_data_fields.total_of_payments = `${formatter.format(total_of_payments)}`
 
-                let first_due_date = new Date();
-                first_due_date.setDate(today.getDate() + 30);
-                doc_data_fields.payment_schedule = `Monthly, starting ${first_due_date.toLocaleDateString('en-us', dateOptions)}`
-                doc_data_fields.prepayment_penalty = `${formatter.format(0)}`
-                doc_data_fields.amount_to_you = `${formatter.format(offer.amount / 100)}`
-                doc_data_fields.amount_to_others = `${formatter.format(0)}`
-                doc_data_fields.total_financed = `${formatter.format(offer.amount / 100)}`
-                doc_data_fields.interest_rate = `${offer.interest_rate / 100}%`;
-                template_id = 'tpl_kSQ29kLkxL3ZbHg4t2';
+                const first_payment_date = moment().add(1,'months').format("MM/DD/YYYY");
+                const payments_due = `Monthly beginning ${first_payment_date}`;
+                doc_data_fields.payments_due = payments_due;
+                const final_due_date = moment().add(offer.term,'months').format("MM/DD/YYYY");
+                doc_data_fields.final_payment_due = final_due_date;
+
+
+                doc_data_fields.amount_to_you = `${formatter.format(offer.amount / 100)}`;
+                doc_data_fields.total_financed = `${formatter.format(offer.amount / 100)}`;
+                doc_data_fields.origination_fee = "$0.00";
+                doc_data_fields.total_loan_amount = `${formatter.format(offer.amount / 100)}`;
+                doc_data_fields.borrower_name = `${consumer.first_name} ${consumer.last_name}`;
+                template_id = 'tpl_CxaCsG7LtLH9Jksez2';
+                console.log('logging doc data fields')
+                console.log(doc_data_fields);
             // if line of credit
             } else {
+                doc_data_fields.email = `${consumer.email}`;
+                doc_data_fields.address = `${consumer.address.line_1} ${address_line_2} ${consumer.address.city} ${consumer.address.state} ${consumer.address.zip}`;
+                doc_data_fields.account_number = `${application_id}`;
+                doc_data_fields.late_payment_fee = `${formatter.format(offer.late_payment_fee / 100)}`;
                 doc_data_fields.annual_fee = `${formatter.format(offer.annual_fee / 100)}`
                 doc_data_fields.origination_fee = `${formatter.format(offer.origination_fee / 100)}`
                 doc_data_fields.whitespace = true;
@@ -171,7 +187,6 @@ router.post('/', [auth], async (req, res) => {
             }
 
         }
-
 
         // Create DS submission
         const docspring_pending_submission = await createDocSpringSubmission(template_id, doc_data_fields)
@@ -242,15 +257,15 @@ const createDocSpringSubmission = async (template_id, doc_data_fields) => {
     // create docspring submission with applicant data
     console.log('running docspring creation job')
 
-    const username = config.get('docspring-id');
-    const pw = config.get('docspring-secret');
+    const username = config.get('docspringId');
+    const pw = config.get('docspringSecret');
     const auth = 'Basic ' + Buffer.from(username + ':' + pw).toString('base64');
     
     const header = {'user-agent': 'node.js', 'Authorization': auth}
 
     const body_params = {
         data: doc_data_fields,
-        test: config.get('docspring-test'),
+        test: config.get('docspringTest'),
         editable: false
     }
 
@@ -264,8 +279,8 @@ const createDocSpringSubmission = async (template_id, doc_data_fields) => {
 
   const getDocSpringSubmission = async (submission_id) => {
     console.log('running docspring fetch job');
-    const username = config.get('docspring-id');
-    const pw = config.get('docspring-secret');
+    const username = config.get('docspringId');
+    const pw = config.get('docspringSecret');
     const auth = 'Basic ' + Buffer.from(username + ':' + pw).toString('base64');
     const header = {'user-agent': 'node.js', 'Authorization': auth}
     const url = `https://api.docspring.com/api/v1/submissions/${submission_id}`;
@@ -278,6 +293,18 @@ const createDocSpringSubmission = async (template_id, doc_data_fields) => {
     return response.data;
 
   }
+
+const calculate_periodic_payment = (amount, n_payments, payments_per_year, apr) => {
+    const i = apr/payments_per_year;
+    const a = amount;
+    const n = n_payments;
+    const periodic_payment = a / (((1+i)**n)-1) * (i*(1+i)**n);
+    console.log(i);
+    console.log(a);
+    console.log(n);
+    console.log(`per pay formula yielding: ${periodic_payment}`)
+    return periodic_payment;
+}
 
 // @route POST document
 // @desc Sign loan agreement
@@ -359,6 +386,7 @@ router.post('/:id/sign', [auth], async (req, res) => {
         } else {
             // DS data fields for consumer
             // for consumer applicants for LOC
+            // DS data fields for consumer
             const consumer = await Consumer.findOne({ id: application.borrower_id})     
             const address_line_2 = consumer.address.line_2 ?? ""
             const today = new Date();
@@ -369,36 +397,53 @@ router.post('/:id/sign', [auth], async (req, res) => {
             });
 
             doc_data_fields.date = today.toLocaleDateString('en-us', dateOptions);
-            doc_data_fields.account_number = `${application.id}`;
             doc_data_fields.amount = `${formatter.format(offer.amount / 100)}`;
-            doc_data_fields.apr = `${offer.apr / 100}%`;
-            doc_data_fields.late_payment_fee = `${formatter.format(offer.late_payment_fee / 100)}`;
-            doc_data_fields.address = `${consumer.address.line_1} ${consumer.address.line_2} ${consumer.address.city} ${consumer.address.state} ${consumer.address.zip}`;
+            doc_data_fields.apr = `${offer.interest_rate / 100}%`;
             doc_data_fields.name = `${consumer.first_name} ${consumer.last_name}`;
-            doc_data_fields.email = `${consumer.email}`;
             doc_data_fields.name_2 = `${consumer.first_name} ${consumer.last_name}`;
             doc_data_fields.date_2 = today.toLocaleDateString('en-us', dateOptions);
             doc_data_fields.signature = `${consumer.first_name} ${consumer.last_name}`;
-            
 
+            // if loan
             if(application.credit_type === "installment_loan") {
-                doc_data_fields.finance_charge = `${formatter.format(offer.finance_charge / 100)}`
-                const total_payments = offer.finance_charge + offer.amount
-                doc_data_fields.total_payments = `${formatter.format(total_payments / 100)}`
-                doc_data_fields.n_payments = offer.term;
-                const amount_of_payments = total_payments / offer.term;
-                doc_data_fields.amount_of_payments = `${formatter.format(amount_of_payments / 100)}`
+                doc_data_fields.address = `${consumer.address.line_1} ${address_line_2}`;
+                doc_data_fields.city_state_zip = `${consumer.address.city} ${consumer.address.state} ${consumer.address.zip}`;
+                // payment amount
+                const periodic_payment_amount = calculate_periodic_payment(
+                    offer.amount / 100,
+                    offer.term,
+                    12,
+                    offer.interest_rate / 10000
+                ).toFixed(2);
+                doc_data_fields.payment_amount = `${formatter.format(periodic_payment_amount)}`
+                doc_data_fields.payment_amount_2 = `${formatter.format(periodic_payment_amount)}`
+                doc_data_fields.n_payments = (offer.term - 1);
+                const finance_charge = (offer.term * periodic_payment_amount) - (offer.amount / 100);
+                doc_data_fields.finance_charge = `${formatter.format(finance_charge)}`; 
+                const total_of_payments = (offer.term * periodic_payment_amount);
+                doc_data_fields.total_of_payments = `${formatter.format(total_of_payments)}`
 
-                let first_due_date = new Date();
-                first_due_date.setDate(today.getDate() + 30);
-                doc_data_fields.payment_schedule = `Monthly, starting ${first_due_date.toLocaleDateString('en-us', dateOptions)}`
-                doc_data_fields.prepayment_penalty = `${formatter.format(0)}`
-                doc_data_fields.amount_to_you = `${formatter.format(offer.amount / 100)}`
-                doc_data_fields.amount_to_others = `${formatter.format(0)}`
-                doc_data_fields.total_financed = `${formatter.format(offer.amount / 100)}`
-                doc_data_fields.interest_rate = `${offer.interest_rate / 100}%`;
-                template_id = 'tpl_kSQ29kLkxL3ZbHg4t2';
+                const first_payment_date = moment().add(1,'months').format("MM/DD/YYYY");
+                const payments_due = `Monthly beginning ${first_payment_date}`;
+                doc_data_fields.payments_due = payments_due;
+                const final_due_date = moment().add(offer.term,'months').format("MM/DD/YYYY");
+                doc_data_fields.final_payment_due = final_due_date;
+
+
+                doc_data_fields.amount_to_you = `${formatter.format(offer.amount / 100)}`;
+                doc_data_fields.total_financed = `${formatter.format(offer.amount / 100)}`;
+                doc_data_fields.origination_fee = "$0.00";
+                doc_data_fields.total_loan_amount = `${formatter.format(offer.amount / 100)}`;
+                doc_data_fields.borrower_name = `${consumer.first_name} ${consumer.last_name}`;
+                template_id = 'tpl_CxaCsG7LtLH9Jksez2';
+                console.log('logging doc data fields')
+                console.log(doc_data_fields);
+            // if line of credit
             } else {
+                doc_data_fields.email = `${consumer.email}`;
+                doc_data_fields.address = `${consumer.address.line_1} ${address_line_2} ${consumer.address.city} ${consumer.address.state} ${consumer.address.zip}`;
+                doc_data_fields.account_number = `${application_id}`;
+                doc_data_fields.late_payment_fee = `${formatter.format(offer.late_payment_fee / 100)}`;
                 doc_data_fields.annual_fee = `${formatter.format(offer.annual_fee / 100)}`
                 doc_data_fields.origination_fee = `${formatter.format(offer.origination_fee / 100)}`
                 doc_data_fields.whitespace = true;

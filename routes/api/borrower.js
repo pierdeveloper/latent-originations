@@ -1,6 +1,7 @@
 const { getError } = require('../../helpers/errors.js')
 const { v4: uuidv4 } = require('uuid');
 const express = require('express');
+const { encrypt, decrypt } = require('../../helpers/crypto');
 const auth = require('../../middleware/auth');
 const router = express.Router();
 const Business = require('../../models/Business');
@@ -217,6 +218,9 @@ router.post('/consumer', [auth, consumerValidationRules()], async (req, res) => 
             phone,
             ssn } = req.body
 
+        // encrypt ssn
+        //TODO
+
         let consumer = await Consumer.findOne({ ssn, client_id })
 
         if (consumer) {
@@ -237,7 +241,8 @@ router.post('/consumer', [auth, consumerValidationRules()], async (req, res) => 
 
         await borrower.save();
 
-        // create business and set the borrower_id on it
+        // create consumer and set the borrower_id on it
+        
         consumer = new Consumer({
             address,
             id: borrower_id,
@@ -254,7 +259,7 @@ router.post('/consumer', [auth, consumerValidationRules()], async (req, res) => 
         await consumer.save();
 
         consumer = await Consumer.findOne({ id: borrower_id, client_id })
-            .select('-_id -__v -client_id');
+            .select('-_id -__v -client_id -ssn');
 
         console.log(consumer); 
         res.json(consumer);
@@ -291,8 +296,7 @@ router.patch('/consumer/:id', [auth, consumerValidationRules()], async (req, res
                 error_code: error.error_code,
                 error_message: error.error_message
             })
-        } else { console.log('foudn consumer borrower!')}
-
+        }
 
 
         // find the consumer 
@@ -387,7 +391,7 @@ router.get('/:id', [auth], async (req, res) => {
 
         if (borrower.type === 'consumer') {
             var consumer = await Consumer.findOne({ id: req.params.id })
-                .select('-_id -__v');
+                .select('-_id -__v -ssn');
             if(!consumer || consumer.client_id !== req.client_id) {
                 const error = getError("borrower_not_found")
                 return res.status(error.error_status).json({ 
@@ -448,7 +452,7 @@ router.get('/', [auth], async (req, res) => {
     try {
 
         const consumers = await Consumer.find({ client_id: req.client_id })
-            .select('-_id -__v -client_id');
+            .select('-_id -__v -client_id -ssn');
 
         const businesses = await Business.find({ client_id: req.client_id })
             .select('-_id -__v -client_id');

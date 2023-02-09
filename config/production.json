@@ -1,8 +1,0 @@
-{
-    "mongoURI": "mongodb+srv://ahegevall:Pperry11@pier-production-tempora.qe7kk.mongodb.net/?retryWrites=true&w=majority",
-    "docspring-id": "api_6r6MPkheLQDFeMfR39",
-    "docspring-secret": "HqatYXFDgSdREeHYJQsQgnh7GaKZ6SHxSP6bfayaqf",
-    "docspring-test": false,
-    "envo": "production",
-    "log-level": "info"
-}

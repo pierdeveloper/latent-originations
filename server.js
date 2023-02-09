@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const connectDB = require('./config/db.js');
 const path = require('path');
@@ -6,6 +7,7 @@ const bunyan = require('bunyan');
 const config = require('config');
 const bodyParser = require('body-parser');
 const helmet = require('helmet');
+
 
 
 const app = express();
@@ -19,7 +21,7 @@ app.use(express.json({ extended: false }));
 // Init logging
 const log = bunyan.createLogger({
     name: 'pier-api',
-    level: config.get('log-level')
+    level: config.get('logLevel')
 });
 app.use((req, res, next) => {
     log.info({req: req}, 'Incoming request');
@@ -53,7 +55,6 @@ app.use('/api/facilities', require('./routes/api/facility'));
 app.use('/api/coverage', require('./routes/api/coverage'));
 app.use('/api/rejection_reasons', require('./routes/api/rejection_reasons'));
 app.use('/api/customers', require('./routes/api/customer'));
-app.use('/', require('./routes/api/temp-landing'));
 
 // Serve static assets in production
 
@@ -69,5 +70,5 @@ if(process.env.NODE_ENV === 'production' /*|| process.env.NODE_ENV === 'staging'
 }
 
 const PORT = process.env.PORT || 5001;
-console.log(`nodejs environment: ${process.env.NODE_ENV}`);
+console.log(`environment: ${process.env}`);
 app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
