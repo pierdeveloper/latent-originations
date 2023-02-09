@@ -1,7 +1,8 @@
 module.exports = {
-    mongoURI: "mongodb+srv://ahegevall:Pperry11@pier-production-tempora.qe7kk.mongodb.net/?retryWrites=true&w=majority",
-    docspringId: "api_6r6MPkheLQDFeMfR39",
-    docspringSecret: "HqatYXFDgSdREeHYJQsQgnh7GaKZ6SHxSP6bfayaqf",
+    mongoURI: process.env.MONGO_URI,
+    docspringId: process.env.DOCSPRING_ID,
+    docspringSecret: process.env.DOCSPRING_SECRET,
+    pier_admin_key: process.env.PIER_ADMIN_KEY,
     docspringTest: false,
     envo: "production",
     logLevel: "info"
