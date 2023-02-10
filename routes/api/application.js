@@ -156,7 +156,6 @@ router.post('/:id/approve', [auth, offerValidationRules()], async (req, res) => 
     // build offer object
     const offerFields = {};
     offerFields.amount = offer.amount;
-    offerFields.apr = offer.apr;
     offerFields.interest_rate = offer.interest_rate;
     offerFields.late_payment_fee = offer.late_payment_fee;
     offerFields.grace_period = offer.grace_period;
@@ -318,19 +317,17 @@ router.post('/:id/approve', [auth, offerValidationRules()], async (req, res) => 
             // check type 1
             if ((offer.amount >= limit_1.amount.min && 
                 offer.amount <= limit_1.amount.max &&
-                offer.apr <= limit_1.max_apr &&
                 offer.origination_fee <= limit_1.max_origination_fee &&
                 offer.interest_rate <= limit_1.max_apr) ||
                 // check type 2
                 (
                     offer.amount >= limit_2?.amount.min && 
                     offer.amount <= limit_2?.amount.max &&
-                    offer.apr <= limit_2?.max_apr &&
                     offer.interest_rate <= limit_2?.max_apr &&
                     offer.origination_fee <= limit_2?.max_origination_fee &&
                     customer.consumer_non_zero_enabled
                 )) {
-                    // accept approval if offer meets type 1
+                    // accept approval if offer meets type 1 or type 2
                     application.offer = offerFields
                     application.status = 'approved'
                     application.decisioned_on = Date.now();

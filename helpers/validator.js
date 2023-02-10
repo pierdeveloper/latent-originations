@@ -92,17 +92,17 @@ const consumerValidationRules = () => {
   const offerValidationRules = () => {
     return [
         check('offer.amount', 'Amount must be an integer greater than or equal to 0')
-            .isInt({min:0}).optional({nullable: true}),
-        check('offer.annual_fee', 'Annual fee must be an integer greater than or equal to 0')
-            .isInt({min:0}),   
-        check('offer.apr', 'APR must be an integer greater than or equal to 0')
             .isInt({min:0}),
+        check('offer.annual_fee', 'Annual fee must be an integer greater than or equal to 0')
+            .isInt({min:0}).optional({nullable: true}),   
+        check('offer.apr', 'APR must be an integer greater than or equal to 0')
+            .isInt({min:0}).optional({nullable: true}),
         check('offer.billing_cycle', 'Billing cycle must be an integer greater than or equal to 0')
             .isInt({min:0}).optional({nullable: true}), 
         check('offer.finance_charge', 'Finance charge must be an integer >= 0')
-            .isInt({min:0}),
+            .isInt({min:0}).optional({nullable: true}),
         check('offer.grace_period', 'Grace period must be an integer >= 0 and <= 1000')
-            .isInt({min:0, max: 1000}),
+            .isInt({min:0, max: 1000}).optional({nullable: true}),
         check('offer.grace_period_interest_rate', 'Grace period interest rate must be an integer >= 0')
             .isInt({min:0}).optional({nullable: true}),
         check('offer.interest_free_period', 'Interest free period must be an integer between 0 and 365')

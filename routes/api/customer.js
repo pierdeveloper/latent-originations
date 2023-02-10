@@ -14,7 +14,7 @@ router.post('/', customerValidationRules(), async (req, res) => {
     
     // verify admin key
     const { admin_key } = req.body
-    if(admin_key !== config.get(pier_admin_key)) {
+    if(admin_key !== config.get("pier_admin_key")) {
         return res.status(401).send('Unauthorized')
     }
     // Validate input
@@ -68,7 +68,7 @@ router.patch('/:id', async (req, res) => {
     try {
         // verify admin key
         const { admin_key } = req.body
-        if(admin_key !== config.get(pier_admin_key)) {
+        if(admin_key !== config.get("pier_admin_key")) {
             return res.status(401).send('Unauthorized')
         }
 
@@ -125,7 +125,7 @@ router.patch('/:id/enable_production', async (req, res) => {
 
         // verify admin key
         const { admin_key, sandbox_client_id } = req.body
-        if(admin_key !== config.get(pier_admin_key)) {
+        if(admin_key !== config.get("pier_admin_key")) {
             return res.status(401).send('Unauthorized')
         }
 
@@ -163,7 +163,7 @@ router.get('/:id', async (req, res) => {
     try {
         // verify admin key
         const { admin_key } = req.body
-        if(admin_key !== config.get(pier_admin_key)) {
+        if(admin_key !== config.get("pier_admin_key")) {
             return res.status(401).send('Unauthorized')
         }
         // Get customer and return it
@@ -187,7 +187,7 @@ router.get('/:id', async (req, res) => {
 router.get('/', async (req, res) => {
     // verify admin key
     const { admin_key } = req.body
-    if(admin_key !== config.get(pier_admin_key)) {
+    if(admin_key !== config.get("pier_admin_key")) {
         return res.status(403).send('Unauthorized')
     }
     try {
@@ -207,7 +207,7 @@ router.delete('/:id', async (req, res) => {
     try {
         // verify admin key
         const { admin_key } = req.body
-        if(admin_key !== config.get(pier_admin_key)) {
+        if(admin_key !== config.get("pier_admin_key")) {
             return res.status(401).send('Unauthorized')
         }
 
