@@ -46,6 +46,23 @@ router.post('/', [auth, applicationValidationRules()], async (req, res) => {
                 error_message: error.error_message
             })
         }
+        // check that application credit type and borrower type match
+        if((borrower.type === 'business' && [
+            'consumer_bnpl', 'consumer_revolving_line_of_credit', 'consumer_closed_line_of_credit', 
+            'consumer_installment_loan'].includes(credit_type))
+
+            || (borrower.type === 'consumer' && [
+                'commercial_bnpl', 'commercial_revolving_line_of_credit', 'commercial_closed_line_of_credit', 
+                'commercial_installment_loan'].includes(credit_type))
+        ) {
+            console.log('credit type cant be made for this borrower type')
+            const error = getError("application_cannot_be_created")
+            return res.status(error.error_status).json({ 
+                error_type: error.error_type,
+                error_code: error.error_code,
+                error_message: error.error_message
+            })
+        }
         const application_id = 'app_' + uuidv4().replace(/-/g, '');
         let application = new Application({
             id: application_id,
@@ -171,8 +188,6 @@ router.post('/:id/approve', [auth, offerValidationRules()], async (req, res) => 
     }
     if(offer.hasOwnProperty("grace_period_interest_rate")) {
         offerFields.grace_period_interest_rate = offer.grace_period_interest_rate
-    } else {
-        offerFields.grace_period_interest_rate = 0 // default value
     }
     if(offer.hasOwnProperty("introductory_offer_interest_rate")) {
         offerFields.introductory_offer_interest_rate = offer.introductory_offer_interest_rate

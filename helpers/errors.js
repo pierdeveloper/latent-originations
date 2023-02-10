@@ -31,6 +31,12 @@ const errors = {
         error_status: 404,
         error_type: "APPLICATION_ERROR"
     },
+    application_cannot_be_created: {
+        error_code: "APPLICATION_CANNOT_BE_CREATED",
+        error_message: "The application credit type can't be created for this type of borrower",
+        error_status: 400,
+        error_type: "APPLICATION_ERROR"
+    },
     application_cannot_be_approved: {
         error_code: "APPLICATION_CANNOT_BE_APPROVED",
         error_message: "The application's status must be pending in order to approve it",
