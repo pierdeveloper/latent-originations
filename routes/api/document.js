@@ -11,7 +11,6 @@ const config = require('config');
 const Application = require('../../models/Application');
 const moment = require('moment');
 
-
 // @route     POST document
 // @desc      Create a loan agreement pdf for user
 // @access    Public
@@ -34,7 +33,6 @@ router.post('/', [auth], async (req, res) => {
                 error_code: error.error_code,
                 error_message: error.error_message
             })
-
         }
 
         // check that the application status is approved
@@ -60,10 +58,9 @@ router.post('/', [auth], async (req, res) => {
                 error_message: error.error_message
             })
         }
-        const offer = application.offer
-
+       
+        // Check that borrower exists
         let borrower = await Borrower.findOne({ id: application.borrower_id })
-
         if(!borrower || borrower.client_id !== req.client_id) {
             const error = getError("borrower_not_found")
             return res.status(error.error_status).json({ 
@@ -73,121 +70,27 @@ router.post('/', [auth], async (req, res) => {
             })
         }
 
-        // Prep docspring fields to be created
-        const doc_data_fields = {}
-        let template_id = ""
-
-        // DS data fields for business
-        if(borrower.type === 'business') {
-            const business = await Business.findOne({ id: application.borrower_id})     
-            const address_line_2 = business.address.line_2 ?? ""
-            const today = new Date();
-            const dateOptions = { year: 'numeric', month: 'long', day: 'numeric' } 
-            const formatter = new Intl.NumberFormat('en-US', {
-                style: 'currency',
-                currency: 'USD',
-              });
-
-            if(application.credit_type === 'installment_loan') {
-                const error = getError("unsupported_product")
-                return res.status(error.error_status).json({ 
-                    error_type: error.error_type,
-                    error_code: error.error_code,
-                    error_message: error.error_message
-                })
-            } else {
-                doc_data_fields.date = today.toLocaleDateString('en-us', dateOptions);
-                doc_data_fields.account_number = `${application_id}`;
-                doc_data_fields.annual_fee = `${formatter.format(offer.annual_fee / 100)}`
-                doc_data_fields.origination_fee = `${formatter.format(offer.origination_fee / 100)}`
-                doc_data_fields.credit_limit = `${formatter.format(offer.amount / 100)}`;
-                doc_data_fields.apr = `${offer.apr / 100}%`;
-                doc_data_fields.late_payment_fee = `${formatter.format(offer.late_payment_fee / 100)}`;
-                doc_data_fields.entity_name = `${business.business_name}`;
-                doc_data_fields.entity_type = `${business.business_type}`;
-                doc_data_fields.ein = `${business.ein}`;
-                doc_data_fields.address = `${business.address.line_1} ${business.address.line_2} ${business.address.city} ${business.address.state} ${business.address.zip}`;
-                doc_data_fields.phone = `${business.phone}`;
-                doc_data_fields.officer_name = `${business.business_contact.first_name} ${business.business_contact.last_name}`;
-                doc_data_fields.officer_title = `${business.business_contact.title}`;
-                doc_data_fields.officer_address = `${business.address.line_1} ${business.address_line_2} ${business.address.city} ${business.address.state} ${business.address.zip}`;
-                doc_data_fields.officer_name_2 = " ";
-                doc_data_fields.officer_title_2 = " ";
-                doc_data_fields.entity_name_2 = " ";
-                doc_data_fields.signature_date = " ";
-                doc_data_fields.signature = " ";
-                doc_data_fields.whitespace = true;
-
-                template_id = "tpl_CbSMf49ckCdT6fLNYh";
-            }
-        
-        } else {
-            // DS data fields for consumer
-            const consumer = await Consumer.findOne({ id: application.borrower_id})     
-            const address_line_2 = consumer.address.line_2 ?? ""
-            const today = new Date();
-            const dateOptions = { year: 'numeric', month: 'long', day: 'numeric' } 
-            const formatter = new Intl.NumberFormat('en-US', {
-                style: 'currency',
-                currency: 'USD',
-            });
-            
-            doc_data_fields.date = today.toLocaleDateString('en-us', dateOptions);
-            doc_data_fields.amount = `${formatter.format(offer.amount / 100)}`;
-            doc_data_fields.apr = `${offer.interest_rate / 100}%`;
-            doc_data_fields.name = `${consumer.first_name} ${consumer.last_name}`;
-            doc_data_fields.name_2 = " ";
-            doc_data_fields.date_2 = " ";
-            doc_data_fields.signature = " ";
-            
-            // if loan
-            if(application.credit_type === "installment_loan") {
-                doc_data_fields.address = `${consumer.address.line_1} ${address_line_2}`;
-                doc_data_fields.city_state_zip = `${consumer.address.city} ${consumer.address.state} ${consumer.address.zip}`;
-                // payment amount
-                const periodic_payment_amount = calculate_periodic_payment(
-                    offer.amount / 100,
-                    offer.term,
-                    12,
-                    offer.interest_rate / 10000
-                ).toFixed(2);
-                doc_data_fields.payment_amount = `${formatter.format(periodic_payment_amount)}`
-                doc_data_fields.payment_amount_2 = `${formatter.format(periodic_payment_amount)}`
-                doc_data_fields.n_payments = (offer.term - 1);
-                const finance_charge = (offer.term * periodic_payment_amount) - (offer.amount / 100);
-                doc_data_fields.finance_charge = `${formatter.format(finance_charge)}`; 
-                const total_of_payments = (offer.term * periodic_payment_amount);
-                doc_data_fields.total_of_payments = `${formatter.format(total_of_payments)}`
-
-                const first_payment_date = moment().add(1,'months').format("MM/DD/YYYY");
-                const payments_due = `Monthly beginning ${first_payment_date}`;
-                doc_data_fields.payments_due = payments_due;
-                const final_due_date = moment().add(offer.term,'months').format("MM/DD/YYYY");
-                doc_data_fields.final_payment_due = final_due_date;
-
-
-                doc_data_fields.amount_to_you = `${formatter.format(offer.amount / 100)}`;
-                doc_data_fields.total_financed = `${formatter.format(offer.amount / 100)}`;
-                doc_data_fields.origination_fee = "$0.00";
-                doc_data_fields.total_loan_amount = `${formatter.format(offer.amount / 100)}`;
-                doc_data_fields.borrower_name = `${consumer.first_name} ${consumer.last_name}`;
-                template_id = 'tpl_CxaCsG7LtLH9Jksez2';
-                console.log('logging doc data fields')
-                console.log(doc_data_fields);
-            // if line of credit
-            } else {
-                doc_data_fields.email = `${consumer.email}`;
-                doc_data_fields.address = `${consumer.address.line_1} ${address_line_2} ${consumer.address.city} ${consumer.address.state} ${consumer.address.zip}`;
-                doc_data_fields.account_number = `${application_id}`;
-                doc_data_fields.late_payment_fee = `${formatter.format(offer.late_payment_fee / 100)}`;
-                doc_data_fields.annual_fee = `${formatter.format(offer.annual_fee / 100)}`
-                doc_data_fields.origination_fee = `${formatter.format(offer.origination_fee / 100)}`
-                doc_data_fields.whitespace = true;
-                template_id = "tpl_m5cpPsgcqxk2RzM2cN";
-            }
-
+        // Check that the product is supported
+        if(['consumer_closed_line_of_credit', 'commercial_closed_line_of_credit', 
+            'commercial_installment_loan', 'commercial_bnpl'].includes(application.credit_type)) {
+            const error = getError("unsupported_product")
+            return res.status(error.error_status).json({ 
+                error_type: error.error_type,
+                error_code: error.error_code,
+                error_message: error.error_message
+            })
         }
 
+        // Generate docspring data fields
+        var docspringBorrower = {}
+        if(borrower.type === 'business') {
+            docspringBorrower = await Business.findOne({ id: application.borrower_id}) 
+        } else {
+            docspringBorrower = await Consumer.findOne({ id: application.borrower_id})  
+        }
+        const doc_data_fields = generateDocspringDataFields(borrower.type, docspringBorrower, application, false)
+        const template_id = docspringTemplates[application.credit_type] 
+        
         // Create DS submission
         const docspring_pending_submission = await createDocSpringSubmission(template_id, doc_data_fields)
         
@@ -246,9 +149,7 @@ router.post('/', [auth], async (req, res) => {
             error_message: error.error_message
         })
     }
-    
 });
-
 
 /*
     DOC SPRING HELPERS
@@ -306,6 +207,149 @@ const calculate_periodic_payment = (amount, n_payments, payments_per_year, apr) 
     return periodic_payment;
 }
 
+const generateDocspringDataFields = (borrower_type, borrower, application, isSigned) => {
+    
+    const offer = application.offer;
+    const doc_data_fields = {}
+
+    if(borrower_type === 'consumer') {
+
+        // standard fields   
+        const consumer = borrower;
+        const address_line_2 = consumer.address.line_2 ?? ""
+        const today = new Date();
+        const dateOptions = { year: 'numeric', month: 'long', day: 'numeric' } 
+        const formatter = new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+        });
+        doc_data_fields.date = today.toLocaleDateString('en-us', dateOptions);
+        doc_data_fields.amount = `${formatter.format(offer.amount / 100)}`;
+        doc_data_fields.apr = `${offer.interest_rate / 100}%`;
+        doc_data_fields.name = `${consumer.first_name} ${consumer.last_name}`;
+
+        doc_data_fields.name_2 = isSigned ? `${consumer.first_name} ${consumer.last_name}` : " ";
+        doc_data_fields.date_2 = isSigned ? today.toLocaleDateString('en-us', dateOptions) : " ";
+        doc_data_fields.signature = isSigned ? `${consumer.first_name} ${consumer.last_name}` : " ";
+
+        // credit product-specific fields
+        switch (application.credit_type) {
+            case "consumer_installment_loan":
+                doc_data_fields.address = `${consumer.address.line_1} ${address_line_2}`;
+                doc_data_fields.city_state_zip = `${consumer.address.city} ${consumer.address.state} ${consumer.address.zip}`;
+                // payment amount
+                const periodic_payment_amount = calculate_periodic_payment(
+                    offer.amount / 100,
+                    offer.term,
+                    12,
+                    offer.interest_rate / 10000
+                ).toFixed(2);
+                doc_data_fields.payment_amount = `${formatter.format(periodic_payment_amount)}`
+                doc_data_fields.payment_amount_2 = `${formatter.format(periodic_payment_amount)}`
+                doc_data_fields.n_payments = (offer.term - 1);
+                const finance_charge = (offer.term * periodic_payment_amount) - (offer.amount / 100);
+                doc_data_fields.finance_charge = `${formatter.format(finance_charge)}`; 
+                const total_of_payments = (offer.term * periodic_payment_amount);
+                doc_data_fields.total_of_payments = `${formatter.format(total_of_payments)}`
+
+                const first_payment_date = moment().add(1,'months').format("MM/DD/YYYY");
+                const payments_due = `Monthly beginning ${first_payment_date}`;
+                doc_data_fields.payments_due = payments_due;
+                const final_due_date = moment().add(offer.term,'months').format("MM/DD/YYYY");
+                doc_data_fields.final_payment_due = final_due_date;
+
+
+                doc_data_fields.amount_to_you = `${formatter.format(offer.amount / 100)}`;
+                doc_data_fields.total_financed = `${formatter.format(offer.amount / 100)}`;
+                doc_data_fields.origination_fee = "$0.00";
+                doc_data_fields.total_loan_amount = `${formatter.format(offer.amount / 100)}`;
+                doc_data_fields.borrower_name = `${consumer.first_name} ${consumer.last_name}`;
+                console.log('logging doc data fields')
+                console.log(doc_data_fields);
+                break;
+            case "consumer_bnpl":
+                break;
+            case "consumer_revolving_line_of_credit":
+                doc_data_fields.email = `${consumer.email}`;
+                doc_data_fields.address = `${consumer.address.line_1} ${address_line_2} ${consumer.address.city} ${consumer.address.state} ${consumer.address.zip}`;
+                doc_data_fields.account_number = `${application.id}`;
+                doc_data_fields.late_payment_fee = `${formatter.format(offer.late_payment_fee / 100)}`;
+                doc_data_fields.annual_fee = `${formatter.format(offer.annual_fee / 100)}`
+                doc_data_fields.origination_fee = `${formatter.format(offer.origination_fee / 100)}`
+                doc_data_fields.whitespace = true;
+                break;
+            case "consumer_closed_line_of_credit":
+                doc_data_fields.email = `${consumer.email}`;
+                doc_data_fields.address = `${consumer.address.line_1} ${address_line_2} ${consumer.address.city} ${consumer.address.state} ${consumer.address.zip}`;
+                doc_data_fields.account_number = `${application.application_id}`;
+                doc_data_fields.late_payment_fee = `${formatter.format(offer.late_payment_fee / 100)}`;
+                doc_data_fields.annual_fee = `${formatter.format(offer.annual_fee / 100)}`
+                doc_data_fields.origination_fee = `${formatter.format(offer.origination_fee / 100)}`
+                doc_data_fields.whitespace = true;
+                break;
+        
+            default: break;
+        }
+    } else { // business borrower
+        // standard fields
+        const business = borrower;
+        const address_line_2 = business.address.line_2 ?? ""
+        const today = new Date();
+        const dateOptions = { year: 'numeric', month: 'long', day: 'numeric' } 
+        const formatter = new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            });
+        doc_data_fields.officer_name_2 = isSigned ? `${business.business_contact.first_name} ${business.business_contact.last_name}` : " ";
+        doc_data_fields.officer_title_2 = isSigned ? `${business.business_contact.title}` : " ";
+        doc_data_fields.entity_name_2 = isSigned ? `${business.business_name}` : " ";
+        doc_data_fields.signature_date = isSigned ? today.toLocaleDateString('en-us', dateOptions) : " ";
+        doc_data_fields.signature = isSigned ? `${business.business_contact.first_name} ${business.business_contact.last_name}` : " ";
+
+        // credit product-specific fields
+        switch (application.credit_type) {
+            case "commercial_installment_loan": 
+                break;
+            case "commercial_bnpl": 
+                break;
+            case "commercial_revolving_line_of_credit":
+                doc_data_fields.date = today.toLocaleDateString('en-us', dateOptions);
+                doc_data_fields.account_number = `${application.id}`;
+                doc_data_fields.annual_fee = `${formatter.format(offer.annual_fee / 100)}`
+                doc_data_fields.origination_fee = `${formatter.format(offer.origination_fee / 100)}`
+                doc_data_fields.credit_limit = `${formatter.format(offer.amount / 100)}`;
+                doc_data_fields.apr = `${offer.interest_rate / 100}%`;
+                doc_data_fields.late_payment_fee = `${formatter.format(offer.late_payment_fee / 100)}`;
+                doc_data_fields.entity_name = `${business.business_name}`;
+                doc_data_fields.entity_type = `${business.business_type}`;
+                doc_data_fields.ein = `${business.ein}`;
+                doc_data_fields.address = `${business.address.line_1} ${address_line_2} ${business.address.city} ${business.address.state} ${business.address.zip}`;
+                doc_data_fields.phone = `${business.phone}`;
+                doc_data_fields.officer_name = `${business.business_contact.first_name} ${business.business_contact.last_name}`;
+                doc_data_fields.officer_title = `${business.business_contact.title}`;
+                doc_data_fields.officer_address = `${business.address.line_1} ${business.address_line_2} ${business.address.city} ${business.address.state} ${business.address.zip}`;
+                doc_data_fields.whitespace = true;
+                break;
+            case "commercial_closed_line_of_credit":
+                break;
+        
+            default: break;
+        }
+    }
+    return doc_data_fields;
+}
+
+const docspringTemplates = {
+    consumer_installment_loan: "tpl_CxaCsG7LtLH9Jksez2",
+    consumer_bnpl: "",
+    consumer_revolving_line_of_credit: "tpl_m5cpPsgcqxk2RzM2cN",
+    consumer_closed_line_of_credit: "",
+    commercial_installment_loan: "",
+    commercial_bnpl: "",
+    commercial_revolving_line_of_credit: "tpl_CbSMf49ckCdT6fLNYh",
+    commercial_closed_line_of_credit: ""
+}
+
 // @route POST document
 // @desc Sign loan agreement
 // @access Public
@@ -343,114 +387,16 @@ router.post('/:id/sign', [auth], async (req, res) => {
 
         // Pull up relevant borrower
         const borrower = await Borrower.findOne({ id: application.borrower_id })
-        
-        // Prep docspring fields to be created
-        const doc_data_fields = {}
-        let template_id = ""
 
-        // DS data fields for business
+        // Generate docspring data fields
+        var docspringBorrower = {}
         if(borrower.type === 'business') {
-            const business = await Business.findOne({ id: application.borrower_id})     
-            const address_line_2 = business.address.line_2 ?? ""
-            const today = new Date();
-            const dateOptions = { year: 'numeric', month: 'long', day: 'numeric' } 
-            const formatter = new Intl.NumberFormat('en-US', {
-                style: 'currency',
-                currency: 'USD',
-              });
-
-            doc_data_fields.date = today.toLocaleDateString('en-us', dateOptions);
-            doc_data_fields.account_number = `${application.id}`;
-            doc_data_fields.annual_fee = `${formatter.format(offer.annual_fee / 100)}`
-            doc_data_fields.origination_fee = `${formatter.format(offer.origination_fee / 100)}`
-            doc_data_fields.credit_limit = `${formatter.format(offer.amount / 100)}`;
-            doc_data_fields.apr = `${offer.apr / 100}%`;
-            doc_data_fields.late_payment_fee = `${formatter.format(offer.late_payment_fee / 100)}`;
-            doc_data_fields.entity_name = `${business.business_name}`;
-            doc_data_fields.entity_type = `${business.business_type}`;
-            doc_data_fields.ein = `${business.ein}`;
-            doc_data_fields.address = `${business.address.line_1} ${business.address.line_2} ${business.address.city} ${business.address.state} ${business.address.zip}`;
-            doc_data_fields.phone = `${business.phone}`;
-            doc_data_fields.officer_name = `${business.business_contact.first_name} ${business.business_contact.last_name}`;
-            doc_data_fields.officer_title = `${business.business_contact.title}`;
-            doc_data_fields.officer_address = `${business.address.line_1} ${business.address_line_2} ${business.address.city} ${business.address.state} ${business.address.zip}`;
-            doc_data_fields.officer_name_2 = `${business.business_contact.first_name} ${business.business_contact.last_name}`;
-            doc_data_fields.officer_title_2 = `${business.business_contact.title}`;
-            doc_data_fields.entity_name_2 = `${business.business_name}`;
-            doc_data_fields.signature_date = today.toLocaleDateString('en-us', dateOptions);
-            doc_data_fields.signature = `${business.business_contact.first_name} ${business.business_contact.last_name}`;
-            doc_data_fields.whitespace = true;
-
-            template_id = "tpl_CbSMf49ckCdT6fLNYh";
-        
+            docspringBorrower = await Business.findOne({ id: application.borrower_id}) 
         } else {
-            // DS data fields for consumer
-            // for consumer applicants for LOC
-            // DS data fields for consumer
-            const consumer = await Consumer.findOne({ id: application.borrower_id})     
-            const address_line_2 = consumer.address.line_2 ?? ""
-            const today = new Date();
-            const dateOptions = { year: 'numeric', month: 'long', day: 'numeric' } 
-            const formatter = new Intl.NumberFormat('en-US', {
-                style: 'currency',
-                currency: 'USD',
-            });
-
-            doc_data_fields.date = today.toLocaleDateString('en-us', dateOptions);
-            doc_data_fields.amount = `${formatter.format(offer.amount / 100)}`;
-            doc_data_fields.apr = `${offer.interest_rate / 100}%`;
-            doc_data_fields.name = `${consumer.first_name} ${consumer.last_name}`;
-            doc_data_fields.name_2 = `${consumer.first_name} ${consumer.last_name}`;
-            doc_data_fields.date_2 = today.toLocaleDateString('en-us', dateOptions);
-            doc_data_fields.signature = `${consumer.first_name} ${consumer.last_name}`;
-
-            // if loan
-            if(application.credit_type === "installment_loan") {
-                doc_data_fields.address = `${consumer.address.line_1} ${address_line_2}`;
-                doc_data_fields.city_state_zip = `${consumer.address.city} ${consumer.address.state} ${consumer.address.zip}`;
-                // payment amount
-                const periodic_payment_amount = calculate_periodic_payment(
-                    offer.amount / 100,
-                    offer.term,
-                    12,
-                    offer.interest_rate / 10000
-                ).toFixed(2);
-                doc_data_fields.payment_amount = `${formatter.format(periodic_payment_amount)}`
-                doc_data_fields.payment_amount_2 = `${formatter.format(periodic_payment_amount)}`
-                doc_data_fields.n_payments = (offer.term - 1);
-                const finance_charge = (offer.term * periodic_payment_amount) - (offer.amount / 100);
-                doc_data_fields.finance_charge = `${formatter.format(finance_charge)}`; 
-                const total_of_payments = (offer.term * periodic_payment_amount);
-                doc_data_fields.total_of_payments = `${formatter.format(total_of_payments)}`
-
-                const first_payment_date = moment().add(1,'months').format("MM/DD/YYYY");
-                const payments_due = `Monthly beginning ${first_payment_date}`;
-                doc_data_fields.payments_due = payments_due;
-                const final_due_date = moment().add(offer.term,'months').format("MM/DD/YYYY");
-                doc_data_fields.final_payment_due = final_due_date;
-
-
-                doc_data_fields.amount_to_you = `${formatter.format(offer.amount / 100)}`;
-                doc_data_fields.total_financed = `${formatter.format(offer.amount / 100)}`;
-                doc_data_fields.origination_fee = "$0.00";
-                doc_data_fields.total_loan_amount = `${formatter.format(offer.amount / 100)}`;
-                doc_data_fields.borrower_name = `${consumer.first_name} ${consumer.last_name}`;
-                template_id = 'tpl_CxaCsG7LtLH9Jksez2';
-                console.log('logging doc data fields')
-                console.log(doc_data_fields);
-            // if line of credit
-            } else {
-                doc_data_fields.email = `${consumer.email}`;
-                doc_data_fields.address = `${consumer.address.line_1} ${address_line_2} ${consumer.address.city} ${consumer.address.state} ${consumer.address.zip}`;
-                doc_data_fields.account_number = `${application_id}`;
-                doc_data_fields.late_payment_fee = `${formatter.format(offer.late_payment_fee / 100)}`;
-                doc_data_fields.annual_fee = `${formatter.format(offer.annual_fee / 100)}`
-                doc_data_fields.origination_fee = `${formatter.format(offer.origination_fee / 100)}`
-                doc_data_fields.whitespace = true;
-                template_id = "tpl_m5cpPsgcqxk2RzM2cN";
-            }
-
+            docspringBorrower = await Consumer.findOne({ id: application.borrower_id})  
         }
+        const doc_data_fields = generateDocspringDataFields(borrower.type, docspringBorrower, application, true)
+        const template_id = docspringTemplates[application.credit_type] 
 
         // Create new signed DS submission
         const docspring_pending_submission = await createDocSpringSubmission(template_id, doc_data_fields)
