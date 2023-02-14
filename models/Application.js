@@ -86,6 +86,10 @@ const ApplicationSchema = new mongoose.Schema({
         term: {
             type: Number,
             required: false
+        },
+        third_party_disbursement_destination: {
+            type: String,
+            required: false
         }
     },
     rejection_reasons: {

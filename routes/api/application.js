@@ -198,10 +198,14 @@ router.post('/:id/approve', [auth, offerValidationRules()], async (req, res) => 
     if(offer.hasOwnProperty("repayment_frequency")) {
         offerFields.repayment_frequency = offer.repayment_frequency
     }
+    if(offer.hasOwnProperty("third_party_disbursement_destination")) {
+        offerFields.third_party_disbursement_destination = offer.third_party_disbursement_destination
+    }
 
 
     try {
         let application = await Application.findOne({ id: req.params.id});
+        // confirm application exists
         if (!application || application.client_id !== req.client_id) {
             const error = getError("application_not_found")
             return res.status(error.error_status).json({ 
@@ -211,6 +215,7 @@ router.post('/:id/approve', [auth, offerValidationRules()], async (req, res) => 
             })
         }
 
+        // confirm application can be approved
         if(application.status !== "pending") {
             const error = getError("application_cannot_be_approved")
             return res.status(error.error_status).json({ 
@@ -218,6 +223,18 @@ router.post('/:id/approve', [auth, offerValidationRules()], async (req, res) => 
                 error_code: error.error_code,
                 error_message: error.error_message
             })
+        }
+
+        // for bnpl confirm that a third party disbursement destination exists
+        if(['consumer_bnpl', 'commercial_bnpl'].includes(application.credit_type)) {
+            if(!offer.hasOwnProperty("third_party_disbursement_destination")) {
+                const error = getError("third_party_missing")
+                return res.status(error.error_status).json({ 
+                    error_type: error.error_type,
+                    error_code: error.error_code,
+                    error_message: error.error_message
+                })
+            }
         }
 
         // grab borrower
