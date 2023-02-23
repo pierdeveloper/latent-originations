@@ -35,6 +35,56 @@ const FacilitySchema = new mongoose.Schema({
         required: false,
         default: "active"
     },
+    remaining_balance: {
+        type: Number,
+        required: false
+    },
+    monthly_payment: {
+        type: Number,
+        required: false
+    },
+    next_payment_due_date: {
+        type: String,
+        required: false
+    },
+    origination_date: {
+        type: String,
+        required: false
+    },
+    disbursement_date: {
+        type: String,
+        required: false
+    },
+    autopay_enabled: {
+        type: Boolean,
+        required: false
+    },
+    autopay_bank_account: {
+        type: String,
+        required: false
+    },
+    autopay_bank_routing: {
+        type: String,
+        required: false
+    },
+    remaining_term: {
+        type: Number,
+        required: false
+    },
+    scheduled_payoff_date: {
+        type: String,
+        required: false
+    },
+    transactions: {
+        type: Array,
+        required: false,
+        default: []
+    },
+    statements: {
+        type: Array,
+        required: false,
+        default: []
+    },
     terms: {
         amount: {
             type: Number,

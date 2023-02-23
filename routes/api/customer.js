@@ -124,7 +124,7 @@ router.patch('/:id/enable_production', async (req, res) => {
         }
 
         // verify admin key
-        const { admin_key, sandbox_client_id } = req.body
+        const { admin_key } = req.body
         if(admin_key !== config.get("pier_admin_key")) {
             return res.status(401).send('Unauthorized')
         }
