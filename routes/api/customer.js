@@ -88,6 +88,7 @@ router.patch('/:id', async (req, res) => {
         if(company_name) customerFields.company_name = company_name;
         if(dba_name) customerFields.dba_name = dba_name;
         if(email) customerFields.email = email;
+        if(consumer_non_zero_enabled) customerFields.consumer_non_zero_enabled = consumer_non_zero_enabled;
     
         customer = await Customer.findOneAndUpdate(
             {client_id: req.params.id},
@@ -124,7 +125,7 @@ router.patch('/:id/enable_production', async (req, res) => {
         }
 
         // verify admin key
-        const { admin_key } = req.body
+        const { admin_key, sandbox_client_id } = req.body
         if(admin_key !== config.get("pier_admin_key")) {
             return res.status(401).send('Unauthorized')
         }
