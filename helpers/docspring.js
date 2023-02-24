@@ -208,12 +208,23 @@ const calculate_periodic_payment = (amount, n_payments, payments_per_year, apr) 
     const i = apr/payments_per_year;
     const a = amount;
     const n = n_payments;
-    const periodic_payment = a / (((1+i)**n)-1) * (i*(1+i)**n);
-    console.log(i);
-    console.log(a);
-    console.log(n);
-    console.log(`per pay formula yielding: ${periodic_payment}`)
-    return periodic_payment.toFixed(2);
+    
+    if (apr === 0) {
+        const periodic_payment = a / n_payments;
+        console.log(i);
+        console.log(a);
+        console.log(n);
+        console.log(`per pay formula yielding: ${periodic_payment}`)
+        return periodic_payment.toFixed(2);
+    } else {
+        const periodic_payment = a / (((1+i)**n)-1) * (i*(1+i)**n);
+        console.log(i);
+        console.log(a);
+        console.log(n);
+        console.log(`per pay formula yielding: ${periodic_payment}`)
+        return periodic_payment.toFixed(2);
+    }
+    
 }
 
 module.exports = {
