@@ -18,6 +18,10 @@ const FacilitySchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    cif_number: {
+        type: String,
+        required: true
+    },
     client_id: {
         type: String,
         required: false
@@ -25,6 +29,14 @@ const FacilitySchema = new mongoose.Schema({
     created_on: {
         type: Date,
         default: Date.now
+    },
+    account_number: {
+        type: String,
+        required: false
+    },
+    nls_account_ref: {
+        type: Number,
+        required: false
     },
     credit_type: {
         type: String,

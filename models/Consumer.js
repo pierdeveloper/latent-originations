@@ -28,6 +28,10 @@ const ConsumerSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    cif_number: {
+        type: String,
+        required: true
+    },
     client_id: {
         type: String,
         required: false
@@ -55,6 +59,11 @@ const ConsumerSchema = new mongoose.Schema({
     ssn: {
         type: String,
         required: true
+    },
+    type: {
+        type: String,
+        required: true,
+        default: "consumer"
     },
     kyc_completion_date: {
         type: String,

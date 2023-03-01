@@ -8,7 +8,9 @@ const Business = require('../../models/Business');
 const Borrower = require('../../models/Borrower');
 const Consumer = require('../../models/Consumer');
 const { validationResult } = require('express-validator');
-const { businessValidationRules, consumerValidationRules } = require('../../helpers/validator.js');
+const { businessValidationRules, consumerValidationRules, consumerUpdateValidationRules } = require('../../helpers/validator.js');
+const {createNLSConsumer} = require('../../helpers/nls.js');
+const responseFilters = require('../../helpers/responseFilters.json');
 
 
 // @route     POST user
@@ -221,6 +223,7 @@ router.post('/consumer', [auth, consumerValidationRules()], async (req, res) => 
         // encrypt ssn
         //TODO
 
+        // check for duplicate ssn
         let consumer = await Consumer.findOne({ ssn, client_id })
 
         if (consumer) {
@@ -231,21 +234,23 @@ router.post('/consumer', [auth, consumerValidationRules()], async (req, res) => 
                 error_message: error.error_message
             })
         }
+
         // create borrower
         const borrower_id = 'bor_' + uuidv4().replace(/-/g, '');
+        const cif_number = Math.floor(Math.random() * 900000000000000) + 100000000000000;
+
         let borrower = new Borrower({
             id: borrower_id,
             type: "consumer",
             client_id: client_id
         });
 
-        await borrower.save();
-
-        // create consumer and set the borrower_id on it
+        // create consumer 
         
         consumer = new Consumer({
             address,
             id: borrower_id,
+            cif_number,
             date_of_birth,
             email,
             first_name,
@@ -255,11 +260,20 @@ router.post('/consumer', [auth, consumerValidationRules()], async (req, res) => 
             phone,
             ssn
         });
-        
+
+        // add consumer to NLS
+        let nlsSuccess = await createNLSConsumer(consumer);
+        if(!nlsSuccess) {
+            console.log('error creating NLS user');
+            throw new Error("TODO")
+        } 
+
+        // Add borrower and consumer data to mongo
+        await borrower.save();
         await consumer.save();
 
         consumer = await Consumer.findOne({ id: borrower_id, client_id })
-            .select('-_id -__v -client_id -ssn');
+            .select(responseFilters['consumer'] + ' -client_id');
 
         console.log(consumer); 
         res.json(consumer);
@@ -279,7 +293,7 @@ router.post('/consumer', [auth, consumerValidationRules()], async (req, res) => 
 // @route     PATCH consumer borrower
 // @desc      Update a consumer borrower
 // @access    Public
-router.patch('/consumer/:id', [auth, consumerValidationRules()], async (req, res) => {
+router.patch('/consumer/:id', [auth, consumerUpdateValidationRules()], async (req, res) => {
     console.log(req.headers)
     console.log(req.body)
     //TODO - check for SSN uniqueness on update call
@@ -342,7 +356,7 @@ router.patch('/consumer/:id', [auth, consumerValidationRules()], async (req, res
         await consumer.save()
 
         consumer = await Consumer.findOne({ id: req.params.id })
-        .select('-_id -__v -client_id');
+        .select(responseFilters['consumer'] + ' -client_id');
 
         console.log(consumer); 
         return res.json(consumer)
@@ -391,7 +405,7 @@ router.get('/:id', [auth], async (req, res) => {
 
         if (borrower.type === 'consumer') {
             var consumer = await Consumer.findOne({ id: req.params.id })
-                .select('-_id -__v -ssn');
+                .select(responseFilters['consumer']);
             if(!consumer || consumer.client_id !== req.client_id) {
                 const error = getError("borrower_not_found")
                 return res.status(error.error_status).json({ 
@@ -452,7 +466,7 @@ router.get('/', [auth], async (req, res) => {
     try {
 
         const consumers = await Consumer.find({ client_id: req.client_id })
-            .select('-_id -__v -client_id -ssn');
+            .select(responseFilters['consumer'] + ' -client_id');
 
         const businesses = await Business.find({ client_id: req.client_id })
             .select('-_id -__v -client_id');

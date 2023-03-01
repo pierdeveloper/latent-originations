@@ -58,7 +58,7 @@ const businessValidationRules = () => {
     ]
   }
 
-  // Business borrower validation rules
+  // Consumer create validation rules
 const consumerValidationRules = () => {
     return [
         check('address.line_1', 'Address line 1 max length is 256 chars')
@@ -77,6 +77,27 @@ const consumerValidationRules = () => {
             .isEmail(),
         check('ssn', 'SSN must be 9-digits')
             .isLength({min:9, max:9}).isNumeric(),
+        check('kyc_completion_date', 'KYC completion date format must conform to yyyy-mm-dd')
+            .isDate({format:"yyyy-mm-dd", strictMode:true})
+    ]
+  }
+
+  const consumerUpdateValidationRules = () => {
+    return [
+        check('address.line_1', 'Address line 1 max length is 256 chars')
+            .isLength({max:256}),
+        check('address.line_2', 'Address line 2 max length is 256 chars')
+            .isLength({max:256}),
+        check('address.city', 'City max length is 30 chars')
+            .isLength({max:30}),
+        check('address.zip', 'Zip code must be 5 digits')
+            .isNumeric().isLength({min:5, max:5}),
+        check('address.state', "State must be valid 2-digit US state abbreviation")
+            .isIn(states.states),
+        check('date_of_birth', 'Date of Birth format must conform to yyyy-mm-dd')
+            .isDate({format:"yyyy-mm-dd", strictMode:true}),
+        check('email', 'Email must be a valid email')
+            .isEmail(),
         check('kyc_completion_date', 'KYC completion date format must conform to yyyy-mm-dd')
             .isDate({format:"yyyy-mm-dd", strictMode:true})
     ]
@@ -146,6 +167,7 @@ const consumerValidationRules = () => {
   module.exports = {
     businessValidationRules,
     consumerValidationRules,
+    consumerUpdateValidationRules,
     customerValidationRules,
     applicationValidationRules,
     offerValidationRules,

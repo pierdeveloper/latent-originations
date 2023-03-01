@@ -12,6 +12,13 @@ const consumer_state_limits = require('../../helpers/coverage/consumer.json');
 const commercial_state_limits = require('../../helpers/coverage/commercial.json');
 const valid_rejection_reasons = require('../../helpers/rejectionReasons.json');
 const moment = require('moment');
+const { createNLSConsumer, createNLSLoan, retrieveNLSLoan } = require('../../helpers/nls.js');
+const axios = require('axios');
+const c = require('config');
+const responseFilters = require('../../helpers/responseFilters.json');
+const { response } = require('express');
+
+
 
 // @route     POST facility
 // @desc      Create a credit facility
@@ -49,10 +56,10 @@ router.post('/', [auth], async (req, res) => {
         }
 
         // Confirm a facility for this loan agreement does not already exist
-        /*
+        
 
         // ******  OMITTING FOR TESTING ONLY. UNCOMMENT ONCE FINISHED TESTING!! *(*********)
-
+/*
         let existingFacility = await Facility
             .findOne({ loan_agreement_id: loan_agreement.id });
         if(existingFacility) {
@@ -62,18 +69,28 @@ router.post('/', [auth], async (req, res) => {
                 error_code: error.error_code,
                 error_message: error.error_message
             })
-        }
-*/
+        }*/
+
         // Pull up relevant application
         let application = await Application.findOne({ id: loan_agreement.application_id })
 
         // Pull up relevant borrower
         const borrower = await Borrower.findOne({ id: application.borrower_id })
 
+        // Get borrower details based on type
+        var borrowerDetails = {}
+        if(borrower.type === 'business') {
+            borrowerDetails = await Business.findOne({ id: borrower.id}) 
+        } else {
+            borrowerDetails = await Consumer.findOne({ id: borrower.id})  
+        }
+
         // build facility params
         const application_id = application.id;
         const borrower_id = borrower.id;
         const credit_type = application.credit_type;
+        const facility_id = 'fac_' + uuidv4().replace(/-/g, '');
+        const account_number = Math.floor(Math.random() * 900000000) + 100000000;
         
         // TO BE REPLACED BY NLS
         const remaining_balance = application.offer.amount;
@@ -90,23 +107,16 @@ router.post('/', [auth], async (req, res) => {
         const remaining_term = application.offer.term;
         const scheduled_payoff_date = moment(origination_date).add(remaining_term, 'months').format("MM/DD/YYYY");
        
-        console.log(origination_date);
-        console.log(disbursement_date);
-        console.log(next_payment_due_date);
-        console.log(remaining_term);
-        console.log(scheduled_payoff_date);
-        // TODO: SAVE IN NLS
-
-
-        // Create facilty and save
-        const facility_id = 'fac_' + uuidv4().replace(/-/g, '');
-
+        
+        // 3. create facility
         let facility = new Facility({
             id: facility_id,
             application_id,
             borrower_id,
+            cif_number: borrowerDetails.cif_number,
             loan_agreement_id,
             client_id,
+            account_number,
             credit_type,
             terms: application.offer,
             origination_date,
@@ -118,11 +128,22 @@ router.post('/', [auth], async (req, res) => {
             remaining_term,
             scheduled_payoff_date
         })
-        await facility.save()
+        
+        
+        //4. Create the Loan in NLS
+        const nls_loan = await createNLSLoan(facility);
+        if(nls_loan === 'nls_error') {
+            console.log('error creating loan in nls');
+            throw new Error("NLS Error");
+        }
+        
+        // Save in mongodb
+        facility.nls_account_ref = nls_loan.nls_account_ref;
+        await facility.save();
 
         // Response
         facility = await Facility.findOne({ id: facility_id, client_id })
-            .select('-_id -__v -client_id');
+            .select(responseFilters['facility'] + ' -client_id');
         
         console.log(facility); 
         res.json(facility);
@@ -170,7 +191,7 @@ router.post('/:id/close', [auth], async (req, res) => {
        
         await facility.save()
         facility = await Facility.findOne({ id: req.params.id })
-            .select('-_id -__v -client_id');
+            .select(responseFilters['facility'] + ' -client_id');
         
         console.log(facility); 
         res.json(facility)
@@ -196,7 +217,7 @@ router.get('/:id', [auth], async (req, res) => {
 
     try {
         const facility = await Facility.findOne({ id: req.params.id })
-            .select('-_id -__v');
+            .select(responseFilters['facility']);
         if(!facility || facility.client_id !== req.client_id) {
             const error = getError("facility_not_found")
             return res.status(error.error_status).json({ 
@@ -205,8 +226,22 @@ router.get('/:id', [auth], async (req, res) => {
                 error_message: error.error_message
             })
         }
+    
         facility.client_id = undefined;
+        console.log('fetching nls info for the following facility...')
+        console.log(facility)
 
+        let nlsLoan = await retrieveNLSLoan(facility.nls_account_ref);
+        if(nlsLoan !== "nls_error") {
+            // populate facility
+            facility.remaining_balance = Math.floor(nlsLoan.loanDetails.Current_Payoff_Balance * 100);
+            facility.monthly_payment = Math.floor(nlsLoan.paymentDetails.Next_Payment_Total_Amount * 100);
+            facility.next_payment_due_date = moment(nlsLoan.paymentDetails.Next_Principal_Payment_Date).format("MM/DD/YYYY");
+            facility.scheduled_payoff_date = moment(nlsLoan.loanDetails.Curr_Maturity_Date).format("MM/DD/YYYY");
+        }
+
+        // save facility
+        facility.save();
         console.log(facility); 
         res.json(facility);
     } catch(err) {
@@ -238,7 +273,7 @@ router.get('/', [auth], async (req, res) => {
 
     try {
         const facilities = await Facility.find({ client_id: req.client_id })
-            .select('-_id -__v -client_id');
+            .select(responseFilters['facility'] + ' -client_id');
 
         console.log(facilities); 
         res.json(facilities);
@@ -251,6 +286,148 @@ router.get('/', [auth], async (req, res) => {
             error_message: error.error_message
         })
     }
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
+// NLS UTILITY FUNCTIONS FOR TESTING
+
+
+
+
+
+
+
+
+router.post('/generate_token', [auth], async (req, res) => {
+    const CLIENT_ID = '08876T';
+    const CLIENT_SECRET = 'x7DbV!qa^';
+    const USERNAME = 'PLREST8876';
+    const PASSWORD = 'prV%h6e@q';
+    const SCOPE = 'openid api server:rnn1-nls-sqlt04.nls.nortridge.tech db:Pier_Lending_Test'
+    
+    const url = 'https://auth.nortridgehosting.com/25.0/core/connect/token';
+
+    const header = {'content-type': 'application/x-www-form-urlencoded'}
+
+    let payload = {
+        grant_type: 'password',
+        username: USERNAME,
+        password: PASSWORD,
+        scope: SCOPE,
+        client_id: CLIENT_ID,
+        client_secret: CLIENT_SECRET
+    }
+
+    
+        console.log("FETCHING TOKEN!!!!!")
+        let response = await axios.post(url, payload, {headers: header})
+        console.log(response.data);
+        const accessToken = response.data.access_token;
+        const bearerToken = 'Bearer ' + accessToken;
+        console.log('Bearer token:', bearerToken);
+        
+        res.json(response.data)
+    
+    
+})
+
+router.post('/revoke_token/:token', [auth], async (req, res) => {
+
+    const token = req.params.token
+
+    /////
+    const CLIENT_ID = '08876T';
+    const CLIENT_SECRET = 'x7DbV!qa^';
+    const USERNAME = 'PLREST8876';
+    const PASSWORD = 'prV%h6e@q';
+    const SCOPE = 'openid api server:rnn1-nls-sqlt04.nls.nortridge.tech db:Pier_Lending_Test'
+    
+    const url = 'https://auth.nortridgehosting.com/25.0/core/connect/revocation';
+
+    const auth = 'Basic ' + Buffer.from(CLIENT_ID + ":" + CLIENT_SECRET).toString('base64');
+    const header = {'content-type': 'application/x-www-form-urlencoded', 'Authorization': auth}
+
+    let payload = {
+        token: token.toString(),
+        token_type_hint: 'access_token'
+    }
+
+    console.log("Revoking token..")
+    let response = await axios.post(url, payload, {headers: header})
+    console.log(response.data);
+
+    res.json(response.data)
+
+    
+})
+
+router.get('/version/:token', [auth], async (req, res) => {
+    const token = req.params.token
+    const url = 'https://api.nortridgehosting.com/25.0/version';
+
+    const auth = 'Bearer ' + token;
+    const header = {'content-type': 'application/json', 'Authorization': auth}
+    let response = await axios.get(url, {headers: header})
+    res.json(response.data);
+})
+
+router.get('/loans/:id', [auth], async (req, res) => {
+    const {nls_auth_token} = req.body
+    const loan_id = "2"
+    const url = `https://api.nortridgehosting.com/25.0/loans/${loan_id}?test=false`;
+
+    const auth = 'Bearer ' + nls_auth_token;
+    const header = {'content-type': 'application/json', 'Authorization': auth}
+
+    let response = await axios.get(url, {headers: header})
+    res.json(response.data);
+})
+
+router.post('/nls_users', [auth], async (req, res) => {
+    const token = await generateNLSAuthToken();
+    console.log(`token generated: ${token}`)
+
+    const url = `https://api.nortridgehosting.com/25.0/nls/xml-import?test=false`;
+
+    const auth = 'Bearer ' + token;
+    const header = {'Content-Type': 'application/xml', 'Accept': 'application/json',
+     'Authorization': auth}
+    const xmlData = `<?xml version="1.0" encoding="UTF-8"?>
+        <NLS CommitBlock="1" EnforceTagExistence="1">
+        <CIF 
+            UpdateFlag="0"
+            CIFNumber="999"
+            Entity="Individual"
+            CIFPortfolioName="&lt;default&gt;" 
+            ShortName="Randy Maven"
+            FirstName1="Randy"
+            LastName1="Maven"
+        >
+        </CIF>
+        </NLS>
+    `
+    await axios.post(url, xmlData, {headers: header})
+    .then((response) => {
+        console.log('successfully created nls consumer user')
+        console.log(response.data);
+      })
+    .catch((error) => {
+        console.log('error trying to create nls consumer')
+        console.log(error.response.data);
+    });
+
+    await revokeNLSAuthToken(token);
 })
 
 

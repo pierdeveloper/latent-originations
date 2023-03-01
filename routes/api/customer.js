@@ -25,7 +25,8 @@ router.post('/', customerValidationRules(), async (req, res) => {
     try {
         const { company_name,
             dba_name,
-            email
+            email,
+            consumer_non_zero_enabled
         } = req.body
 
         let customer = await Customer.findOne({ email })
@@ -47,7 +48,8 @@ router.post('/', customerValidationRules(), async (req, res) => {
             company_name,
             dba_name,
             email,
-            production_enabled
+            production_enabled,
+            consumer_non_zero_enabled
         })  
         
         await customer.save()
@@ -82,13 +84,17 @@ router.patch('/:id', async (req, res) => {
         const { company_name,
             dba_name,
             email,
-            consumer_non_zero_enabled } = req.body;
+            consumer_non_zero_enabled,
+            custom_loan_agreement } = req.body;
 
         const customerFields = {};
         if(company_name) customerFields.company_name = company_name;
         if(dba_name) customerFields.dba_name = dba_name;
         if(email) customerFields.email = email;
         if(consumer_non_zero_enabled) customerFields.consumer_non_zero_enabled = consumer_non_zero_enabled;
+        if(custom_loan_agreement) customerFields.custom_loan_agreement = custom_loan_agreement;
+
+        console.log(customerFields)
     
         customer = await Customer.findOneAndUpdate(
             {client_id: req.params.id},
@@ -118,7 +124,7 @@ router.patch('/:id/enable_production', async (req, res) => {
             return res.status(403).send("This endpoint is only allowed in production")
         }
 
-        // find the customer
+        // find the customer by client ID
         let customer = await Customer.findOne({ client_id: req.params.id });
         if (!customer) {
             return res.status(404).json({ msg: 'Invalid client id' })

@@ -5,5 +5,10 @@ module.exports = {
     pier_admin_key: process.env.PIER_ADMIN_KEY,
     docspringTest: false,
     envo: "production",
-    logLevel: "info"
+    logLevel: "info",
+    nls_username: "",
+    nls_password: "",
+    nls_client_id: "",
+    nls_secret: "",
+    nls_scope: ""
 }

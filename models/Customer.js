@@ -47,6 +47,16 @@ const CustomerSchema = new mongoose.Schema({
             type: Number,
             default: 0
         }
+    },
+    custom_loan_agreement: {
+        enabled: {
+            type: Boolean,
+            default: false
+        },
+        template_id: {
+            type: String,
+            required: false
+        }
     }
 });
 

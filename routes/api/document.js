@@ -11,6 +11,7 @@ const { getDocSpringSubmission,
     generateDocspringDataFields, 
     docspringTemplates } = require('../../helpers/docspring.js')
 const Application = require('../../models/Application');
+const Customer = require('../../models/Customer.js');
 
 
 // @route     POST document
@@ -81,6 +82,11 @@ router.post('/', [auth], async (req, res) => {
                 error_message: error.error_message
             })
         }
+
+        // get client to check if they have loan_doc_template override set
+        const client = await Customer.findOne({client_id: client_id});
+        const custom_loan_doc = client.custom_loan_agreement.enabled;
+        
         // Generate docspring data fields
         var docspringBorrower = {}
         if(borrower.type === 'business') {
@@ -88,8 +94,11 @@ router.post('/', [auth], async (req, res) => {
         } else {
             docspringBorrower = await Consumer.findOne({ id: application.borrower_id})  
         }
-        const doc_data_fields = generateDocspringDataFields(borrower.type, docspringBorrower, application, false)
-        const template_id = docspringTemplates[application.credit_type] 
+        const doc_data_fields = custom_loan_doc ? {} : 
+            generateDocspringDataFields(borrower.type, docspringBorrower, application, false)
+        
+        const template_id = custom_loan_doc ? client.custom_loan_agreement.template_id :
+            docspringTemplates[application.credit_type] 
         
         // Create DS submission
         const docspring_pending_submission = await createDocSpringSubmission(template_id, doc_data_fields)

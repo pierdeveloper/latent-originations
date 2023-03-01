@@ -1,0 +1,5 @@
+
+{
+    "facility": "-_id -__v -cif_number",
+    "consumer": "-_id -__v -ssn -cif_number"
+}

@@ -142,6 +142,11 @@ const BusinessSchema = new mongoose.Schema({
     state_of_incorporation: {
         type: String,
         required: true
+    },
+    type: {
+        type: String,
+        required: true,
+        default: "business"
     }
 });
 
