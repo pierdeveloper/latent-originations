@@ -85,7 +85,7 @@ router.post('/', [auth], async (req, res) => {
 
         // get client to check if they have loan_doc_template override set
         const client = await Customer.findOne({client_id: client_id});
-        const custom_loan_doc = client.custom_loan_agreement.enabled;
+        const is_custom_loan_doc = client.custom_loan_agreement.enabled;
         
         // Generate docspring data fields
         var docspringBorrower = {}
@@ -94,10 +94,10 @@ router.post('/', [auth], async (req, res) => {
         } else {
             docspringBorrower = await Consumer.findOne({ id: application.borrower_id})  
         }
-        const doc_data_fields = custom_loan_doc ? {} : 
+        const doc_data_fields = is_custom_loan_doc ? {} : 
             generateDocspringDataFields(borrower.type, docspringBorrower, application, false)
         
-        const template_id = custom_loan_doc ? client.custom_loan_agreement.template_id :
+        const template_id = is_custom_loan_doc ? client.custom_loan_agreement.template_id :
             docspringTemplates[application.credit_type] 
         
         // Create DS submission
@@ -169,10 +169,10 @@ router.post('/:id/sign', [auth], async (req, res) => {
     console.log(req.body)
 
     try {
-
+        const client_id = req.client_id
         // Confirm existing loan agreement exists
         let loan_agreement = await Document.findOne({ id: req.params.id });
-        if(!loan_agreement || loan_agreement.client_id !== req.client_id) {
+        if(!loan_agreement || loan_agreement.client_id !== client_id) {
             const error = getError("document_not_found")
             return res.status(error.error_status).json({ 
                 error_type: error.error_type,
@@ -199,6 +199,10 @@ router.post('/:id/sign', [auth], async (req, res) => {
         // Pull up relevant borrower
         const borrower = await Borrower.findOne({ id: application.borrower_id })
 
+        // get client to check if they have loan_doc_template override set
+        const client = await Customer.findOne({client_id: client_id});
+        const is_custom_loan_doc = client.custom_loan_agreement.enabled;
+
         // Generate docspring data fields
         var docspringBorrower = {}
         if(borrower.type === 'business') {
@@ -206,8 +210,10 @@ router.post('/:id/sign', [auth], async (req, res) => {
         } else {
             docspringBorrower = await Consumer.findOne({ id: application.borrower_id})  
         }
-        const doc_data_fields = generateDocspringDataFields(borrower.type, docspringBorrower, application, true)
-        const template_id = docspringTemplates[application.credit_type] 
+        const doc_data_fields = is_custom_loan_doc ? {} :
+            generateDocspringDataFields(borrower.type, docspringBorrower, application, true)
+        const template_id = is_custom_loan_doc ? client.custom_loan_agreement.template_id :
+            docspringTemplates[application.credit_type] 
 
         // Create new signed DS submission
         const docspring_pending_submission = await createDocSpringSubmission(template_id, doc_data_fields)
