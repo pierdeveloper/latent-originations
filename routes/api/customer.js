@@ -91,7 +91,7 @@ router.patch('/:id', async (req, res) => {
         if(company_name) customerFields.company_name = company_name;
         if(dba_name) customerFields.dba_name = dba_name;
         if(email) customerFields.email = email;
-        if(consumer_non_zero_enabled) customerFields.consumer_non_zero_enabled = consumer_non_zero_enabled;
+        customerFields.consumer_non_zero_enabled = consumer_non_zero_enabled;
         if(custom_loan_agreement) customerFields.custom_loan_agreement = custom_loan_agreement;
 
         console.log(customerFields)
