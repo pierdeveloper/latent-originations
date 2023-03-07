@@ -184,11 +184,10 @@ router.post('/', [auth], async (req, res) => {
         await facility.save();
 
         // Response
-        facility = await Facility.findOne({ id: facility.id, client_id })
+        let facilityResponse = await Facility.findOne({ id: facility.id, client_id })
             .select(responseFilters['facility'] + ' -client_id');
-        
-        console.log(facility); 
-        res.json(facility);
+        console.log(facilityResponse); 
+        res.json(facilityResponse);
         
     } catch (err) {
         console.error(err);
@@ -258,8 +257,7 @@ router.get('/:id', [auth], async (req, res) => {
     console.log(req.body)
 
     try {
-        const facility = await Facility.findOne({ id: req.params.id })
-            .select(responseFilters['facility']);
+        const facility = await Facility.findOne({ id: req.params.id });
         if(!facility || facility.client_id !== req.client_id) {
             const error = getError("facility_not_found")
             return res.status(error.error_status).json({ 
@@ -275,15 +273,18 @@ router.get('/:id', [auth], async (req, res) => {
             facility.remaining_balance = Math.floor(nlsLoan.loanDetails.Current_Payoff_Balance * 100);
             facility.monthly_payment = Math.floor(nlsLoan.paymentDetails.Next_Payment_Total_Amount * 100);
             facility.next_payment_due_date = moment(nlsLoan.paymentDetails.Next_Principal_Payment_Date).format("MM/DD/YYYY");
-            facility.scheduled_payoff_date = moment(nlsLoan.loanDetails.Curr_Maturity_Date).format("MM/DD/YYYY");
+            const maturity_date = nlsLoan.loanDetails.Curr_Maturity_Date;
+            facility.scheduled_payoff_date = maturity_date ? moment(maturity_date).format("MM/DD/YYYY") : undefined;
         }
 
         // save facility
         await facility.save();
-        
-        facility.client_id = undefined;
+
+        // Response
+        let facilityResponse = await Facility.findOne({ id: facility.id, client_id: req.client_id })
+            .select(responseFilters['facility'] + ' -client_id');
         console.log(facility); 
-        res.json(facility);
+        res.json(facilityResponse);
     } catch(err) {
         console.error(err.message);
         if(err.kind === 'ObjectId') {
