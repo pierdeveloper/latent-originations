@@ -269,7 +269,24 @@
             "max_origination_fee": 100
         } 
     },
-    "MI": {},
+    "MI": {
+        "limit_1": {
+            "amount": {
+                "min": 5000,
+                "max": 500000
+            },
+            "max_apr": 0,
+            "max_origination_fee": 0
+        },
+        "limit_2": {
+            "amount": {
+                "min": 500000,
+                "max": 5000000
+            },
+            "max_apr": 2500,
+            "max_origination_fee": 100
+        }
+    },
     "MN": {
         "limit_1": {
             "amount": {

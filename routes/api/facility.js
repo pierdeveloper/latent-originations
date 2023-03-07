@@ -12,7 +12,7 @@ const consumer_state_limits = require('../../helpers/coverage/consumer.json');
 const commercial_state_limits = require('../../helpers/coverage/commercial.json');
 const valid_rejection_reasons = require('../../helpers/rejectionReasons.json');
 const moment = require('moment');
-const { createNLSConsumer, createNLSLoan, retrieveNLSLoan } = require('../../helpers/nls.js');
+const { createNLSConsumer, createNLSLoan, retrieveNLSLoan, createNLSLineOfCredit } = require('../../helpers/nls.js');
 const axios = require('axios');
 const c = require('config');
 const responseFilters = require('../../helpers/responseFilters.json');
@@ -74,6 +74,16 @@ router.post('/', [auth], async (req, res) => {
         // Pull up relevant application
         let application = await Application.findOne({ id: loan_agreement.application_id })
 
+        // Only allow supported products
+        if(!['consumer_bnpl', 'consumer_revolving_line_of_credit'].includes(application.credit_type)) {
+            const error = getError("unsupported_product")
+            return res.status(error.error_status).json({ 
+                error_type: error.error_type,
+                error_code: error.error_code,
+                error_message: error.error_message
+            })
+        }
+
         // Pull up relevant borrower
         const borrower = await Borrower.findOne({ id: application.borrower_id })
 
@@ -85,64 +95,96 @@ router.post('/', [auth], async (req, res) => {
             borrowerDetails = await Consumer.findOne({ id: borrower.id})  
         }
 
-        // build facility params
-        const application_id = application.id;
-        const borrower_id = borrower.id;
-        const credit_type = application.credit_type;
-        const facility_id = 'fac_' + uuidv4().replace(/-/g, '');
-        const account_number = Math.floor(Math.random() * 900000000) + 100000000;
+        // base facility params
+        var facility = {}
+        var facilityFields = {}
+        facilityFields.application_id = application.id;
+        facilityFields.borrower_id = borrower.id;
+        facilityFields.credit_type = application.credit_type;
+        facilityFields.facility_id = 'fac_' + uuidv4().replace(/-/g, '');
+        facilityFields.account_number = Math.floor(Math.random() * 900000000) + 100000000;
+        facilityFields.autopay_enabled = false
+        facilityFields.origination_date = moment(loan_agreement.signature_timestamp).format("MM/DD/YYYY");
         
-        // TO BE REPLACED BY NLS
-        const remaining_balance = application.offer.amount;
-        const monthly_payment = calculate_periodic_payment(
-            application.offer.amount / 100,
-            application.offer.term,
-            12,
-            (application.offer.interest_rate / 10000)
-        ) * 100
-        const origination_date = moment(loan_agreement.signature_timestamp).format("MM/DD/YYYY");
-        const disbursement_date = origination_date;
-        const next_payment_due_date = moment(origination_date).add(1, 'months').format("MM/DD/YYYY");
-        const autopay_enabled = false
-        const remaining_term = application.offer.term;
-        const scheduled_payoff_date = moment(origination_date).add(remaining_term, 'months').format("MM/DD/YYYY");
+        // Build facility object based on credit type
+        switch (facilityFields.credit_type) {
+            case "consumer_bnpl":
+                facilityFields.balance = application.offer.amount;
+                facilityFields.monthly_payment = calculate_periodic_payment(
+                    application.offer.amount / 100,
+                    application.offer.term,
+                    12,
+                    (application.offer.interest_rate / 10000)
+                ) * 100
+                
+                facilityFields.disbursement_date = facilityFields.origination_date;
+                facilityFields.next_payment_due_date = moment(facilityFields.origination_date).add(1, 'months').format("MM/DD/YYYY");
+                
+                facilityFields.remaining_term = application.offer.term;
+                facilityFields.scheduled_payoff_date = moment(facilityFields.origination_date)
+                    .add(facilityFields.remaining_term, 'months').format("MM/DD/YYYY");
+                
+                break;
+            case "consumer_revolving_line_of_credit":
+                facilityFields.balance = 0
+                facilityFields.next_payment_due_date = moment(facilityFields.origination_date).add(1, 'months').format("MM/DD/YYYY");
+                break
+        
+            default:
+                break;
+        }
+        
        
         
         // 3. create facility
-        let facility = new Facility({
-            id: facility_id,
-            application_id,
-            borrower_id,
+        facility = new Facility({
+            id: facilityFields.facility_id,
+            application_id: facilityFields.application_id,
+            borrower_id: facilityFields.borrower_id,
             cif_number: borrowerDetails.cif_number,
-            loan_agreement_id,
+            loan_agreement_id: loan_agreement_id,
             client_id,
-            account_number,
-            credit_type,
+            account_number: facilityFields.account_number,
+            credit_type: facilityFields.credit_type,
             terms: application.offer,
-            origination_date,
-            disbursement_date,
-            remaining_balance,
-            monthly_payment,
-            next_payment_due_date,
-            autopay_enabled,
-            remaining_term,
-            scheduled_payoff_date
+            origination_date: facilityFields.origination_date,
+            disbursement_date: facilityFields.disbursement_date,
+            balance: facilityFields.balance,
+            monthly_payment: facilityFields.monthly_payment,
+            next_payment_due_date: facilityFields.next_payment_due_date,
+            autopay_enabled: facilityFields.autopay_enabled,
+            remaining_term: facilityFields.remaining_term,
+            scheduled_payoff_date: facilityFields.scheduled_payoff_date
         })
         
         
-        //4. Create the Loan in NLS
-        const nls_loan = await createNLSLoan(facility);
-        if(nls_loan === 'nls_error') {
-            console.log('error creating loan in nls');
-            throw new Error("NLS Error");
+        //4. Create the facility in NLS based on credit type
+        switch (facilityFields.credit_type) {
+            case "consumer_bnpl":
+                const nls_loan = await createNLSLoan(facility);
+                if(nls_loan === 'nls_error') {
+                    console.log('error creating loan in nls');
+                    throw new Error("NLS Error");
+                }
+        
+                facility.nls_account_ref = nls_loan.nls_account_ref;
+                break;
+            case "consumer_revolving_line_of_credit":
+                const nls_line_of_credit = await createNLSLineOfCredit(facility);
+                if(nls_line_of_credit === 'nls_error') {
+                    console.log('error creating line of credit in nls');
+                    throw new Error("NLS Error");
+                }
+                facility.nls_account_ref = nls_line_of_credit.nls_account_ref;
+        
+            default:
+                break;
         }
         
-        // Save in mongodb
-        facility.nls_account_ref = nls_loan.nls_account_ref;
         await facility.save();
 
         // Response
-        facility = await Facility.findOne({ id: facility_id, client_id })
+        facility = await Facility.findOne({ id: facility.id, client_id })
             .select(responseFilters['facility'] + ' -client_id');
         
         console.log(facility); 
@@ -226,10 +268,6 @@ router.get('/:id', [auth], async (req, res) => {
                 error_message: error.error_message
             })
         }
-    
-        facility.client_id = undefined;
-        console.log('fetching nls info for the following facility...')
-        console.log(facility)
 
         let nlsLoan = await retrieveNLSLoan(facility.nls_account_ref);
         if(nlsLoan !== "nls_error") {
@@ -241,7 +279,9 @@ router.get('/:id', [auth], async (req, res) => {
         }
 
         // save facility
-        facility.save();
+        await facility.save();
+        
+        facility.client_id = undefined;
         console.log(facility); 
         res.json(facility);
     } catch(err) {

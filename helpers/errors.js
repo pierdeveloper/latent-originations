@@ -13,6 +13,12 @@ const errors = {
         error_status: 403,
         error_type: "API_ERROR"
     },
+    non_zero_interest_not_enabled: {
+        error_code: "NON_ZERO_INTEREST_NOT_ENABLED",
+        error_message: "Your account is not permitted to create loans with interest. Contact Pier to enable your account for loans with interest",
+        error_status: 403,
+        error_type: "API_ERROR"
+    },
     duplicate_ein: {
         error_code: "DUPLICATE_EIN",
         error_message: "A borrower with that EIN already exists",

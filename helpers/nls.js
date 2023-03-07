@@ -185,6 +185,88 @@ const createNLSLoan = async (facility) => {
     }
 }
 
+// create line of credit
+const createNLSLineOfCredit = async (facility) => {
+    // Generate Auth token
+    const nls_token = await generateNLSAuthToken();
+
+    try {
+        // NLS config
+        const url = `https://api.nortridgehosting.com/25.0/nls/xml-import?test=false`;
+        const auth = 'Bearer ' + nls_token;
+        const header = {'Content-Type': 'application/xml', 'Accept': 'application/json',
+        'Authorization': auth}
+        
+        // Create NLS loan data fields
+        const cif_number = facility.cif_number;
+        const account_number = facility.account_number;
+        const origination_date = facility.origination_date;
+        const amount = facility.terms.amount / 100;
+        const term = facility.terms.term;
+        const interest_rate = facility.terms.interest_rate / 100;
+
+        const xmlData = `<?xml version="1.0" encoding="UTF-8"?>
+            <NLS CommitBlock="1" EnforceTagExistence="1">
+            <LOAN 
+                UpdateFlag="0"
+                CIFNumber="${cif_number}"
+                LoanTemplateName="LINE_OF_CREDIT"
+                LoanNumber="${account_number}"
+                OriginationDate="${origination_date}" 
+                InterestMethod="SI"
+                >
+
+                <LOANCREDITLINE
+                  CreditLineLimit="${amount}"
+                > 
+                </LOANCREDITLINE>
+
+                <LOANINTERESTRATERECORD
+                InterestType="0"    
+                InterestRate="${interest_rate}"
+                >
+                </LOANINTERESTRATERECORD>
+            </LOAN>
+            </NLS>`
+
+        console.log(`xml data: ${xmlData}`)
+        // Request
+        const response = await axios.post(url, xmlData, {headers: header})
+        console.log(response.data);
+
+        // find accountrefno via NLS search
+        const url2 = `https://api.nortridgehosting.com/25.0/loans/search`
+        const header2 = {'content-type': 'application/x-www-form-urlencoded', 'Authorization': auth}
+
+        let payload = {
+            Loan_Number: facility.account_number
+        }
+
+        let response2 = await axios.post(url2, payload, {headers: header2})
+
+        let response_data = response2.data.payload.data
+        
+        if(response_data.length !== 1) {
+            throw new Error('nls error')
+        }
+
+        const nls_loan = response_data[0]
+        let nls_account_ref = nls_loan['Acctrefno'];
+        
+        // Revoke token
+        await revokeNLSAuthToken(nls_token);
+        return { nls_account_ref: nls_account_ref}
+        
+    } catch (error) {
+        console.log('error trying to create nls loan')
+        console.log(error.response.data);
+
+        // Revoke token
+        await revokeNLSAuthToken(nls_token)
+        return "nls_error"
+    }
+}
+
 // retrieve loan with id
 const retrieveNLSLoan = async (loanRef) => {
     // Generate Auth token
@@ -231,5 +313,6 @@ const retrieveNLSLoan = async (loanRef) => {
 module.exports = {
     createNLSConsumer,
     createNLSLoan,
+    createNLSLineOfCredit,
     retrieveNLSLoan
 }

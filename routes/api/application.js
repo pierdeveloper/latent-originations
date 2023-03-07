@@ -320,8 +320,10 @@ router.post('/:id/approve', [auth, offerValidationRules()], async (req, res) => 
             // if it's consumer then
             let consumer = await Consumer.findOne({ id: application.borrower_id })
             //verify state is supported (ie it's not PR, guam etc)
+            console.log(`state: ${consumer.address.state}`)
             if(!(consumer.address.state in consumer_state_limits)) {
                 const error = getError("state_not_supported")
+                console.log('state not found')
                 return res.status(error.error_status).json({ 
                     error_type: error.error_type,
                     error_code: error.error_code,
@@ -334,12 +336,23 @@ router.post('/:id/approve', [auth, offerValidationRules()], async (req, res) => 
             // verify Pier has limits for the state
             if(Object.keys(state).length === 0) {
                 const error = getError("state_not_supported")
+                console.log('no pier limits exist');
                 return res.status(error.error_status).json({ 
                     error_type: error.error_type,
                     error_code: error.error_code,
                     error_message: error.error_message
                 })
             } 
+
+            // verify customer is enabled for non-zero interest
+            if(offer.interest_rate > 0 && !customer.consumer_non_zero_enabled) {
+                const error = getError('non_zero_interest_not_enabled')
+                return res.status(error.error_status).json({ 
+                    error_type: error.error_type,
+                    error_code: error.error_code,
+                    error_message: error.error_message
+                })
+            }
             
             // verify if either limit type 1 
             const limit_1 = state.limit_1
@@ -356,8 +369,7 @@ router.post('/:id/approve', [auth, offerValidationRules()], async (req, res) => 
                     offer.amount >= limit_2?.amount.min && 
                     offer.amount <= limit_2?.amount.max &&
                     offer.interest_rate <= limit_2?.max_apr &&
-                    offer.origination_fee <= limit_2?.max_origination_fee &&
-                    customer.consumer_non_zero_enabled
+                    offer.origination_fee <= limit_2?.max_origination_fee
                 )) {
                     // accept approval if offer meets type 1 or type 2
                     application.offer = offerFields
