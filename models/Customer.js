@@ -57,6 +57,10 @@ const CustomerSchema = new mongoose.Schema({
             type: String,
             required: false
         }
+    },
+    nls_group_name: {
+        type: String,
+        required: false
     }
 });
 

@@ -117,9 +117,10 @@ const createNLSLoan = async (facility) => {
         
         // Create NLS loan data fields
         const cif_number = facility.cif_number;
-        const loan_ref = facility.account_number.substring(1)
+        const nls_group_name = facility.nls_group_name;
         const account_number = facility.account_number;
-        const origination_date = facility.origination_date;
+        const origination_date = moment(facility.origination_date).format("YYYY/MM/DD"); // set facility og date based on our format
+        const nls_origination_date = moment(origination_date).format("MM/DD/YYYY") // convert to nls format
         const amount = facility.terms.amount / 100;
         const term = facility.terms.term;
         const interest_rate = facility.terms.interest_rate / 100;
@@ -130,9 +131,9 @@ const createNLSLoan = async (facility) => {
                 UpdateFlag="0"
                 CIFNumber="${cif_number}"
                 LoanTemplateName="CONSUMER_BNPL"
-                AcctRefno="${loan_ref}"
                 LoanNumber="${account_number}"
-                OriginationDate="${origination_date}" 
+                LoanGroupName="${nls_group_name}"
+                OriginationDate="${nls_origination_date}" 
                 LoanAmount="${amount}"
                 InterestMethod="FA"
                 Term="${term}"
@@ -199,8 +200,10 @@ const createNLSLineOfCredit = async (facility) => {
         
         // Create NLS loan data fields
         const cif_number = facility.cif_number;
+        const nls_group_name = facility.nls_group_name;
         const account_number = facility.account_number;
-        const origination_date = facility.origination_date;
+        const origination_date = moment(facility.origination_date).format("YYYY/MM/DD");
+        const nls_origination_date = moment(origination_date).format("MM/DD/YYYY");
         const amount = facility.terms.amount / 100;
         const term = facility.terms.term;
         const interest_rate = facility.terms.interest_rate / 100;
@@ -212,7 +215,8 @@ const createNLSLineOfCredit = async (facility) => {
                 CIFNumber="${cif_number}"
                 LoanTemplateName="LINE_OF_CREDIT"
                 LoanNumber="${account_number}"
-                OriginationDate="${origination_date}" 
+                LoanGroupName="${nls_group_name}"
+                OriginationDate="${nls_origination_date}" 
                 InterestMethod="SI"
                 >
 

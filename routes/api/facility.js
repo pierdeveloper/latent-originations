@@ -84,6 +84,11 @@ router.post('/', [auth], async (req, res) => {
             })
         }
 
+        // Get portfolio id from client resource
+        const client = await Customer.findOne({client_id});
+        const nls_group_name = client.nls_group_name;
+    
+
         // Pull up relevant borrower
         const borrower = await Borrower.findOne({ id: application.borrower_id })
 
@@ -104,7 +109,10 @@ router.post('/', [auth], async (req, res) => {
         facilityFields.facility_id = 'fac_' + uuidv4().replace(/-/g, '');
         facilityFields.account_number = Math.floor(Math.random() * 900000000) + 100000000;
         facilityFields.autopay_enabled = false
-        facilityFields.origination_date = moment(loan_agreement.signature_timestamp).format("MM/DD/YYYY");
+        facilityFields.origination_date = moment(loan_agreement.signature_timestamp).format("YYYY/MM/DD");
+        if(!nls_group_name || nls_group_name === "") {
+            facilityFields.nls_group_name = "DEFAULT"
+        } else { facilityFields.nls_group_name = nls_group_name}
         
         // Build facility object based on credit type
         switch (facilityFields.credit_type) {
@@ -118,16 +126,16 @@ router.post('/', [auth], async (req, res) => {
                 ) * 100
                 
                 facilityFields.disbursement_date = facilityFields.origination_date;
-                facilityFields.next_payment_due_date = moment(facilityFields.origination_date).add(1, 'months').format("MM/DD/YYYY");
+                facilityFields.next_payment_due_date = moment(facilityFields.origination_date).add(1, 'months').format("YYYY/MM/DD");
                 
                 facilityFields.remaining_term = application.offer.term;
                 facilityFields.scheduled_payoff_date = moment(facilityFields.origination_date)
-                    .add(facilityFields.remaining_term, 'months').format("MM/DD/YYYY");
+                    .add(facilityFields.remaining_term, 'months').format("YYYY/MM/DD");
                 
                 break;
             case "consumer_revolving_line_of_credit":
                 facilityFields.balance = 0
-                facilityFields.next_payment_due_date = moment(facilityFields.origination_date).add(1, 'months').format("MM/DD/YYYY");
+                facilityFields.next_payment_due_date = moment(facilityFields.origination_date).add(1, 'months').format("YYYY/MM/DD");
                 break
         
             default:
@@ -151,6 +159,7 @@ router.post('/', [auth], async (req, res) => {
             disbursement_date: facilityFields.disbursement_date,
             balance: facilityFields.balance,
             monthly_payment: facilityFields.monthly_payment,
+            nls_group_name: facilityFields.nls_group_name,
             next_payment_due_date: facilityFields.next_payment_due_date,
             autopay_enabled: facilityFields.autopay_enabled,
             remaining_term: facilityFields.remaining_term,
@@ -272,9 +281,9 @@ router.get('/:id', [auth], async (req, res) => {
             // populate facility
             facility.remaining_balance = Math.floor(nlsLoan.loanDetails.Current_Payoff_Balance * 100);
             facility.monthly_payment = Math.floor(nlsLoan.paymentDetails.Next_Payment_Total_Amount * 100);
-            facility.next_payment_due_date = moment(nlsLoan.paymentDetails.Next_Principal_Payment_Date).format("MM/DD/YYYY");
+            facility.next_payment_due_date = moment(nlsLoan.paymentDetails.Next_Principal_Payment_Date).format("YYYY/MM/DD");
             const maturity_date = nlsLoan.loanDetails.Curr_Maturity_Date;
-            facility.scheduled_payoff_date = maturity_date ? moment(maturity_date).format("MM/DD/YYYY") : undefined;
+            facility.scheduled_payoff_date = maturity_date ? moment(maturity_date).format("YYYY/MM/DD") : undefined;
         }
 
         // save facility
@@ -283,7 +292,6 @@ router.get('/:id', [auth], async (req, res) => {
         // Response
         let facilityResponse = await Facility.findOne({ id: facility.id, client_id: req.client_id })
             .select(responseFilters['facility'] + ' -client_id');
-        console.log(facility); 
         res.json(facilityResponse);
     } catch(err) {
         console.error(err.message);

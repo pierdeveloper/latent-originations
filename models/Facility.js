@@ -38,6 +38,10 @@ const FacilitySchema = new mongoose.Schema({
         type: Number,
         required: false
     },
+    nls_group_name: {
+        type: String,
+        required: false
+    },
     credit_type: {
         type: String,
         required: true
@@ -47,7 +51,7 @@ const FacilitySchema = new mongoose.Schema({
         required: false,
         default: "active"
     },
-    remaining_balance: {
+    balance: {
         type: Number,
         required: false
     },

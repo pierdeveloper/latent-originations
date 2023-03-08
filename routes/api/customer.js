@@ -85,7 +85,8 @@ router.patch('/:id', async (req, res) => {
             dba_name,
             email,
             consumer_non_zero_enabled,
-            custom_loan_agreement } = req.body;
+            custom_loan_agreement,
+            nls_group_name } = req.body;
 
         const customerFields = {};
         if(company_name) customerFields.company_name = company_name;
@@ -93,6 +94,7 @@ router.patch('/:id', async (req, res) => {
         if(email) customerFields.email = email;
         customerFields.consumer_non_zero_enabled = consumer_non_zero_enabled;
         if(custom_loan_agreement) customerFields.custom_loan_agreement = custom_loan_agreement;
+        if(nls_group_name) customerFields.nls_group_name = nls_group_name;
 
         console.log(customerFields)
     
@@ -131,7 +133,7 @@ router.patch('/:id/enable_production', async (req, res) => {
         }
 
         // verify admin key
-        const { admin_key, sandbox_client_id } = req.body
+        const { admin_key, sandbox_client_id, nls_group_name } = req.body
         if(admin_key !== config.get("pier_admin_key")) {
             return res.status(401).send('Unauthorized')
         }
@@ -150,6 +152,7 @@ router.patch('/:id/enable_production', async (req, res) => {
         customer.production_secret = production_secret;
         customer.production_enabled = true;
         customer.sandbox_secret = null;
+        customer.nls_group_name = nls_group_name;
         await customer.save()
     
         return res.send('Production enabled for client!')

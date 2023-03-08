@@ -1,4 +1,4 @@
 {
-    "facility": "-_id -__v -cif_number -nls_account_ref",
+    "facility": "-_id -__v -cif_number -nls_account_ref -nls_group_name",
     "consumer": "-_id -__v -ssn -cif_number"
 }
