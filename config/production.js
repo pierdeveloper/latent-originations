@@ -5,6 +5,7 @@ module.exports = {
     pier_admin_key: process.env.PIER_ADMIN_KEY,
     docspringTest: false,
     envo: "production",
+    allow_sandbox_testing_endpoints: false,
     logLevel: "info",
     nls_username: process.env.NLS_USERNAME,
     nls_password: process.env.NLS_PASSWORD,

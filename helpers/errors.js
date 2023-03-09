@@ -19,6 +19,12 @@ const errors = {
         error_status: 403,
         error_type: "API_ERROR"
     },
+    endpoint_not_allowed_in_production: {
+        error_code: "ENDPOINT_NOT_ALLOWED_IN_PRODUCTION",
+        error_message: "This endpoint is only allowed in the sandbox",
+        error_status: 403,
+        error_type: "API_ERROR"
+    },
     duplicate_ein: {
         error_code: "DUPLICATE_EIN",
         error_message: "A borrower with that EIN already exists",
@@ -31,6 +37,12 @@ const errors = {
         error_status: 400,
         error_type: "BORROWER_ERROR"
     }, 
+    unable_to_delete_borrower: {
+        error_code: "UNABLE_TO_DELETE_BORROWER",
+        error_message: "There was an error attempting to delete the borrower",
+        error_status: 400,
+        error_type: "BORROWER_ERROR"
+    },
     application_not_found: {
         error_code: "APPLICATION_NOT_FOUND",
         error_message: "The application resource does not exist",

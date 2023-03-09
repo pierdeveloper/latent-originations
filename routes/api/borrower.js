@@ -11,6 +11,7 @@ const { validationResult } = require('express-validator');
 const { businessValidationRules, consumerValidationRules, consumerUpdateValidationRules } = require('../../helpers/validator.js');
 const {createNLSConsumer} = require('../../helpers/nls.js');
 const responseFilters = require('../../helpers/responseFilters.json');
+const config = require('config');
 
 
 // @route     POST user
@@ -475,6 +476,86 @@ router.get('/', [auth], async (req, res) => {
 
         console.log(borrowers); 
         res.json(borrowers);
+    } catch(err) {
+        const error = getError("internal_server_error")
+        return res.status(error.error_status).json({ 
+            error_type: error.error_type,
+            error_code: error.error_code,
+            error_message: error.error_message
+        })
+    }
+})
+
+// @route     DELETE a borrowers (sandbox only!)
+// @desc      List all borrowers
+// @access    Public
+router.delete('/:id', [auth], async (req, res) => {
+    console.log(req.headers)
+    console.log(req.body)
+
+    try {
+        // require sandbox/dev (error on prod/staging)
+        if(!config.get('allow_sandbox_testing_endpoints')) {
+            console.log('error! borrower deletion not allowed in prod/staging')
+            const error = getError("endpoint_not_allowed_in_production")
+            return res.status(error.error_status).json({ 
+                error_type: error.error_type,
+                error_code: error.error_code,
+                error_message: error.error_message
+            }) 
+        }
+
+        // pull up the borrower resource 
+        let borrower = await Borrower.findOne({ id: req.params.id })
+        console.log(borrower)
+        if(!borrower || borrower.client_id !== req.client_id) {
+            console.log('borrower not found');
+            const error = getError("borrower_not_found")
+            return res.status(error.error_status).json({ 
+                error_type: error.error_type,
+                error_code: error.error_code,
+                error_message: error.error_message
+            })
+        }
+
+        var borrower_detail = {}
+        if(borrower.type === 'consumer') {
+            borrower_detail = await Consumer.findOne({ id: req.params.id })
+        } else {
+            borrower_detail = await Business.findOne({ id: req.params.id })
+        }
+        
+        // delete the details resource
+        await borrower_detail.deleteOne({id: req.params.id}, (err) => {
+            if (err) {
+                console.log('error deleting borrower');
+                const error = getError("unable_to_delete_borrower")
+                return res.status(error.error_status).json({ 
+                    error_type: error.error_type,
+                    error_code: error.error_code,
+                    error_message: error.error_message
+                })
+            } else {
+              console.log('Object deleted successfully!');
+            }
+          });
+
+        // delete the borrower resource
+        await borrower.deleteOne({id: req.params.id}, (err) => {
+            if (err) {
+                console.log('error deleting borrower');
+                const error = getError("unable_to_delete_borrower")
+                return res.status(error.error_status).json({ 
+                    error_type: error.error_type,
+                    error_code: error.error_code,
+                    error_message: error.error_message
+                })
+            } else {
+              console.log('Object deleted successfully!');
+            }
+          });
+
+        res.json({ msg: "This borrower has been deleted"});
     } catch(err) {
         const error = getError("internal_server_error")
         return res.status(error.error_status).json({ 
