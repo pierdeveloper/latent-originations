@@ -24,4 +24,16 @@ router.post('/docspring_258956nrd_889765', async (req, res) => {
 })
 
 
+// where i'm leaving off
+/*
+status:
+successfuly set up this endpoint to receive docspring webhook
+
+next step:
+implement event emitter in /loan_agreement create endpoint
+confirm emitter is firing
+
+
+*/
+
 module.exports = router;

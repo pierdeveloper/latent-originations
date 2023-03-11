@@ -12,6 +12,8 @@ const { getDocSpringSubmission,
     docspringTemplates } = require('../../helpers/docspring.js')
 const Application = require('../../models/Application');
 const Customer = require('../../models/Customer.js');
+const EventEmitter = require('events');
+const eventEmitter = new EventEmitter()
 
 
 // @route     POST document
@@ -116,10 +118,57 @@ router.post('/', [auth], async (req, res) => {
             })
         }
         console.log(docspring_pending_submission.submission.id)
+/*
+
+        // 
+        // Wait for 'myEvent' to be emitted
+        const waitForEvent = new Promise((resolve, reject) => {
+            setTimeout(() => {
+                reject(new Error('Timeout: event not received in 4 seconds'));
+            }, 4000);
+        
+            eventEmitter.once('ds_submission', (submission) => {
+                console.log(`submission event received! this is where we do something`);
+                console.log(submission);
+                resolve(submission);
+            });
+        });
+        
+        // Fallback method
+        const fallbackMethod = new Promise((resolve, reject) => {
+            // Do something else here
+            // For example, make an API call, read from a file, etc.
+            // Resolve or reject the promise based on the result
+            console.log('webhook not received in time')
+        });
+        
+        Promise.race([waitForEvent, fallbackMethod])
+            .then((data) => {
+                // 'waitForEvent' resolved before the timeout
+                console.log(`Received data: ${data}`);
+            })
+            .catch((err) => {
+                // 'waitForEvent' rejected due to timeout
+                console.error(err);
+            }); 
+
+
+
+
+
+
 
         // wait for webhook with submission id = docspring_pending_submission.submission.id and status = processed
+        eventEmitter.once('docspring_submission', (submission) => {
+            // Do something with the verified user data, e.g. save to database
+            console.log('Docspring submission:', submission);
+            //res.status(200).send('User created and verified');
+          });
+        // set doc_url to permanent_download_url received in webhook, create loan, and respond w/ 200
 
-        // if no webhook after 4 seconds, stop waiting and just call the /get_submission endpoint
+        // (if no webhook after 4 seconds, stop waiting and just call the /get_submission endpoint)
+
+        */
 
         // Artificial latency for ds to prepare submission
         console.log('aftificial latency..')
