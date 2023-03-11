@@ -12,7 +12,6 @@ const config = require('config');
 
 const createDocSpringSubmission = async (template_id, doc_data_fields) => {
     // create docspring submission with applicant data
-    console.log('running docspring creation job')
 
     const username = config.get('docspringId');
     const pw = config.get('docspringSecret');
@@ -31,11 +30,12 @@ const createDocSpringSubmission = async (template_id, doc_data_fields) => {
         JSON.stringify(body_params), 
         { headers: header }
     );
+    console.log(`ds submission: `)
+    console.log(response.data)
     return response.data;
   }
 
   const getDocSpringSubmission = async (submission_id) => {
-    console.log('running docspring fetch job');
     const username = config.get('docspringId');
     const pw = config.get('docspringSecret');
     const auth = 'Basic ' + Buffer.from(username + ':' + pw).toString('base64');

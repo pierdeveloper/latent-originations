@@ -48,6 +48,8 @@ router.post('/', [auth], async (req, res) => {
         }
 
         // check that a live loan agreement doesn't already exist
+        /*
+        **** TEMPORARY FOR TESTING!!
         const existing_loan_agreement = await Document.findOne({
             application_id: application_id,
             status: "pending_signature"
@@ -60,6 +62,7 @@ router.post('/', [auth], async (req, res) => {
                 error_message: error.error_message
             })
         }
+        */
        
         // Check that borrower exists
         let borrower = await Borrower.findOne({ id: application.borrower_id })
@@ -112,7 +115,14 @@ router.post('/', [auth], async (req, res) => {
                 error_message: error.error_message
             })
         }
+        console.log(docspring_pending_submission.submission.id)
+
+        // wait for webhook with submission id = docspring_pending_submission.submission.id and status = processed
+
+        // if no webhook after 4 seconds, stop waiting and just call the /get_submission endpoint
+
         // Artificial latency for ds to prepare submission
+        console.log('aftificial latency..')
         var waitTill = new Date(new Date().getTime() + 4 * 1000);
         while(waitTill > new Date()){}
 
