@@ -7,7 +7,7 @@ const bunyan = require('bunyan');
 const config = require('config');
 const bodyParser = require('body-parser');
 const helmet = require('helmet');
-
+const EventEmitter = require('events');
 
 
 const app = express();
@@ -57,6 +57,8 @@ app.use('/api/rejection_reasons', require('./routes/api/rejection_reasons'));
 app.use('/api/customers', require('./routes/api/customer'));
 app.use('/api/webhooks', require('./routes/api/webhook'));
 
+const webhookEventEmitter = new EventEmitter();
+
 // Serve static assets in production
 
 if(process.env.NODE_ENV === 'production' /*|| process.env.NODE_ENV === 'staging'*/) {
@@ -73,3 +75,5 @@ if(process.env.NODE_ENV === 'production' /*|| process.env.NODE_ENV === 'staging'
 const PORT = process.env.PORT || 5001;
 console.log(`environment: ${process.env}`);
 app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
+
+module.exports = webhookEventEmitter;

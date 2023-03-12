@@ -262,12 +262,13 @@ router.post('/consumer', [auth, consumerValidationRules()], async (req, res) => 
             ssn
         });
 
-        // add consumer to NLS
-        let nlsSuccess = await createNLSConsumer(consumer);
+        // add consumer to NLS (quick hack to reduce latency is to do this asynch and hope it works)
+        let nlsSuccess = /*await*/ createNLSConsumer(consumer);
+        /*
         if(!nlsSuccess) {
             console.log('error creating NLS user');
             throw new Error("TODO")
-        } 
+        } */
 
         // Add borrower and consumer data to mongo
         await borrower.save();

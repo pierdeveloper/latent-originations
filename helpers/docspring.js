@@ -134,7 +134,7 @@ const generateDocspringDataFields = (borrower_type, borrower, application, isSig
         
             default: break;
         }
-        console.log(`3rd party: ${offer.third_party_disbursement_destination}`)
+
         // bnpl type-specific fields
         if(application.credit_type === "consumer_bnpl") {
             doc_data_fields.merchant_name = `${offer.third_party_disbursement_destination}.`
