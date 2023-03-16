@@ -79,7 +79,7 @@ const createNLSConsumer = async (borrowerDetails) => {
                 UpdateFlag="0"
                 CIFNumber="${cif_number}"
                 Entity="Individual"
-                CIFPortfolioName="&lt;default&gt;" 
+                CIFPortfolioName="CONSUMER" 
                 ShortName="${first_name} ${last_name}"
                 FirstName1="${first_name}"
                 LastName1="${last_name}"

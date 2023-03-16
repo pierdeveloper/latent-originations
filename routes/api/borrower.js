@@ -224,10 +224,14 @@ router.post('/consumer', [auth, consumerValidationRules()], async (req, res) => 
         // encrypt ssn
         //TODO
 
+        // grab customer profile for checking ssn whitelist and other configs
+        let customer = await Customer.findOne({client_id: req.client_id });
+        const duplicate_ssn_whitelist = customer.duplicate_ssn_whitelist
+
         // check for duplicate ssn
         let consumer = await Consumer.findOne({ ssn, client_id })
 
-        if (consumer) {
+        if (consumer && !duplicate_ssn_whitelist.includes(ssn)) {
             const error = getError("duplicate_ssn")
             return res.status(error.error_status).json({ 
                 error_type: error.error_type,

@@ -26,7 +26,7 @@ router.post('/', customerValidationRules(), async (req, res) => {
         const { company_name,
             dba_name,
             email,
-            consumer_non_zero_enabled
+            consumer_non_zero_enabled,
         } = req.body
 
         let customer = await Customer.findOne({ email })
@@ -41,6 +41,13 @@ router.post('/', customerValidationRules(), async (req, res) => {
         const secret_uuid = uuidv4();
         const sandbox_secret = 'test_' + secret_uuid.replace(/-/g, '');
         const production_enabled = false;
+        var duplicate_ssn_whitelist = [];
+
+        // add dummy SSNs for easier testing
+        if(config.get('envo') === 'sandbox' || config.get('envo') === "default") {
+            duplicate_ssn_whitelist = ['000000000', '111111111']
+        }
+        console.log(config.get('envo'));
 
         customer = new Customer({
             client_id,
@@ -49,7 +56,8 @@ router.post('/', customerValidationRules(), async (req, res) => {
             dba_name,
             email,
             production_enabled,
-            consumer_non_zero_enabled
+            consumer_non_zero_enabled,
+            duplicate_ssn_whitelist
         })  
         
         await customer.save()
@@ -86,7 +94,8 @@ router.patch('/:id', async (req, res) => {
             email,
             consumer_non_zero_enabled,
             custom_loan_agreement,
-            nls_group_name } = req.body;
+            nls_group_name,
+            duplicate_ssn_whitelist } = req.body;
 
         const customerFields = {};
         if(company_name) customerFields.company_name = company_name;
@@ -95,6 +104,7 @@ router.patch('/:id', async (req, res) => {
         customerFields.consumer_non_zero_enabled = consumer_non_zero_enabled;
         if(custom_loan_agreement) customerFields.custom_loan_agreement = custom_loan_agreement;
         if(nls_group_name) customerFields.nls_group_name = nls_group_name;
+        if(duplicate_ssn_whitelist) customerFields.duplicate_ssn_whitelist = duplicate_ssn_whitelist;
 
         console.log(customerFields)
     

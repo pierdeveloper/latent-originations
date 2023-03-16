@@ -58,6 +58,10 @@ const CustomerSchema = new mongoose.Schema({
             required: false
         }
     },
+    duplicate_ssn_whitelist: {
+        type: Array,
+        default: []
+    },
     nls_group_name: {
         type: String,
         required: false
