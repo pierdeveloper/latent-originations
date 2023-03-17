@@ -217,7 +217,7 @@ const createNLSLineOfCredit = async (facility) => {
                 LoanNumber="${account_number}"
                 LoanGroupName="${nls_group_name}"
                 OriginationDate="${nls_origination_date}" 
-                InterestMethod="SI"
+                InterestMethod="AD"
                 >
 
                 <LOANCREDITLINE
