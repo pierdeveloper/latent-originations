@@ -58,6 +58,11 @@ const CustomerSchema = new mongoose.Schema({
             required: false
         }
     },
+    repayment_ach_enabled: {
+        type: Boolean,
+        default: false,
+        required: true
+    },
     duplicate_ssn_whitelist: {
         type: Array,
         default: []
