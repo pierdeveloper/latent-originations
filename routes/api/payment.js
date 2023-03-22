@@ -29,7 +29,7 @@ router.post('/', [auth, paymentValidationRules()], async (req, res) => {
 
     try {
         const client_id = req.client_id;
-        const { amount, date, transfer_type, bank_account_routing, bank_account_number,
+        const { amount, date, transfer_type,
             facility_id  } = req.body
 
         // check that facility exists
@@ -42,6 +42,19 @@ router.post('/', [auth, paymentValidationRules()], async (req, res) => {
                 error_message: error.error_message
             })
         }
+
+        // check that facility has repayment bank info
+        const bank_details = facility.repayment_bank_details;
+        if(!bank_details || 
+            !bank_details.bank_account_number ||
+            !bank_details.bank_account_routing) {
+                const error = getError("missing_repayment_bank_details")
+                return res.status(error.error_status).json({ 
+                    error_type: error.error_type,
+                    error_code: error.error_code,
+                    error_message: error.error_message
+                })
+            }
 
         // check that customer is enabled for ach
         // TODO
@@ -57,8 +70,9 @@ router.post('/', [auth, paymentValidationRules()], async (req, res) => {
             amount,
             date,
             transfer_type,
-            bank_account_number,
-            bank_account_routing
+            bank_account_number: facility.repayment_bank_details.bank_account_number,
+            bank_account_routing: facility.repayment_bank_details.bank_account_routing,
+            bank_account_type: facility.repayment_bank_details.type
         })
         
         await payment.save()

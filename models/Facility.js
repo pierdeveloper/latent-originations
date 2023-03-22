@@ -75,13 +75,20 @@ const FacilitySchema = new mongoose.Schema({
         type: Boolean,
         required: false
     },
-    autopay_bank_account: {
-        type: String,
-        required: false
-    },
-    autopay_bank_routing: {
-        type: String,
-        required: false
+    repayment_bank_details: {
+        bank_account_routing: {
+            type: String,
+            required: false
+        },
+        bank_account_number: {
+            type: String,
+            required: false
+        },
+        type: {
+            type: String,
+            required: false,
+            enum: ['checking', 'savings']
+        }
     },
     remaining_term: {
         type: Number,

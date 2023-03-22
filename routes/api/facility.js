@@ -17,6 +17,7 @@ const axios = require('axios');
 const c = require('config');
 const responseFilters = require('../../helpers/responseFilters.json');
 const { response } = require('express');
+const { bankDetailsValidationRules } = require('../../helpers/validator.js');
 
 
 
@@ -209,6 +210,59 @@ router.post('/', [auth], async (req, res) => {
     }
     
 });
+
+// @route POST facility/{id}/repayment_bank_details
+// @desc Add bank account and routing number for repayment to facility
+// @access Public
+router.post('/:id/repayment_bank_details', [auth, bankDetailsValidationRules()], async (req, res) => {
+    console.log(req.headers);
+    console.log(req.body); 
+
+    const errors = validationResult(req);
+    if(!errors.isEmpty()) {
+        const response = {
+            error_type: "APPLICATION_ERROR",
+            error_code: "INVALID_INPUT",
+            error_message: "A value provided in the body is incorrect. See error_detail for more",
+            error_detail: errors.array()
+        }
+        return res.status(400).json(response);
+    }
+
+    const {repayment_bank_details} = req.body
+
+    try {
+        // verify facility exists
+        let facility = await Facility.findOne({ id: req.params.id });
+        if(!facility || facility.client_id !== req.client_id) {
+            const error = getError("facility_not_found")
+            return res.status(error.error_status).json({ 
+                error_type: error.error_type,
+                error_code: error.error_code,
+                error_message: error.error_message
+            })
+        }
+
+
+        facility.repayment_bank_details = repayment_bank_details;
+        await facility.save();
+
+        facility = await Facility.findOne({ id: req.params.id })
+            .select(responseFilters['facility'] + ' -client_id');
+        
+        console.log(facility);
+        res.json(facility)
+
+    } catch (err) {
+        console.error(err);
+        const error = getError("internal_server_error")
+        return res.status(error.error_status).json({ 
+            error_type: error.error_type,
+            error_code: error.error_code,
+            error_message: error.error_message
+        })
+    }
+})
 
 // @route POST facility/close
 // @desc Close a facility

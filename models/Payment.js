@@ -16,7 +16,7 @@ const PaymentSchema = new mongoose.Schema({
     },
     date: {
         type: String,
-        required: true
+        required: false
     },
     facility_id: {
         type: String,
@@ -30,10 +30,15 @@ const PaymentSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    bank_account_type: {
+        type: String,
+        required: true,
+        enum: ['savings', 'checking']
+    },
     status: {
         type: String,
         required: true,
-        enum: ['pending', 'processing', 'settled', 'failed'],
+        enum: ['pending', 'processing', 'settled', 'failed', 'canceled'],
         default: 'pending'
     },
     transfer_type: {

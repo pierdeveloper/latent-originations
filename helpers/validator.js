@@ -163,14 +163,19 @@ const consumerValidationRules = () => {
         check('amount', 'amount must be an integer (in cents).')
             .isInt(),
         check('date', 'date must be a string in the following format: YYYY-MM-DD')
-            .isDate({format:"yyyy-mm-dd", strictMode:true}),
+            .isDate({format:"yyyy-mm-dd", strictMode:true}).optional({nullable: true}),
         check('facility_id', 'invalid facility id')
-            .isString(),
-        check('bank_account_number', 'invalid format for bank account number')
-            .isString(),
-        check('bank_account_routing', 'invalid format for bank account routing')
             .isString()
 
+    ]
+  }
+
+  const bankDetailsValidationRules = () => {
+    return [
+        check('repayment_bank_details.bank_account_number', 'Bank account number must be a string')
+            .isInt().isLength({max: 100}),
+        check('repayment_bank_details.bank_account_routing', 'Bank account routing must be a string')
+            .isInt().isLength({max: 100})
     ]
   }
 
@@ -189,5 +194,6 @@ const consumerValidationRules = () => {
     applicationValidationRules,
     offerValidationRules,
     rejectionValidationRules,
-    paymentValidationRules
+    paymentValidationRules,
+    bankDetailsValidationRules
   }

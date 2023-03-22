@@ -174,6 +174,12 @@ const errors = {
         error_message: "The facility is already closed",
         error_status: 400,
         error_type: "FACILITY_ERROR"
+    },
+    missing_repayment_bank_details: {
+        error_code: "MISSING_REPAYMENT_BANK_DETAILS",
+        error_message: "Invalid or missing repayment bank account & routing info. Add repayment bank details before submitting a payment",
+        error_status: 400,
+        error_type: "PAYMENT_ERROR"
     }
 }
 
