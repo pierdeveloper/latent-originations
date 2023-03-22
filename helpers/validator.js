@@ -147,6 +147,7 @@ const consumerValidationRules = () => {
     ]
   }
 
+
   const rejectionValidationRules = () => {
     return [
         check('rejection_reasons', 'rejection reasons must be a list of 1-4 reasons')
@@ -154,6 +155,22 @@ const consumerValidationRules = () => {
             .custom(values => values.length <= 4),
         check('rejection_reasons.*', 'Invalid rejection reason')
             .isIn(rejection_reasons)
+    ]
+  }
+
+  const paymentValidationRules = () => {
+    return [
+        check('amount', 'amount must be an integer (in cents).')
+            .isInt(),
+        check('date', 'date must be a string in the following format: YYYY-MM-DD')
+            .isDate({format:"yyyy-mm-dd", strictMode:true}),
+        check('facility_id', 'invalid facility id')
+            .isString(),
+        check('bank_account_number', 'invalid format for bank account number')
+            .isString(),
+        check('bank_account_routing', 'invalid format for bank account routing')
+            .isString()
+
     ]
   }
 
@@ -171,5 +188,6 @@ const consumerValidationRules = () => {
     customerValidationRules,
     applicationValidationRules,
     offerValidationRules,
-    rejectionValidationRules
+    rejectionValidationRules,
+    paymentValidationRules
   }

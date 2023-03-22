@@ -205,7 +205,7 @@ const createNLSLineOfCredit = async (facility) => {
         const origination_date = moment(facility.origination_date).format("YYYY/MM/DD");
         const nls_origination_date = moment(origination_date).format("MM/DD/YYYY");
         const amount = facility.terms.amount / 100;
-        const term = facility.terms.term;
+        //const term = facility.terms.term;
         const interest_rate = facility.terms.interest_rate / 100;
 
         const xmlData = `<?xml version="1.0" encoding="UTF-8"?>

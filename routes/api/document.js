@@ -12,7 +12,7 @@ const { getDocSpringSubmission,
     docspringTemplates } = require('../../helpers/docspring.js')
 const Application = require('../../models/Application');
 const Customer = require('../../models/Customer.js');
-const { webhookEventEmitter } = require('../../server');
+//const { webhookEventEmitter } = require('../../server');
 
 
 // @route     POST document

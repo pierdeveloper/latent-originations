@@ -9,7 +9,8 @@ const { validationResult } = require('express-validator');
 const { applicationValidationRules, 
         offerValidationRules,
         rejectionValidationRules, 
-        customerValidationRules} = require('../../helpers/validator.js');
+        customerValidationRules,
+        validationMiddleware} = require('../../helpers/validator.js');
 const consumer_state_limits = require('../../helpers/coverage/consumer.json');
 const commercial_state_limits = require('../../helpers/coverage/commercial.json');
 const valid_rejection_reasons = require('../../helpers/rejectionReasons.json');

@@ -5,7 +5,7 @@ const consumer_state_limits = require('../../helpers/coverage/consumer.json');
 const commercial_state_limits = require('../../helpers/coverage/commercial.json');
 const Customer = require('../../models/Customer');
 const { getError } = require('../../helpers/errors.js');
-const { webhookEventEmitter } = require('../../server');
+//const { webhookEventEmitter } = require('../../server');
 
 
 // @route     DOCSPRING WEBHOOKS
