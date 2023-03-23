@@ -70,7 +70,7 @@ const CustomerSchema = new mongoose.Schema({
     nls_group_name: {
         type: String,
         required: false
-    },
+    }/*,
     billing: {
         start_date: {
             type: String,
@@ -80,17 +80,28 @@ const CustomerSchema = new mongoose.Schema({
             type: Number,
             required: false
         },
+        implementation_fee: {
+            type: Number,
+            required: false
+        },
         monthly_minimums: {
             type: [MonthlyMinimumSchema],
             required: false
-        }
-    }
-});
+        },
+        usage_fees: {
 
-const monthlyMinimumSchema = new mongoose.Schema({
+        }
+    }*/
+});
+/*
+const MonthlyMinimumSchema = new mongoose.Schema({
     startMonth: { type: Number, required: true },
     endMonth: { type: Number, required: true },
     amount: { type: Number, required: true }
   });
 
+const UsageFeeSchema = new mongoose.Schema({
+    product: { type: String, required: true, enum: ['origination', 'reporting', 'servicing', 'underwriting']}
+})
+*/
 module.exports = Customer = mongoose.model('customer', CustomerSchema)
