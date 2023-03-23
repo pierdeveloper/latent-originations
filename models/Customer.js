@@ -70,7 +70,27 @@ const CustomerSchema = new mongoose.Schema({
     nls_group_name: {
         type: String,
         required: false
+    },
+    billing: {
+        start_date: {
+            type: String,
+            required: false
+        },
+        term: {
+            type: Number,
+            required: false
+        },
+        monthly_minimums: {
+            type: [MonthlyMinimumSchema],
+            required: false
+        }
     }
 });
+
+const monthlyMinimumSchema = new mongoose.Schema({
+    startMonth: { type: Number, required: true },
+    endMonth: { type: Number, required: true },
+    amount: { type: Number, required: true }
+  });
 
 module.exports = Customer = mongoose.model('customer', CustomerSchema)

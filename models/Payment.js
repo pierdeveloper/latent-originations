@@ -45,6 +45,10 @@ const PaymentSchema = new mongoose.Schema({
         type: String,
         required: true,
         enum: ['standard', 'next_day', 'same_day', 'none']
+    },
+    created_on: {
+        type: Date,
+        default: Date.now
     }
   
 });
