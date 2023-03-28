@@ -117,6 +117,7 @@ router.post('/', [auth], async (req, res) => {
         
         // Build facility object based on credit type
         switch (facilityFields.credit_type) {
+            case "consumer_installment_loan":
             case "consumer_bnpl":
                 facilityFields.balance = application.offer.amount;
                 facilityFields.monthly_payment = calculate_periodic_payment(
@@ -138,6 +139,8 @@ router.post('/', [auth], async (req, res) => {
                 facilityFields.balance = 0
                 facilityFields.next_payment_due_date = moment(facilityFields.origination_date).add(1, 'months').format("YYYY/MM/DD");
                 break
+
+            
         
             default:
                 break;
@@ -394,7 +397,40 @@ router.get('/', [auth], async (req, res) => {
 
 
 
+// @route     PATCH facilities/id/synchronize
+// @desc      Sync facility with NLS
+// @access    Private
+router.PATCH('/{id}/synchronize', [auth], async (req, res) => {
+    console.log(req.headers)
+    console.log(req.body)
 
+    // verify facility exists
+
+    // grab facility from mongo
+
+    // pull NLS loan details 
+
+    // pull NLS stats
+
+    // update facilty with NLS data
+
+    // save to mongodb  
+    try {
+        const facilities = await Facility.find({ client_id: req.client_id })
+            .select(responseFilters['facility'] + ' -client_id');
+
+        console.log(facilities); 
+        res.json(facilities);
+    } catch(err) {
+        console.error(err);
+        const error = getError("internal_server_error")
+        return res.status(error.error_status).json({ 
+            error_type: error.error_type,
+            error_code: error.error_code,
+            error_message: error.error_message
+        })
+    }
+})
 
 
 
@@ -532,6 +568,8 @@ router.post('/nls_users', [auth], async (req, res) => {
 
     await revokeNLSAuthToken(token);
 })
+
+
 
 
 module.exports = router;
