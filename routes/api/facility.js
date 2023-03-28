@@ -118,6 +118,27 @@ router.post('/', [auth], async (req, res) => {
         // Build facility object based on credit type
         switch (facilityFields.credit_type) {
             case "consumer_installment_loan":
+                facilityFields.balance = application.offer.amount;
+                facilityFields.monthly_payment = calculate_periodic_payment(
+                    application.offer.amount / 100,
+                    application.offer.term,
+                    12,
+                    (application.offer.interest_rate / 10000)
+                ) * 100
+                
+                facilityFields.disbursement_date = facilityFields.origination_date;
+                facilityFields.next_payment_due_date = moment(facilityFields.origination_date).add(1, 'months').format("YYYY/MM/DD");
+                
+                facilityFields.remaining_term = application.offer.term;
+                facilityFields.scheduled_payoff_date = moment(facilityFields.origination_date)
+                    .add(facilityFields.remaining_term, 'months').format("YYYY/MM/DD");
+                
+                break;
+            case "consumer_revolving_line_of_credit":
+                facilityFields.balance = 0
+                facilityFields.next_payment_due_date = moment(facilityFields.origination_date).add(1, 'months').format("YYYY/MM/DD");
+                break
+
             case "consumer_bnpl":
                 facilityFields.balance = application.offer.amount;
                 facilityFields.monthly_payment = calculate_periodic_payment(
