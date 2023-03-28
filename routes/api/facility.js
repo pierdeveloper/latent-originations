@@ -417,7 +417,7 @@ router.get('/', [auth], async (req, res) => {
 
 
 
-
+/*
 // @route     PATCH facilities/id/synchronize
 // @desc      Sync facility with NLS
 // @access    Private
@@ -453,7 +453,7 @@ router.PATCH('/{id}/synchronize', [auth], async (req, res) => {
     }
 })
 
-
+*/
 
 
 
