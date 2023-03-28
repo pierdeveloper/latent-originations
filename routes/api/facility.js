@@ -76,7 +76,7 @@ router.post('/', [auth], async (req, res) => {
         let application = await Application.findOne({ id: loan_agreement.application_id })
 
         // Only allow supported products
-        if(!['consumer_bnpl', 'consumer_revolving_line_of_credit'].includes(application.credit_type)) {
+        if(!['consumer_bnpl', 'consumer_revolving_line_of_credit', 'consumer_installment_loan'].includes(application.credit_type)) {
             const error = getError("unsupported_product")
             return res.status(error.error_status).json({ 
                 error_type: error.error_type,
