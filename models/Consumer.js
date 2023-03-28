@@ -68,6 +68,10 @@ const ConsumerSchema = new mongoose.Schema({
     kyc_completion_date: {
         type: String,
         required: true
+    },
+    status: {
+        type: String,
+        default: "verified"
     }
 });
 
