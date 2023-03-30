@@ -429,6 +429,11 @@ router.patch('/:id/synchronize', async (req, res) => {
         }
         console.log(facility)
 
+        // verify nls loan ref exists
+        if(!facility.nls_loan_ref) {
+            return res.status(404).json({ error: 'this facility does not have a nls_loan_ref'})
+        }
+
         // get nls loan details
         let nlsLoan = await retrieveNLSLoan(facility.nls_account_ref);
 
