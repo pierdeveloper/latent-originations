@@ -551,7 +551,7 @@ router.patch('/synchronize', async (req, res) => {
             await facility.save();
 
             // latency to avoid nls rate limit
-            var waitTill = new Date(new Date().getTime() + 2 * 1000);
+            var waitTill = new Date(new Date().getTime() + 1 * 250);
             while(waitTill > new Date()){}
         }
 
