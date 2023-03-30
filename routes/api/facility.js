@@ -494,7 +494,8 @@ router.patch('/synchronize', async (req, res) => {
 
         // grab all facilities
         const facilities = await Facility.find();
-        const errors = []
+        const errors = [];
+        const skipped = [];
         var sync_count = 0;
         
         // loop thru each facility
@@ -502,6 +503,11 @@ router.patch('/synchronize', async (req, res) => {
 
             var facility = facilities[i]
             console.log(facility);
+            if(!facility.nls_account_ref) {
+                console.log('facility not setup in NLS. Skipping it')
+                skipped.push(facility.facility_id);
+                continue;
+            }
             // get nls loan details
             let nlsLoan = await retrieveNLSLoan(facility.nls_account_ref);
             console.log(Math.floor(nlsLoan.loanDetails.Current_Payoff_Balance * 100));
@@ -555,6 +561,7 @@ router.patch('/synchronize', async (req, res) => {
             msg: 'Facility Job complete',
             facility_count: facilities.length,
             sync_count: sync_count,
+            skipped: skipped,
             errors: errors
         }
 
