@@ -178,6 +178,7 @@ router.post('/', [auth], async (req, res) => {
         
         //4. Create the facility in NLS based on credit type
         switch (facilityFields.credit_type) {
+            case "consumer_installment_loan":
             case "consumer_bnpl":
                 const nls_loan = await createNLSLoan(facility);
                 if(nls_loan === 'nls_error') {
@@ -430,7 +431,7 @@ router.patch('/:id/synchronize', async (req, res) => {
         console.log(facility)
 
         // verify nls loan ref exists
-        if(!facility.nls_loan_ref) {
+        if(!facility.nls_account_ref) {
             return res.status(404).json({ error: 'this facility does not have a nls_loan_ref'})
         }
 
