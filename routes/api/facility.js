@@ -14,7 +14,7 @@ const valid_rejection_reasons = require('../../helpers/rejectionReasons.json');
 const moment = require('moment');
 const { createNLSConsumer, createNLSLoan, retrieveNLSLoan, createNLSLineOfCredit } = require('../../helpers/nls.js');
 const axios = require('axios');
-const c = require('config');
+const config = require('config');
 const responseFilters = require('../../helpers/responseFilters.json');
 const { response } = require('express');
 const { bankDetailsValidationRules } = require('../../helpers/validator.js');
@@ -117,6 +117,7 @@ router.post('/', [auth], async (req, res) => {
         
         // Build facility object based on credit type
         switch (facilityFields.credit_type) {
+            case "consumer_bnpl":
             case "consumer_installment_loan":
                 facilityFields.balance = application.offer.amount;
                 facilityFields.monthly_payment = calculate_periodic_payment(
@@ -139,23 +140,6 @@ router.post('/', [auth], async (req, res) => {
                 facilityFields.next_payment_due_date = moment(facilityFields.origination_date).add(1, 'months').format("YYYY/MM/DD");
                 break
 
-            case "consumer_bnpl":
-                facilityFields.balance = application.offer.amount;
-                facilityFields.monthly_payment = calculate_periodic_payment(
-                    application.offer.amount / 100,
-                    application.offer.term,
-                    12,
-                    (application.offer.interest_rate / 10000)
-                ) * 100
-                
-                facilityFields.disbursement_date = facilityFields.origination_date;
-                facilityFields.next_payment_due_date = moment(facilityFields.origination_date).add(1, 'months').format("YYYY/MM/DD");
-                
-                facilityFields.remaining_term = application.offer.term;
-                facilityFields.scheduled_payoff_date = moment(facilityFields.origination_date)
-                    .add(facilityFields.remaining_term, 'months').format("YYYY/MM/DD");
-                
-                break;
             case "consumer_revolving_line_of_credit":
                 facilityFields.balance = 0
                 facilityFields.next_payment_due_date = moment(facilityFields.origination_date).add(1, 'months').format("YYYY/MM/DD");
@@ -417,33 +401,65 @@ router.get('/', [auth], async (req, res) => {
 
 
 
-/*
+
 // @route     PATCH facilities/id/synchronize
 // @desc      Sync facility with NLS
 // @access    Private
-router.PATCH('/{id}/synchronize', [auth], async (req, res) => {
+router.patch('/:id/synchronize', async (req, res) => {
     console.log(req.headers)
     console.log(req.body)
 
-    // verify facility exists
+    // verify admin key
+    const { admin_key } = req.body
+    if(admin_key !== config.get("pier_admin_key")) {
+        return res.status(401).send('Unauthorized')
+    }
 
-    // grab facility from mongo
-
-    // pull NLS loan details 
-
-    // pull NLS stats
-
-    // update facilty with NLS data
-
-    // save to mongodb  
     try {
-        const facilities = await Facility.find({ client_id: req.client_id })
-            .select(responseFilters['facility'] + ' -client_id');
 
-        console.log(facilities); 
-        res.json(facilities);
-    } catch(err) {
-        console.error(err);
+        // verify facility exists
+        const facility = await Facility.findOne({ id: req.params.id });
+        if(!facility) {
+            const error = getError("facility_not_found")
+            return res.status(error.error_status).json({ 
+                error_type: error.error_type,
+                error_code: error.error_code,
+                error_message: error.error_message
+            })
+        }
+        console.log(facility)
+
+        // get nls loan details
+        let nlsLoan = await retrieveNLSLoan(facility.nls_account_ref);
+
+        // populate facility with updated info
+        if(nlsLoan !== "nls_error") {
+            // populate facility based on type
+            switch (facility.credit_type) {
+                case "consumer_installment_loan":
+                case "consumer_bnpl":
+                    facility.balance = Math.floor(nlsLoan.loanDetails.Current_Payoff_Balance * 100);
+                    facility.monthly_payment = Math.floor(nlsLoan.paymentDetails.Next_Payment_Total_Amount * 100);
+                    facility.next_payment_due_date = moment(nlsLoan.paymentDetails.Next_Principal_Payment_Date).format("YYYY/MM/DD");
+                    const maturity_date = nlsLoan.loanDetails.Curr_Maturity_Date;
+                    facility.scheduled_payoff_date = maturity_date ? moment(maturity_date).format("YYYY/MM/DD") : undefined;
+                    break
+                default: console.log('cannot sync this type of credit product')
+                    break;
+            }
+            
+        } else {
+            console.log('nls error. Unable to synchronize');
+        }
+
+        // save facility
+        await facility.save();
+
+        // Response
+        let facilityResponse = await Facility.findOne({ id: facility.id })
+        res.json(facilityResponse);
+
+    } catch (err) {
         const error = getError("internal_server_error")
         return res.status(error.error_status).json({ 
             error_type: error.error_type,
@@ -451,11 +467,105 @@ router.PATCH('/{id}/synchronize', [auth], async (req, res) => {
             error_message: error.error_message
         })
     }
+
 })
 
-*/
 
+// @route     PATCH facilities/synchronize
+// @desc      Sync all facilities with NLS
+// @access    Private
+router.patch('/synchronize', async (req, res) => {
+    console.log(req.headers)
+    console.log(req.body)
 
+    // verify admin key
+    const { admin_key } = req.body
+    if(admin_key !== config.get("pier_admin_key")) {
+        return res.status(401).send('Unauthorized')
+    }
+
+    try {
+
+        // grab all facilities
+        const facilities = await Facility.find();
+        const errors = []
+        var sync_count = 0;
+        
+        // loop thru each facility
+        for (let i = 0; i < facilities.length; i++) {
+
+            var facility = facilities[i]
+            console.log(facility);
+            // get nls loan details
+            let nlsLoan = await retrieveNLSLoan(facility.nls_account_ref);
+            console.log(Math.floor(nlsLoan.loanDetails.Current_Payoff_Balance * 100));
+            console.log(Math.floor(nlsLoan.paymentDetails.Next_Payment_Total_Amount * 100));
+            console.log(facility.next_payment_due_date = moment(nlsLoan.paymentDetails.Next_Principal_Payment_Date).format("YYYY/MM/DD"));
+            const maturity_date = nlsLoan.loanDetails.Curr_Maturity_Date;
+            console.log(maturity_date ? moment(maturity_date).format("YYYY/MM/DD") : undefined);
+
+            
+            // populate facility with updated info
+            if(nlsLoan !== "nls_error") {
+                console.log('no nls error found..')
+                // populate facility based on type
+                switch (facility.credit_type) {
+                    case "consumer_installment_loan":
+                    case "consumer_bnpl":
+                        console.log('in the switch statement now..')
+                        facility.balance = Math.floor(nlsLoan.loanDetails.Current_Payoff_Balance * 100);
+                        facility.monthly_payment = Math.floor(nlsLoan.paymentDetails.Next_Payment_Total_Amount * 100);
+                        facility.next_payment_due_date = moment(nlsLoan.paymentDetails.Next_Principal_Payment_Date).format("YYYY/MM/DD");
+                        const maturity_date = nlsLoan.loanDetails.Curr_Maturity_Date;
+                        facility.scheduled_payoff_date = maturity_date ? moment(maturity_date).format("YYYY/MM/DD") : undefined;
+                        console.log('facility dets synced..')
+                        sync_count++;
+                        console.log(sync_count)
+                        break
+                    case "consumer_revolving_line_of_credit":
+                        //todo
+                        sync_count++;
+                        break;
+                    default: console.log('cannot sync this type of credit product')
+                        break;
+                }
+                
+            } else {
+                console.log('nls error. Unable to synchronize faciilty ' + facility.id);
+                errors.push(facility.id)
+            }
+
+            // save facility
+            await facility.save();
+
+            // latency to avoid nls rate limit
+            var waitTill = new Date(new Date().getTime() + 2 * 1000);
+            while(waitTill > new Date()){}
+        }
+
+        console.log('loop job complete')
+        
+        const jobReport = {
+            msg: 'Facility Job complete',
+            facility_count: facilities.length,
+            sync_count: sync_count,
+            errors: errors
+        }
+
+        console.log(jobReport)
+        // Response
+        res.json(jobReport);
+
+    } catch (err) {
+        const error = getError("internal_server_error")
+        return res.status(error.error_status).json({ 
+            error_type: error.error_type,
+            error_code: error.error_code,
+            error_message: error.error_message
+        })
+    }
+
+})
 
 
 
