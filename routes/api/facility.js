@@ -490,6 +490,15 @@ router.patch('/synchronize', async (req, res) => {
         return res.status(401).send('Unauthorized')
     }
 
+    runNLSSynchroJob()
+
+    res.json({msg: 'started nls synchro job'})
+
+    
+
+})
+
+const runNLSSynchroJob = async () => {
     try {
 
         // grab all facilities
@@ -566,8 +575,6 @@ router.patch('/synchronize', async (req, res) => {
         }
 
         console.log(jobReport)
-        // Response
-        res.json(jobReport);
 
     } catch (err) {
         const error = getError("internal_server_error")
@@ -578,9 +585,9 @@ router.patch('/synchronize', async (req, res) => {
         })
     }
 
-})
-
-
+    
+    
+}
 
 
 // NLS UTILITY FUNCTIONS FOR TESTING
