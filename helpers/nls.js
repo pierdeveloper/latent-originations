@@ -275,7 +275,8 @@ const createNLSLineOfCredit = async (facility) => {
 const retrieveNLSLoan = async (loanRef) => {
     // Generate Auth token
     const nls_token = await generateNLSAuthToken();
-    var fullLoanDetails = { loanDetails: {}, paymentDetails: {}}
+    var fullLoanDetails = { loanDetails: {}, paymentDetails: {},
+        paymentsDue: {}, statistics: {}, paymentSchedule: {}, amortizationSchedule: {}, };
 
     try {
         // NLS config
@@ -288,15 +289,41 @@ const retrieveNLSLoan = async (loanRef) => {
         const loanData = response.data.payload.data;
         Object.assign(fullLoanDetails.loanDetails, loanData);
 
-        console.log(`loan details:`)
-        console.log(loanData);
-
-
         // Request payment details and append to data obje
         const url2 = `https://api.nortridgehosting.com/25.0/loans/${loanRef}/payment-info`
         const response2 = await axios.get(url2, {headers: header});
         const paymentData = response2.data.payload.data;
         Object.assign(fullLoanDetails.paymentDetails, paymentData);
+        
+        // Request amort table and append to data object
+        const url3 = `https://api.nortridgehosting.com/25.0/loans/${loanRef}/amortization-schedule`
+        const response3 = await axios.get(url3, {headers: header});
+        console.log(response3.data.payload.data)
+        const amortSchedData = response3.data.payload.data;
+        Object.assign(fullLoanDetails.amortizationSchedule, amortSchedData);
+
+        // Request payment schedule and append to data object
+        const url4 = `https://api.nortridgehosting.com/25.0/loans/${loanRef}/payment-schedule`
+        const response4 = await axios.get(url4, {headers: header});
+        console.log(response4.data)
+        const paymentSchedData = response4.data.payload.data;
+        Object.assign(fullLoanDetails.paymentSchedule, paymentSchedData);
+
+        // Request payments due and append to data object
+        const url5 = `https://api.nortridgehosting.com/25.0/loans/${loanRef}/payments-due`
+        const response5 = await axios.get(url5, {headers: header});
+        console.log(response5.data)
+        const paymentsDueData = response5.data.payload.data;
+        Object.assign(fullLoanDetails.paymentsDue, paymentsDueData);
+
+
+        // Request statistics and append to data object
+        const url6 = `https://api.nortridgehosting.com/25.0/loans/${loanRef}/statistics`
+        const response6 = await axios.get(url6, {headers: header});
+        console.log(response6.data)
+        const statisticsData = response6.data.payload.data;
+        Object.assign(fullLoanDetails.statistics, statisticsData);
+
         
         console.log(fullLoanDetails)
         

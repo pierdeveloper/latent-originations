@@ -51,26 +51,6 @@ const FacilitySchema = new mongoose.Schema({
         required: false,
         default: "active"
     },
-    balance: {
-        type: Number,
-        required: false
-    },
-    monthly_payment: {
-        type: Number,
-        required: false
-    },
-    next_payment_due_date: {
-        type: String,
-        required: false
-    },
-    origination_date: {
-        type: String,
-        required: false
-    },
-    disbursement_date: {
-        type: String,
-        required: false
-    },
     autopay_enabled: {
         type: Boolean,
         required: false
@@ -90,13 +70,66 @@ const FacilitySchema = new mongoose.Schema({
             enum: ['checking', 'savings']
         }
     },
-    remaining_term: {
+    balance: {
         type: Number,
+        required: false
+    },
+    monthly_payment: {
+        type: Number,
+        required: false
+    },
+    next_payment_amount: {
+        type: Number,
+        required: false
+    },
+    current_payment_due_date: {
+        type: String,
+        required: false
+    },
+    next_payment_due_date: {
+        type: String,
+        required: false
+    },
+    last_payment_date: {
+        type: String,
+        required: false
+    },
+    principal_paid_thru: {
+        type: String,
+        required: false
+    },
+    next_billing_date: {
+        type: String,
+        required: false
+    },
+    interest_accrued_thru: {
+        type: String,
+        required: false
+    },
+    next_accrual_cutoff_date: {
+        type: String,
+        required: false
+    },
+    origination_date: {
+        type: String,
+        required: false
+    },
+    disbursement_date: {
+        type: String,
         required: false
     },
     scheduled_payoff_date: {
         type: String,
         required: false
+    },
+    remaining_term: {
+        type: Number,
+        required: false
+    },
+    payments_due: {
+        type: Array,
+        required: false,
+        default: []
     },
     transactions: {
         type: Array,
