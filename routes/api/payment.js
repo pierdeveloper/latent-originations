@@ -1,5 +1,6 @@
 const express = require('express');
 const auth = require('../../middleware/auth');
+const config = require('config');
 const router = express.Router();
 const Customer = require('../../models/Customer');
 const Payment = require('../../models/Payment');
@@ -8,6 +9,9 @@ const { validationResult } = require('express-validator');
 const { paymentValidationRules } = require('../../helpers/validator.js');
 const Facility = require('../../models/Facility');
 const { v4: uuidv4 } = require('uuid');
+const { WebClient } = require('@slack/web-api');
+
+
 
 // @route     POST payments
 // @desc      Add a payment submission
@@ -77,10 +81,27 @@ router.post('/', [auth, paymentValidationRules()], async (req, res) => {
         
         await payment.save()
 
+        // check if process env is production and if so, submit payment notification
+        if(process.env.NODE_ENV === 'production') {
+            const slack = new WebClient(config.get('slack_bot_id'));
+            (async () => {
+                try {
+                    const greeting = 'Bonjour, a payment has been submitted. Please submit the transfer to Dwolla.'
+                    const result = slack.chat.postMessage({
+                        channel: '#payments',
+                        text: greeting + '\n' + `*facility_id:* ${facility_id}` + '\n' + `*amount:* $${amount/100}` + '\n' + `*status:* ${payment.status}`
+                    });
+                }
+                catch (error) { console.error(error); }
+            })();
+        }
+
         payment = await Payment.findOne({ id: payment_id })
             .select('-_id -__v -client_id');
         console.log(payment)
         res.json(payment);
+
+
 
     } catch (err) {
         console.error(err);
