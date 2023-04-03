@@ -86,7 +86,7 @@ router.post('/', [auth, paymentValidationRules()], async (req, res) => {
             const slack = new WebClient(config.get('slack_bot_id'));
             (async () => {
                 try {
-                    const greeting = 'Bonjour, a payment has been submitted. Please submit the transfer to Dwolla.'
+                    const greeting = 'Bonjour! A payment has been submitted. Please submit the transfer to Dwolla.'
                     const result = slack.chat.postMessage({
                         channel: '#payments',
                         text: greeting + '\n' + `*facility_id:* ${facility_id}` + '\n' + `*amount:* $${amount/100}` + '\n' + `*status:* ${payment.status}` + '\n' + `*env:* ${process.env.NODE_ENV}`
