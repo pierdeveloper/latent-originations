@@ -460,6 +460,52 @@ const syncNLSWithFacility = async (facility) => {
                     facility.next_accrual_cutoff_date = moment(nlsLoan.loanDetails.Next_Accrual_Cutoff).format("YYYY/MM/DD");
                     const maturity_date = nlsLoan.loanDetails.Curr_Maturity_Date;
                     facility.scheduled_payoff_date = maturity_date ? moment(maturity_date).format("YYYY/MM/DD") : null;
+
+                    // add payments due
+
+                    // first reset the array
+                    facility.payments_due = [];
+                    // for each object in nlsLoan.loanDetails.Payments_Due
+                    var paymentsDueData = nlsLoan.paymentsDue;
+                    console.log(`payments due array of ojbs \n` +paymentsDueData)
+                    Object.values(paymentsDueData).forEach(pmtDueData => {
+                        console.log(`payment due data:`)
+                        console.log(pmtDueData)
+                        if (pmtDueData.Payment_Description === 'TOT PAYMENT') {
+                            facility.payments_due.push({
+                                payment_amount: Math.floor(pmtDueData.Payment_Amount * 100),
+                                payment_amount_remaining: Math.floor(pmtDueData.Payment_Remaining * 100),
+                                payment_due_date: moment(pmtDueData.Date_Due).format("YYYY/MM/DD")
+                            })
+                        }
+                    })
+
+                    /*
+                    for (let i = 0; i < paymentsDueData.length; index++) {
+                        console.log(' in teh for loop!')
+                        let pmtDueData = paymentsDueData[i];
+                        console.log(`payment due data:`)
+                        console.log(pmtDueData)
+                        if(pmtDueData.Payment_Description === 'TOT PAYMENT') {
+                            facility.payments_due.push({
+                                payment_amount: Math.floor(pmtDueData.Payment_Amount * 100),
+                                payment_amount_remaining: Math.floor(pmtDueData.Payment_Remaining * 100),
+                                payment_due_date: moment(pmtDueData.Date_Due).format("YYYY/MM/DD")
+                            })
+                        }   
+                    }*/
+
+                    // check if Payment_Description === 'TOT PAYMENT'
+
+                    // if so, create payment_due object
+
+                    // set payment_amount to object.Payment_Amount
+
+                    // set payment_aount_remaining to object.Payment_Amount_Remaining
+
+                    // set payment_due_date to object.Payment_Due_Date
+
+                    // append object to facility.payments_due
                     break;
                 default: console.log('cannot sync this type of credit product')
                     break;
@@ -480,6 +526,7 @@ const syncNLSWithFacility = async (facility) => {
         return "SUCCESS"
 
     } catch (err) {
+        console.error(err.message);
         return "ERROR: unexpected error"
     }
 }

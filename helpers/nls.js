@@ -298,21 +298,18 @@ const retrieveNLSLoan = async (loanRef) => {
         // Request amort table and append to data object
         const url3 = `https://api.nortridgehosting.com/25.0/loans/${loanRef}/amortization-schedule`
         const response3 = await axios.get(url3, {headers: header});
-        console.log(response3.data.payload.data)
         const amortSchedData = response3.data.payload.data;
         Object.assign(fullLoanDetails.amortizationSchedule, amortSchedData);
 
         // Request payment schedule and append to data object
         const url4 = `https://api.nortridgehosting.com/25.0/loans/${loanRef}/payment-schedule`
         const response4 = await axios.get(url4, {headers: header});
-        console.log(response4.data)
         const paymentSchedData = response4.data.payload.data;
         Object.assign(fullLoanDetails.paymentSchedule, paymentSchedData);
 
         // Request payments due and append to data object
         const url5 = `https://api.nortridgehosting.com/25.0/loans/${loanRef}/payments-due`
         const response5 = await axios.get(url5, {headers: header});
-        console.log(response5.data)
         const paymentsDueData = response5.data.payload.data;
         Object.assign(fullLoanDetails.paymentsDue, paymentsDueData);
 
@@ -320,7 +317,6 @@ const retrieveNLSLoan = async (loanRef) => {
         // Request statistics and append to data object
         const url6 = `https://api.nortridgehosting.com/25.0/loans/${loanRef}/statistics`
         const response6 = await axios.get(url6, {headers: header});
-        console.log(response6.data)
         const statisticsData = response6.data.payload.data;
         Object.assign(fullLoanDetails.statistics, statisticsData);
 
