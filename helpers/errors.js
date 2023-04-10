@@ -85,6 +85,18 @@ const errors = {
         error_status: 400,
         error_type: "APPLICATION_ERROR"
     },
+    invalid_statement_id: {
+        error_code: "INVALID_STATEMENT_ID",
+        error_message: "The statement_id specified is invalid",
+        error_status: 400,
+        error_type: "STATEMENT_ERROR"
+    },
+    statement_not_found: {
+        error_code: "STATEMENT_NOT_FOUND",
+        error_message: "The statement resource does not exist",
+        error_status: 404,
+        error_type: "STATEMENT_ERROR"
+    },
     third_party_missing: {
         error_code: "THIRD_PARTY_MISSING",
         error_message: "For BNPL loans, a third_party_disbursement_destination field must be provided with name of the third party",

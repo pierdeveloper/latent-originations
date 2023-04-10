@@ -276,7 +276,7 @@ const retrieveNLSLoan = async (loanRef) => {
     // Generate Auth token
     const nls_token = await generateNLSAuthToken();
     var fullLoanDetails = { loanDetails: {}, paymentDetails: {},
-        paymentsDue: {}, statistics: {}, paymentSchedule: {}, amortizationSchedule: {}, };
+        paymentsDue: {}, statistics: {}, paymentHistory: {}, amortizationSchedule: {}, };
 
     try {
         // NLS config
@@ -302,10 +302,10 @@ const retrieveNLSLoan = async (loanRef) => {
         Object.assign(fullLoanDetails.amortizationSchedule, amortSchedData);
 
         // Request payment schedule and append to data object
-        const url4 = `https://api.nortridgehosting.com/25.0/loans/${loanRef}/payment-schedule`
+        const url4 = `https://api.nortridgehosting.com/25.0/loans/${loanRef}/payment-history`
         const response4 = await axios.get(url4, {headers: header});
-        const paymentSchedData = response4.data.payload.data;
-        Object.assign(fullLoanDetails.paymentSchedule, paymentSchedData);
+        const paymentHistoryData = response4.data.payload.data;
+        Object.assign(fullLoanDetails.paymentHistory, paymentHistoryData);
 
         // Request payments due and append to data object
         const url5 = `https://api.nortridgehosting.com/25.0/loans/${loanRef}/payments-due`
@@ -326,12 +326,12 @@ const retrieveNLSLoan = async (loanRef) => {
         await revokeNLSAuthToken(nls_token);
         return fullLoanDetails
         
-    } catch (error) {
-        console.log('error trying to get nls loan')
-        console.log(error.response.data);
-
+    } catch (err) {
         // Revoke token
         await revokeNLSAuthToken(nls_token)
+
+        console.log('error trying to get nls loan')
+        console.log(err);        
         return "nls_error"
     }
 }

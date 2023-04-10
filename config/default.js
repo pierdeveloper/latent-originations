@@ -15,5 +15,6 @@ module.exports = {
     nls_scope: process.env.NLS_SCOPE,
     slack_bot_id: process.env.SLACK_BOT_ID,
     aes_secret_key: process.env.AES_SECRET_KEY,
-    aes_iv: process.env.AES_IV
+    aes_iv: process.env.AES_IV,
+    current_date: "02/24/2024" // for testing only
 }

@@ -25,6 +25,10 @@ const StatementSchema = new mongoose.Schema({
     created_on: {
         type: Date,
         default: Date.now
+    },
+    client_id: {
+        type: String,
+        required: true
     } 
 });
 

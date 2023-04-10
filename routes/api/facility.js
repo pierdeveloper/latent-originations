@@ -341,19 +341,6 @@ router.get('/:id', [auth], async (req, res) => {
             })
         }
 
-        let nlsLoan = await retrieveNLSLoan(facility.nls_account_ref);
-        if(nlsLoan !== "nls_error") {
-            // populate facility
-            facility.remaining_balance = Math.floor(nlsLoan.loanDetails.Current_Payoff_Balance * 100);
-            facility.monthly_payment = Math.floor(nlsLoan.paymentDetails.Next_Payment_Total_Amount * 100);
-            facility.next_payment_due_date = moment(nlsLoan.paymentDetails.Next_Principal_Payment_Date).format("YYYY/MM/DD");
-            const maturity_date = nlsLoan.loanDetails.Curr_Maturity_Date;
-            facility.scheduled_payoff_date = maturity_date ? moment(maturity_date).format("YYYY/MM/DD") : undefined;
-        }
-
-        // save facility
-        await facility.save();
-
         // Response
         let facilityResponse = await Facility.findOne({ id: facility.id, client_id: req.client_id })
             .select(responseFilters['facility'] + ' -client_id');

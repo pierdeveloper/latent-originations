@@ -1,4 +1,5 @@
 {
     "facility": "-_id -__v -cif_number -nls_account_ref -nls_group_name",
-    "consumer": "-_id -__v -ssn -cif_number"
+    "consumer": "-_id -__v -ssn -cif_number",
+    "statement": "-_id -__v -ds_submission_id"
 }

@@ -16,6 +16,79 @@ const Consumer = require('../../models/Consumer.js');
 const { retrieveNLSLoan } = require('../../helpers/nls.js');
 
  
+
+// @route     GET statement by id
+// @desc      Retrieve a statement
+// @access    Public
+router.get('/:id', [auth], async (req, res) => {
+    console.log(req.headers)
+    console.log(req.body)
+
+    try {
+        const statement = await Statement.findOne({ id: req.params.id });
+        if(!statement || statement.client_id !== req.client_id) {
+            const error = getError("statement_not_found")
+            return res.status(error.error_status).json({ 
+                error_type: error.error_type,
+                error_code: error.error_code,
+                error_message: error.error_message
+            })
+        }
+
+        // Response
+        let statementResponse = await Statement.findOne({ id: statement.id, client_id: req.client_id })
+            .select(responseFilters['statement'] + ' -client_id');
+        res.json(statementResponse);
+    } catch(err) {
+        console.error(err.message);
+        if(err.kind === 'ObjectId') {
+            const error = getError("invalid_statement_id")
+            return res.status(error.error_status).json({ 
+                error_type: error.error_type,
+                error_code: error.error_code,
+                error_message: error.error_message
+            })
+        }
+        console.error(err);
+        const error = getError("internal_server_error")
+        return res.status(error.error_status).json({ 
+            error_type: error.error_type,
+            error_code: error.error_code,
+            error_message: error.error_message
+        })
+    }
+})
+
+// @route     GET statements
+// @desc      List all statements 
+// @access    Public
+router.get('/', [auth], async (req, res) => {
+    console.log(req.headers)
+    console.log(req.body)
+
+    try {
+        const statements = await Statement.find({ client_id: req.client_id })
+            .select(responseFilters['statement'] + ' -client_id');
+
+        console.log(statements); 
+        res.json(statements);
+    } catch(err) {
+        console.error(err);
+        const error = getError("internal_server_error")
+        return res.status(error.error_status).json({ 
+            error_type: error.error_type,
+            error_code: error.error_code,
+            error_message: error.error_message
+        })
+    }
+})
+
+
+
+
+///////////////////
+// INTERNAL ROUTES
+///////////////////////
  
  // @route    PATCH statements/generate
 // @desc      Generate statements for all facilities
@@ -33,8 +106,6 @@ router.patch('/generate', async (req, res) => {
     runStatementGenerateJob()
 
     res.json({msg: 'Started statement generation job'})
-
-    
 
 })
 
@@ -70,7 +141,7 @@ router.patch('/generate/:id', async (req, res) => {
     // check if billing date is today or in the past
     var next_statement_date = moment(facility.next_billing_date);
     //const today = moment();
-    const today = moment('2024/03/23');
+    const today = process.env.NODE_ENV === 'development' ? moment(config.get('current_date')) : moment();
 
     if(next_statement_date.isSameOrBefore(today, 'day')) {
         console.log('need to generate statement!')
@@ -86,6 +157,7 @@ router.patch('/generate/:id', async (req, res) => {
         // pull in nls loan details
         const nls_loan_details = await retrieveNLSLoan(facility.nls_account_ref);
         console.log(`nls loan details: ${nls_loan_details}`)
+        if(nls_loan_details === 'nls_error') { return res.status(500).json({msg: 'error retrieving nls loan details'}) }
 
         // Generate docspring data fields
         const statement_data_fields = generateDocspringStatementDataFields(facility, borrower_details, nls_loan_details)
@@ -130,7 +202,8 @@ router.patch('/generate/:id', async (req, res) => {
             statement_date: statement_date,
             url: statement_url,
             facility_id: facility.id,
-            ds_submission_id: submission_id
+            ds_submission_id: submission_id,
+            client_id: facility.client_id
         })
         await statement.save()
 

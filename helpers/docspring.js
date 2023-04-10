@@ -208,6 +208,9 @@ const generateDocspringStatementDataFields = (facility, borrower_details, nls_lo
 
     const doc_data_fields = {};
 
+    //////////////////////////
+    // SUMMARY 
+    //////////////////////////
     // top table
     doc_data_fields.statement_date = moment(facility.next_billing_date).format("MM/DD/YYYY");
     doc_data_fields.account_number = facility.account_number;
@@ -232,24 +235,68 @@ const generateDocspringStatementDataFields = (facility, borrower_details, nls_lo
     doc_data_fields.cs_phone = "707-563-1563";
     doc_data_fields.cs_email = "customer-service@pier-finance.com";
 
-    // account activity
+    // set period start and end date
+    var period_start = "";
+    const today = process.env.NODE_ENV === 'development' ? moment(config.get('current_date')) : moment();
+    // if it's the first (shortened) billing cycle, set start date to open date, else set it to last billing date
+    if (today.isSameOrBefore(nls_loan_details.amortizationSchedule[1].Payment_Date, 'day')) {
+        period_start = moment(nls_loan_details.loanDetails.Open_Date).format("M/D");
+    } else {
+        period_start = moment(nls_loan_details.loanDetails.Last_Billing_Date).format("M/D");
+    }
 
-    doc_data_fields.statement_period = ""
-    doc_data_fields.statement_period_starting_balance = ""
-    doc_data_fields.statement_period_scheduled_principal_payments = ""
-    doc_data_fields.statement_period_scheduled_interest_payments = ""
-    doc_data_fields.statement_period_additional_principal_applied = ""
-    doc_data_fields.statement_period_additional_interest_applied = ""
-    doc_data_fields.statement_period_principal_adjustments = ""
-    doc_data_fields.statement_period_fees = ""
-    doc_data_fields.statement_period_ending_balance = ""
+    // set end date to billing date - 1
+    const period_end = moment(facility.next_billing_date, "YYYY/MM/DD").subtract(1, "days").format("M/D");
+    
 
 
-    var ytdStats = {}
+    ////////////////////////////
+    // ACCOUNT ACTIVITY
+    ////////////////////////////
+
+    // Current period  
+    var periodStats = {};
     Object.values(nls_loan_details.statistics).forEach(statData => {
-        if (statData.Year_Number === moment().year() && statData.Master_Record === 1 && statData.Month_Number === 0) {
+        if (statData.Month_Number.toString() === today.format("YYYYMM")) {
+            periodStats = statData
+        }
+    })
+    doc_data_fields.statement_period = `${period_start} – ${period_end}`
+
+    // Calculate total principal and interest payments in current period
+
+    // Grab payments from last billing period
+    const currentPaymentsList = Object.values(nls_loan_details.paymentHistory).filter(pmt => {
+        // if pmt.Date_Paid is before today and on/after last billing date, filter out the payment
+        const pmt_date = moment(pmt.Date_Paid);
+        return (pmt_date.isSameOrAfter(nls_loan_details.loanDetails.Last_Billing_Date) && pmt_date.isBefore(today))
+    })
+    console.log('CURRENT PAYMENTS LIST')
+    console.log(currentPaymentsList)
+
+    var principalPaidSum = 0
+    var interestPaidSum = 0
+    currentPaymentsList.forEach(pmt => {
+        if(pmt.Payment_Description === "Principal Payment") { principalPaidSum += pmt.Payment_Amount }
+        if(pmt.Payment_Description === "Interest Payment") { interestPaidSum += pmt.Payment_Amount }
+    })
+    
+    doc_data_fields.statement_period_starting_balance = `${formatter.format(periodStats.Loan_Balance_High)}`;
+    doc_data_fields.statement_period_scheduled_principal_payments = `${formatter.format(principalPaidSum)}`;
+    doc_data_fields.statement_period_scheduled_interest_payments = `${formatter.format(interestPaidSum)}`;
+    doc_data_fields.statement_period_additional_principal_applied = "$0.00"
+    doc_data_fields.statement_period_additional_interest_applied = "$0.00"
+    doc_data_fields.statement_period_principal_adjustments = "$0.00"
+    doc_data_fields.statement_period_fees = "$0.00"
+    doc_data_fields.statement_period_ending_balance = `${formatter.format(facility.balance / 100)}`
+
+
+    // YTD
+    var ytdStats = {}
+    const currentYear = process.env.NODE_ENV === 'development' ? moment(config.get('current_date')).year() : moment().year();
+    Object.values(nls_loan_details.statistics).forEach(statData => {
+        if (statData.Year_Number === currentYear && statData.Master_Record === 1 && statData.Month_Number === 0) {
             ytdStats = statData
-            
         }
     })
     doc_data_fields.ytd_starting_balance = `${formatter.format(ytdStats.Loan_Balance_High)}`
@@ -261,7 +308,7 @@ const generateDocspringStatementDataFields = (facility, borrower_details, nls_lo
     doc_data_fields.ytd_fees = "$0.00"
     doc_data_fields.ytd_ending_balance = `${formatter.format(facility.balance / 100)}`
 
-
+    // Lifetime
     var lifetimeStats = {}
     Object.values(nls_loan_details.statistics).forEach(statData => {
         if (statData.Year_Number === 0 && statData.Master_Record === 0 && statData.Month_Number === 0) {
@@ -278,10 +325,114 @@ const generateDocspringStatementDataFields = (facility, borrower_details, nls_lo
     doc_data_fields.lifetime_fees = "$0.00"
     doc_data_fields.lifetime_ending_balance = `${formatter.format(facility.balance / 100)}`
 
-    // transaction activity
 
-    // bottom due table
+    ////////////////////////////
+    // TRANSACTION TABLE
+    ////////////////////////////
 
+    // set period
+    doc_data_fields.transaction_period = `${period_start} – ${period_end}`
+
+    // Sort payments by date
+    const sortedPaymentsList = currentPaymentsList.sort((a, b) => {
+        return moment(a.Date_Paid).isBefore(moment(b.Date_Paid)) ? 1 : -1;
+    })
+
+    // combine principal, interest and total payment objects
+    const combinedPayments = sortedPaymentsList.reduce((acc, curr) => {
+        if (!acc[curr.Transaction_Reference_No]) {
+            acc[curr.Transaction_Reference_No] = { Transaction_Reference_No: curr.Transaction_Reference_No, objects: [] };
+          }
+          acc[curr.Transaction_Reference_No].objects.push(curr);
+          return acc;
+        }, {});
+
+    console.log('combined payments:')
+    console.log(combinedPayments)
+    
+    var pmtIndex = 1 // need this to map transactions to correct docspring txn rom
+    // loop through each payment trio
+    Object.values(combinedPayments).forEach(pmt => {
+        // create the txn
+        var txn = {}
+        // set doc data fields
+        pmt.objects.forEach(pmtObj => {
+            switch (pmtObj.Payment_Description) {
+                case 'PAYMENT':
+                    txn.date = moment(pmtObj.Date_Paid).format("MM/DD/YYYY")
+                    txn.desc = "Scheduled Payment"
+                    txn.total = `${formatter.format(pmtObj.Payment_Amount)}`
+                    break;
+                case 'Principal Payment':
+                    txn.principal = `${formatter.format(pmtObj.Payment_Amount)}`
+                    break;
+                case 'Interest Payment':
+                    txn.interest = `${formatter.format(pmtObj.Payment_Amount)}`
+                    break;
+                default:
+                    break;
+            }
+
+            console.log('pmtObj:')
+            console.log(pmtObj)
+        })
+        switch (pmtIndex) {
+            case 1:
+                doc_data_fields.t1_date = txn.date
+                doc_data_fields.t1_desc = txn.desc
+                doc_data_fields.t1_principal = txn.principal ? txn.principal : "$0.00"
+                doc_data_fields.t1_interest = txn.interest ? txn.interest : "$0.00"
+                doc_data_fields.t1_total = txn.total ? txn.total : "$0.00"
+                break;
+            case 2:
+                doc_data_fields.t2_date = txn.date
+                doc_data_fields.t2_desc = txn.desc
+                doc_data_fields.t2_principal = txn.principal ? txn.principal : "$0.00"
+                doc_data_fields.t2_interest = txn.interest ? txn.interest : "$0.00"
+                doc_data_fields.t2_total = txn.total ? txn.total : "$0.00"
+                break;
+            case 3:
+                doc_data_fields.t3_date = txn.date
+                doc_data_fields.t3_desc = txn.desc
+                doc_data_fields.t3_principal = txn.principal ? txn.principal : "$0.00"
+                doc_data_fields.t3_interest = txn.interest ? txn.interest : "$0.00"
+                doc_data_fields.t3_total = txn.total ? txn.total : "$0.00"
+                break;
+            case 4:
+                doc_data_fields.t4_date = txn.date
+                doc_data_fields.t4_desc = txn.desc
+                doc_data_fields.t4_principal = txn.principal ? txn.principal : "$0.00"
+                doc_data_fields.t4_interest = txn.interest ? txn.interest : "$0.00"
+                doc_data_fields.t4_total = txn.total ? txn.total : "$0.00"
+                break;
+            case 5:
+                doc_data_fields.t5_date = txn.date
+                doc_data_fields.t5_desc = txn.desc
+                doc_data_fields.t5_principal = txn.principal ? txn.principal : "$0.00"
+                doc_data_fields.t5_interest = txn.interest ? txn.interest : "$0.00"
+                doc_data_fields.t5_total = txn.total ? txn.total : "$0.00"
+                break;
+
+            default:
+                break;
+        }
+        pmtIndex++
+    })
+
+    ////////////////////////////
+    // BOTTOM AMOUNT DUE
+    ////////////////////////////
+
+    // borrower details
+    doc_data_fields.name2 = `${borrower_details.first_name} ${borrower_details.last_name}`
+    doc_data_fields.street2 = `${borrower_details.address.line_1} ${borrower_details.address.line_2}`;
+    doc_data_fields.city_state_zip2 = `${borrower_details.address.city}, ${borrower_details.address.state} ${borrower_details.address.zip}`;
+    doc_data_fields.due_amount = `${formatter.format(total_payment_due)}`
+
+    // table
+    doc_data_fields.account_number2 = `Account Number: ${facility.account_number}`;
+    doc_data_fields.due_by = moment(facility.next_payment_due_date).format("MM/DD/YYYY");
+    console.log(`doc_data_fields: ${JSON.stringify(doc_data_fields)}`)
     return doc_data_fields
 }
 
