@@ -4,7 +4,9 @@ const router = express.Router();
 const consumer_state_limits = require('../../helpers/coverage/consumer.json');
 const commercial_state_limits = require('../../helpers/coverage/commercial.json');
 const Customer = require('../../models/Customer');
+const config = require('config');
 const { getError } = require('../../helpers/errors.js');
+const { WebClient } = require('@slack/web-api');
 //const { webhookEventEmitter } = require('../../server');
 
 
@@ -35,5 +37,30 @@ confirm emitter is firing
 
 
 */
+
+// @route     DWOLLA WEBHOOKS
+// @desc      Dwolla event listener for ACH transfers
+// @access    Public
+router.post('/dwolla', async (req, res) => {
+    console.log('received dwolla webhook!')
+    const { topic, resourceId, timestamp } = req.body;
+
+    if (topic === 'customer_transfer_completed' && process.env.NODE_ENV === 'production') {
+        const slack = new WebClient(config.get('slack_bot_id'));
+        (async () => {
+            try {
+                const greeting = 'Bonjour! A Dwolla payment has settled. Please transfer the funds to the client 🫡'
+                const result = slack.chat.postMessage({
+                    channel: '#payments',
+                    text: greeting + '\n' + `*Event:* ${topic}` + '\n' + `*Dwolla Transfer id:* ${resourceId}` + '\n' + `*Timestamp:* ${timestamp}`
+                });
+            }
+            catch (error) { console.error(error); }
+        })();
+    }
+   
+    // respond to dwolla
+    res.status(200).send('Webhook received');
+})
 
 module.exports = router;

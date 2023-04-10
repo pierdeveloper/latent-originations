@@ -81,15 +81,15 @@ router.post('/', [auth, paymentValidationRules()], async (req, res) => {
         
         await payment.save()
 
-        // check if process env is production and if so, submit payment notification
-        if(process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'staging') {
+        // ping slack for prod payments
+        if(process.env.NODE_ENV === 'production') {
             const slack = new WebClient(config.get('slack_bot_id'));
             (async () => {
                 try {
-                    const greeting = 'Bonjour! A payment has been submitted. Please submit the transfer to Dwolla.'
+                    const greeting = 'Bonjour! A payment has been submitted. Submit the transfer to Dwolla 🫡'
                     const result = slack.chat.postMessage({
                         channel: '#payments',
-                        text: greeting + '\n' + `*facility_id:* ${facility_id}` + '\n' + `*amount:* $${amount/100}` + '\n' + `*status:* ${payment.status}` + '\n' + `*env:* ${process.env.NODE_ENV}`
+                        text: greeting + '\n' + `*Amount:* $${amount/100}` + '\n' + `*Status:* ${payment.status}` + '\n' + `*Facility id:* ${facility_id}`
                     });
                 }
                 catch (error) { console.error(error); }

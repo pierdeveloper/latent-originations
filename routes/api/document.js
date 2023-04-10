@@ -49,21 +49,21 @@ router.post('/', [auth], async (req, res) => {
         }
 
         // check that a live loan agreement doesn't already exist
-        /*
-        **** TEMPORARY FOR TESTING!!
-        const existing_loan_agreement = await Document.findOne({
-            application_id: application_id,
-            status: "pending_signature"
-        });
-        if(existing_loan_agreement) {
-            const error = getError("document_already_exists")
-            return res.status(error.error_status).json({ 
-                error_type: error.error_type,
-                error_code: error.error_code,
-                error_message: error.error_message
-            })
+        if(process.env.NODE_ENV !== 'development') {
+            const existing_loan_agreement = await Document.findOne({
+                application_id: application_id,
+                status: "pending_signature"
+            });
+            if(existing_loan_agreement) {
+                const error = getError("document_already_exists")
+                return res.status(error.error_status).json({ 
+                    error_type: error.error_type,
+                    error_code: error.error_code,
+                    error_message: error.error_message
+                })
+            }
         }
-        */
+        
        
         // Check that borrower exists
         let borrower = await Borrower.findOne({ id: application.borrower_id })

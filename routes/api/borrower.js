@@ -222,8 +222,9 @@ router.post('/consumer', [auth, consumerValidationRules()], async (req, res) => 
             ssn } = req.body
 
         // encrypt ssn
-        //TODO
+        const encrypted_ssn = encrypt(ssn);
 
+/*
         // grab customer profile for checking ssn whitelist and other configs
         let customer = await Customer.findOne({client_id: req.client_id });
         const duplicate_ssn_whitelist = customer.duplicate_ssn_whitelist
@@ -239,7 +240,7 @@ router.post('/consumer', [auth, consumerValidationRules()], async (req, res) => 
                 error_message: error.error_message
             })
         }
-
+*/
         // create borrower
         const borrower_id = 'bor_' + uuidv4().replace(/-/g, '');
         const cif_number = Math.floor(Math.random() * 900000000000000) + 100000000000000;
@@ -263,7 +264,7 @@ router.post('/consumer', [auth, consumerValidationRules()], async (req, res) => 
             client_id,
             kyc_completion_date,
             phone,
-            ssn
+            ssn: encrypted_ssn
         });
 
         // add consumer to NLS (quick hack to reduce latency is to do this asynch and hope it works)

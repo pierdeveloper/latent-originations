@@ -52,6 +52,7 @@ app.use('/api/borrowers', require('./routes/api/borrower'));
 app.use('/api/applications', require('./routes/api/application'));
 app.use('/api/loan_agreements', require('./routes/api/document'));
 app.use('/api/facilities', require('./routes/api/facility'));
+app.use('/api/statements', require('./routes/api/statement'));
 app.use('/api/payments', require('./routes/api/payment'));
 app.use('/api/coverage', require('./routes/api/coverage'));
 app.use('/api/rejection_reasons', require('./routes/api/rejection_reasons'));
@@ -62,7 +63,7 @@ const webhookEventEmitter = new EventEmitter();
 
 // Serve static assets in production
 
-if(process.env.NODE_ENV === 'production' /*|| process.env.NODE_ENV === 'staging'*/) {
+if(process.env.NODE_ENV === 'production') {
     app.enable("trust proxy") // for express-rate-limit on heroku
     // Set static folder
     app.use(express.static('client/build'));
@@ -74,7 +75,7 @@ if(process.env.NODE_ENV === 'production' /*|| process.env.NODE_ENV === 'staging'
 }
 
 const PORT = process.env.PORT || 5001;
-console.log(`environment: ${process.env}`);
+console.log(`environment: ${process.env.NODE_ENV}`);
 app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
 
 module.exports = webhookEventEmitter;

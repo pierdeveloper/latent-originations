@@ -18,6 +18,7 @@ const config = require('config');
 const responseFilters = require('../../helpers/responseFilters.json');
 const { response } = require('express');
 const { bankDetailsValidationRules } = require('../../helpers/validator.js');
+const { WebClient } = require('@slack/web-api');
 
 
 
@@ -56,21 +57,19 @@ router.post('/', [auth], async (req, res) => {
             })
         }
 
-        // Confirm a facility for this loan agreement does not already exist
-        
-
-        // ******  OMITTING FOR TESTING ONLY. UNCOMMENT ONCE FINISHED TESTING!! *(*********)
-/*
-        let existingFacility = await Facility
-            .findOne({ loan_agreement_id: loan_agreement.id });
-        if(existingFacility) {
-            const error = getError("facility_already_exists")
-            return res.status(error.error_status).json({ 
-                error_type: error.error_type,
-                error_code: error.error_code,
-                error_message: error.error_message
-            })
-        }*/
+        // Confirm a facility for this loan agreement does not already exist (ignore for dev)
+        if(process.env.NODE_ENV !== 'development') {
+            let existingFacility = await Facility
+                .findOne({ loan_agreement_id: loan_agreement.id });
+            if(existingFacility) {
+                const error = getError("facility_already_exists")
+                return res.status(error.error_status).json({ 
+                    error_type: error.error_type,
+                    error_code: error.error_code,
+                    error_message: error.error_message
+                })
+            }
+        }
 
         // Pull up relevant application
         let application = await Application.findOne({ id: loan_agreement.application_id })
@@ -176,15 +175,33 @@ router.post('/', [auth], async (req, res) => {
                 break;
             default: break;
         }
-        
-        // Save facility
-        //await facility.save();
 
         // Sync facility with NLS details
         const syncJob = await syncNLSWithFacility(facility);
         if(syncJob !== 'SUCCESS') {
             console.log('error syncing facility with nls');
             throw new Error("NLS Sync Error");
+        }
+
+        // ping slack for prod facilities
+        if(process.env.NODE_ENV === 'production'){
+            console.log('running slack script')
+            const slack = new WebClient(config.get('slack_bot_id'));
+            (async () => {
+                try {
+                    const greeting = '💰 A new loan has been originated! 💰'
+                    const customer = facility.nls_group_name;
+                    const loan_type = facility.credit_type;
+                    const amount = facility.terms.amount;
+                    const state = borrowerDetails.address.state;
+                    const result = slack.chat.postMessage({
+                        channel: '#general',
+                        text: greeting + '\n' + `*Customer:* ${customer}` +'\n' + `*Type:* ${loan_type}` +'\n' + 
+                            `*Amount:* $${amount/100}` + '\n' + `*State:* ${state}` +'\n' + `*Account #:* ${facility.account_number}`
+                    });
+                }
+                catch (error) { console.error(error); }
+            })();
         }
 
         // Response
@@ -447,7 +464,7 @@ const syncNLSWithFacility = async (facility) => {
                 case "consumer_revolving_line_of_credit":
                 case "consumer_installment_loan":
                 case "consumer_bnpl":
-                    facility.balance = Math.floor(nlsLoan.loanDetails.Current_Payoff_Balance * 100);
+                    facility.balance = Math.floor(nlsLoan.loanDetails.Current_Principal_Balance * 100);
                     facility.monthly_payment = Math.floor(nlsLoan.paymentDetails.Next_Payment_Total_Amount * 100); // redundant: deprecate!
                     facility.next_payment_amount = Math.floor(nlsLoan.paymentDetails.Next_Payment_Total_Amount * 100);
                     facility.next_payment_due_date = moment(nlsLoan.paymentDetails.Next_Principal_Payment_Date).format("YYYY/MM/DD");
@@ -462,15 +479,11 @@ const syncNLSWithFacility = async (facility) => {
                     facility.scheduled_payoff_date = maturity_date ? moment(maturity_date).format("YYYY/MM/DD") : null;
 
                     // add payments due
-
                     // first reset the array
                     facility.payments_due = [];
                     // for each object in nlsLoan.loanDetails.Payments_Due
                     var paymentsDueData = nlsLoan.paymentsDue;
-                    console.log(`payments due array of ojbs \n` +paymentsDueData)
                     Object.values(paymentsDueData).forEach(pmtDueData => {
-                        console.log(`payment due data:`)
-                        console.log(pmtDueData)
                         if (pmtDueData.Payment_Description === 'TOT PAYMENT') {
                             facility.payments_due.push({
                                 payment_amount: Math.floor(pmtDueData.Payment_Amount * 100),
@@ -480,32 +493,18 @@ const syncNLSWithFacility = async (facility) => {
                         }
                     })
 
-                    /*
-                    for (let i = 0; i < paymentsDueData.length; index++) {
-                        console.log(' in teh for loop!')
-                        let pmtDueData = paymentsDueData[i];
-                        console.log(`payment due data:`)
-                        console.log(pmtDueData)
-                        if(pmtDueData.Payment_Description === 'TOT PAYMENT') {
-                            facility.payments_due.push({
-                                payment_amount: Math.floor(pmtDueData.Payment_Amount * 100),
-                                payment_amount_remaining: Math.floor(pmtDueData.Payment_Remaining * 100),
-                                payment_due_date: moment(pmtDueData.Date_Due).format("YYYY/MM/DD")
-                            })
-                        }   
-                    }*/
+                    // calc remaining term for loans with a populated amort schedule
+                    const amortSchedule = nlsLoan.amortizationSchedule;
+                    if(Object.keys(amortSchedule).length !== 0) {
+                        var termCount = 0;
+                        Object.values(amortSchedule).forEach(remainingPayment => {
+                            if(!remainingPayment.IsHistory) {
+                                termCount++;
+                            }
+                        })
+                        facility.remaining_term = termCount;
+                    }
 
-                    // check if Payment_Description === 'TOT PAYMENT'
-
-                    // if so, create payment_due object
-
-                    // set payment_amount to object.Payment_Amount
-
-                    // set payment_aount_remaining to object.Payment_Amount_Remaining
-
-                    // set payment_due_date to object.Payment_Due_Date
-
-                    // append object to facility.payments_due
                     break;
                 default: console.log('cannot sync this type of credit product')
                     break;
@@ -583,66 +582,6 @@ const runNLSSynchroJob = async () => {
             // latency to avoid nls rate limit
             var waitTill = new Date(new Date().getTime() + 1 * 250);
             while(waitTill > new Date()){}
-
-            // OLD CODE BELOW, WHICH IS CURRENTLY TUCKED IN SYNCNLSWITHFACILITY FUNCTION
-            /*
-            // get nls loan details
-            let nlsLoan = await retrieveNLSLoan(facility.nls_account_ref);
-                        
-            // populate facility with updated info
-            if(nlsLoan !== "nls_error") {
-                console.log('no nls error found..')
-                // populate facility based on type
-                switch (facility.credit_type) {
-                    case "consumer_installment_loan":
-                    case "consumer_bnpl":
-                        console.log('in the switch statement now..')
-                        facility.balance = Math.floor(nlsLoan.loanDetails.Current_Payoff_Balance * 100);
-                        facility.monthly_payment = Math.floor(nlsLoan.paymentDetails.Next_Payment_Total_Amount * 100);
-                        facility.next_payment_due_date = moment(nlsLoan.paymentDetails.Next_Principal_Payment_Date).format("YYYY/MM/DD");
-                        const maturity_date = nlsLoan.loanDetails.Curr_Maturity_Date;
-                        facility.scheduled_payoff_date = maturity_date ? moment(maturity_date).format("YYYY/MM/DD") : undefined;
-                        console.log('facility dets synced..')
-                        sync_count++;
-                        console.log(sync_count)
-                        break
-                    case "consumer_revolving_line_of_credit":
-                        //todo
-                        sync_count++;
-                        break;
-                    default: console.log('cannot sync this type of credit product')
-                        break;
-                }
-                
-            } else {
-                console.log('nls error. Unable to synchronize faciilty ' + facility.id);
-                errors.push(facility.id)
-            }
-
-            const current_principal_pay_date = nlsLoan.paymentDetails.Current_Principal_Payment_Date
-            const next_principal_pay_date = nlsLoan.paymentDetails.Next_Principal_Payment_Date
-            const last_payment_date = nlsLoan.paymentDetails.Last_Payment_Date
-            const principal_paid_thru = nlsLoan.loanDetails.Principal_Paid_Thru_Date
-            const next_billing_date = nlsLoan.loanDetails.Next_Billing_Date
-            const interest_accrued_thru = nlsLoan.loanDetails.Interest_Accrued_Thru_Date
-            const next_accrual_cutoff = nlsLoan.loanDetails.Next_Accrual_Cutoff
-
-            console.log('______________________________________________________')
-            console.log('key data summary')
-            console.log('______________________________________________________')
-            console.log({
-                current_principal_pay_date: current_principal_pay_date,
-                next_principal_pay_date: next_principal_pay_date,
-                last_payment_date: last_payment_date,
-                principal_paid_thru: principal_paid_thru,
-                next_billing_date: next_billing_date,
-                interest_accrued_thru: interest_accrued_thru,
-                next_accrual_cutoff: next_accrual_cutoff
-            })
-
-            // save facility
-            await facility.save();
-*/
             
         }
 

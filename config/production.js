@@ -12,5 +12,7 @@ module.exports = {
     nls_client_id: process.env.NLS_CLIENT_ID,
     nls_secret: process.env.NLS_SECRET,
     nls_scope: process.env.NLS_SCOPE,
-    slack_bot_id: process.env.SLACK_BOT_ID
+    slack_bot_id: process.env.SLACK_BOT_ID,
+    aes_secret_key: process.env.AES_SECRET_KEY,
+    aes_iv: process.env.AES_IV
 }

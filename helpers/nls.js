@@ -319,7 +319,6 @@ const retrieveNLSLoan = async (loanRef) => {
         const response6 = await axios.get(url6, {headers: header});
         const statisticsData = response6.data.payload.data;
         Object.assign(fullLoanDetails.statistics, statisticsData);
-
         
         console.log(fullLoanDetails)
         
