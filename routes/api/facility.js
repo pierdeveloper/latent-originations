@@ -596,6 +596,7 @@ const runNLSSynchroJob = async () => {
     }   
 
     // report the job
+    const duration = moment.duration(time_completed.diff(time_initiated)).asSeconds()
     const jobReport = new Job({
         facility_count: facilities.length,
         sync_count: sync_count,
@@ -606,10 +607,31 @@ const runNLSSynchroJob = async () => {
         type: 'fax',
         env: process.env.NODE_ENV,
         status: status,
-        duration: moment.duration(time_completed.diff(time_initiated)).asSeconds()
+        duration: duration
     })
     jobReport.save();
     console.log(jobReport);
+
+    // ping slack for prod and sandbox facilities
+    if(process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'sandbox') {
+        console.log('running slack script')
+        const slack = new WebClient(config.get('slack_bot_id'));
+        (async () => {
+            try {
+                const greeting = '🔄 A cron job has finished running 🔄'
+                const result = slack.chat.postMessage({
+                    channel: '#crons',
+                    text: greeting + '\n' + '\n' + `*Type:* Fax` +'\n' + `*Env:* ${process.env.NODE_ENV}` +'\n' + 
+                        `*Status:* ${status}` + '\n' + `*Facility count:* ${facilities.length}` +'\n' + `*Sync count:* ${sync_count}`
+                        + '\n' + `*Skipped:* ${skipped}` +'\n' + `*Errors:* ${errorsList}`
+                        + '\n' + `*Time initiated:* ${time_initiated}` +'\n' + `*Time completed:* ${time_completed}`
+                        + '\n' + `*Duration:* ${duration}`
+                });
+            }
+            catch (error) { console.error(error); }
+        })();
+    }
+
 }
 
 
