@@ -6,6 +6,7 @@ const router = express.Router();
 const Borrower = require('../../models/Borrower');
 const Application = require('../../models/Application');
 const Facility = require('../../models/Facility');
+const Job = require('../../models/Job');
 const { calculate_periodic_payment } = require('../../helpers/docspring.js');
 const { validationResult } = require('express-validator');
 const consumer_state_limits = require('../../helpers/coverage/consumer.json');
@@ -345,6 +346,7 @@ router.get('/:id', [auth], async (req, res) => {
         let facilityResponse = await Facility.findOne({ id: facility.id, client_id: req.client_id })
             .select(responseFilters['facility'] + ' -client_id');
         res.json(facilityResponse);
+
     } catch(err) {
         console.error(err.message);
         if(err.kind === 'ObjectId') {
@@ -378,6 +380,7 @@ router.get('/', [auth], async (req, res) => {
 
         console.log(facilities); 
         res.json(facilities);
+
     } catch(err) {
         console.error(err);
         const error = getError("internal_server_error")
@@ -390,6 +393,12 @@ router.get('/', [auth], async (req, res) => {
 })
 
 
+
+
+
+////////////////////////
+// INTERNAL PRIVATE ROUTES FOR SYNCING WITH NLS
+////////////////////////
 
 
 // @route     PATCH facilities/id/synchronize
@@ -539,13 +548,18 @@ router.patch('/synchronize', async (req, res) => {
 })
 
 const runNLSSynchroJob = async () => {
+    const time_initiated = moment()
+    var time_completed = moment()
+    var status = 'failed'
+    const errorsList = [];
+    const skipped = [];
+    var facilities = [];
+    var sync_count = 0;
+
     try {
 
         // grab all facilities
-        const facilities = await Facility.find();
-        const errors = [];
-        const skipped = [];
-        var sync_count = 0;
+        facilities = await Facility.find();
         
         // loop thru each facility
         for (let i = 0; i < facilities.length; i++) {
@@ -561,7 +575,7 @@ const runNLSSynchroJob = async () => {
             const syncJob = await syncNLSWithFacility(facility)
 
             if(syncJob !== "SUCCESS") {
-                errors.push(facility.facility_id)
+                errorsList.push(facility.facility_id)
             } else {
                 sync_count++;
             }
@@ -572,21 +586,30 @@ const runNLSSynchroJob = async () => {
             
         }
 
+        time_completed = moment();
+        status = 'completed'
         console.log('loop job complete')
-        
-        const jobReport = {
-            msg: 'Facility Job complete',
-            facility_count: facilities.length,
-            sync_count: sync_count,
-            skipped: skipped,
-            errors: errors
-        }
-
-        console.log(jobReport)
 
     } catch (err) {
+        time_completed = moment();
         console.log({error: 'critical error syncing facilities with NLS'})
     }   
+
+    // report the job
+    const jobReport = new Job({
+        facility_count: facilities.length,
+        sync_count: sync_count,
+        skipped: skipped,
+        errorsList: errorsList,
+        time_initiated: time_initiated,
+        time_completed: time_completed,
+        type: 'fax',
+        env: process.env.NODE_ENV,
+        status: status,
+        duration: moment.duration(time_completed.diff(time_initiated)).asSeconds()
+    })
+    jobReport.save();
+    console.log(jobReport);
 }
 
 
