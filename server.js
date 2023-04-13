@@ -57,6 +57,7 @@ app.use('/api/payments', require('./routes/api/payment'));
 app.use('/api/coverage', require('./routes/api/coverage'));
 app.use('/api/rejection_reasons', require('./routes/api/rejection_reasons'));
 app.use('/api/customers', require('./routes/api/customer'));
+app.use('/api/sandbox', require('./routes/api/sandbox'));
 app.use('/api/webhooks', require('./routes/api/webhook'));
 
 const webhookEventEmitter = new EventEmitter();

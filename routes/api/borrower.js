@@ -223,24 +223,8 @@ router.post('/consumer', [auth, consumerValidationRules()], async (req, res) => 
 
         // encrypt ssn
         const encrypted_ssn = encrypt(ssn);
+        //console.log(`encrypted ssn: ${encrypted_ssn}`)
 
-/*
-        // grab customer profile for checking ssn whitelist and other configs
-        let customer = await Customer.findOne({client_id: req.client_id });
-        const duplicate_ssn_whitelist = customer.duplicate_ssn_whitelist
-
-        // check for duplicate ssn
-        let consumer = await Consumer.findOne({ ssn, client_id })
-
-        if (consumer && !duplicate_ssn_whitelist.includes(ssn)) {
-            const error = getError("duplicate_ssn")
-            return res.status(error.error_status).json({ 
-                error_type: error.error_type,
-                error_code: error.error_code,
-                error_message: error.error_message
-            })
-        }
-*/
         // create borrower
         const borrower_id = 'bor_' + uuidv4().replace(/-/g, '');
         const cif_number = Math.floor(Math.random() * 900000000000000) + 100000000000000;

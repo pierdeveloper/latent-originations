@@ -5,6 +5,7 @@ const auth = require('../../middleware/auth');
 const router = express.Router();
 const Facility = require('../../models/Facility');
 const Statement = require('../../models/Statement');
+const Job = require('../../models/Job');
 const moment = require('moment');
 const config = require('config');
 const responseFilters = require('../../helpers/responseFilters.json');
@@ -14,7 +15,7 @@ const { getDocSpringSubmission,
     docspringTemplates } = require('../../helpers/docspring.js');
 const Consumer = require('../../models/Consumer.js');
 const { retrieveNLSLoan } = require('../../helpers/nls.js');
-
+const { WebClient } = require('@slack/web-api');
  
 
 // @route     GET statement by id
@@ -222,12 +223,17 @@ router.patch('/generate/:id', async (req, res) => {
 
 // Statement generation job
 const runStatementGenerateJob = async () => {
+    const time_initiated = moment()
+    var time_completed = moment()
+    var status = 'failed'
+    const errorsList = [];
+    const skipped = [];
+    var facilities = [];
+    var sync_count = 0;
+
     try {
         // grab all facilities
-        const facilities = await Facility.find();
-        const errors = [];
-        const skipped = [];
-        var sync_count = 0;
+        facilities = await Facility.find();
         
         // loop thru each facility
         for (let i = 0; i < facilities.length; i++) {
@@ -247,11 +253,11 @@ const runStatementGenerateJob = async () => {
             }
 
             // check if billing date is today or in the past
-            var next_statement_date = moment(facility.next_billing_date);
-            //const today = moment();
-            const today = moment('2023/04/21');
+            var next_statement_date = moment(facility.next_billing_date, "YYYY/MM/DD");
+            const today = process.env.NODE_ENV === 'development' ? 
+                moment(config.get('current_date')).format('YYYY/MM/DD') : moment().format('YYYY/MM/DD');
 
-            if(next_statement_date.isSameOrBefore(today, 'day')) {
+            if(next_statement_date.isSame(today, 'day')) {
                 console.log('need to generate statement!')
                 console.log(facility);
                 // todo: check that existing statement note already created
@@ -311,33 +317,69 @@ const runStatementGenerateJob = async () => {
                     statement_date: statement_date,
                     url: statement_url,
                     facility_id: facility.id,
-                    ds_submission_id: submission_id
+                    ds_submission_id: submission_id,
+                    client_id: facility.client_id
                 })
                 await statement.save()
 
                 sync_count++;
                 console.log(`statement generated: ${statement}`)
                                 
-            } else { console.log('No statement required yet for this facility')}        
+            } else { 
+                console.log('No statement required yet for this facility')
+                skipped.push(facility.id)
+            }        
             
         }
 
+        time_completed = moment();
+        status = 'completed'
         console.log('statement loop job complete')
         
-        const jobReport = {
-            msg: 'Statement Job complete',
-            facility_count: facilities.length,
-            sync_count: sync_count,
-            skipped: skipped,
-            errors: errors
-        }
-
-        console.log(jobReport)
 
     } catch (err) {
+        time_completed = moment();
         console.log({error: 'critical error running statement generation job'})
         console.log(err)
     }   
+
+    // report the job
+    const duration = moment.duration(time_completed.diff(time_initiated)).asSeconds()
+    const jobReport = new Job({
+        facility_count: facilities.length,
+        sync_count: sync_count,
+        skipped: skipped,
+        errorsList: errorsList,
+        time_initiated: time_initiated,
+        time_completed: time_completed,
+        type: 'statement',
+        env: process.env.NODE_ENV,
+        status: status,
+        duration: duration
+    })
+    jobReport.save();
+    console.log(jobReport);
+
+    // ping slack for prod and sandbox facilities
+    if(process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'sandbox') {
+        console.log('running slack script')
+        const slack = new WebClient(config.get('slack_bot_id'));
+        (async () => {
+            try {
+                const greeting = '🔄 A cron job has finished running 🔄'
+                const result = slack.chat.postMessage({
+                    channel: '#crons',
+                    text: greeting + '\n' + '\n' + `*Type:* Statement` +'\n' + `*Env:* ${process.env.NODE_ENV}` +'\n' + 
+                        `*Status:* ${status}` + '\n' + `*Facility count:* ${facilities.length}` +'\n' + `*Sync count:* ${sync_count}`
+                        + '\n' + `*Skipped:* ${skipped}` +'\n' + `*Errors:* ${errorsList}`
+                        + '\n' + `*Time initiated:* ${time_initiated}` +'\n' + `*Time completed:* ${time_completed}`
+                        + '\n' + `*Duration:* ${duration}`
+                });
+            }
+            catch (error) { console.error(error); }
+        })();
+    }
+
 }
 
 module.exports = router;

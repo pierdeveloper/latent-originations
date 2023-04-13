@@ -336,9 +336,141 @@ const retrieveNLSLoan = async (loanRef) => {
     }
 }
 
+// Synchronize a facility with NLS
+const syncFacilityWithNLS = async (facility) => {
+    try {
+        console.log('pre-synced facility')
+        console.log(facility)
+
+        // verify nls loan ref exists
+        if(!facility.nls_account_ref) {
+            return "ERROR: this facility does not have a nls_loan_ref"
+        }
+
+        // get nls loan details
+        let nlsLoan = await retrieveNLSLoan(facility.nls_account_ref);
+
+        // populate facility with updated info
+        if(nlsLoan !== "nls_error") {
+            // populate facility based on type
+            switch (facility.credit_type) {
+                case "consumer_revolving_line_of_credit":
+                case "consumer_installment_loan":
+                case "consumer_bnpl":
+                    facility.balance = Math.floor(nlsLoan.loanDetails.Current_Principal_Balance * 100);
+                    facility.monthly_payment = Math.floor(nlsLoan.paymentDetails.Next_Payment_Total_Amount * 100); // redundant: deprecate!
+                    facility.next_payment_amount = Math.floor(nlsLoan.paymentDetails.Next_Payment_Total_Amount * 100);
+                    facility.next_payment_due_date = moment(nlsLoan.paymentDetails.Next_Principal_Payment_Date).format("YYYY/MM/DD");
+                    facility.current_payment_due_date = moment(nlsLoan.paymentDetails.Current_Principal_Payment_Date).format("YYYY/MM/DD");
+                    const last_payment_date = nlsLoan.paymentDetails.Last_Payment_Date;
+                    facility.last_payment_date = last_payment_date ? moment(last_payment_date).format("YYYY/MM/DD") : null;
+                    facility.principal_paid_thru = moment(nlsLoan.loanDetails.Principal_Paid_Thru_Date).format("YYYY/MM/DD");
+                    facility.next_billing_date = moment(nlsLoan.loanDetails.Next_Billing_Date).format("YYYY/MM/DD");
+                    facility.interest_accrued_thru =  moment(nlsLoan.loanDetails.Interest_Accrued_Thru_Date).format("YYYY/MM/DD");
+                    facility.next_accrual_cutoff_date = moment(nlsLoan.loanDetails.Next_Accrual_Cutoff).format("YYYY/MM/DD");
+                    const maturity_date = nlsLoan.loanDetails.Curr_Maturity_Date;
+                    facility.scheduled_payoff_date = maturity_date ? moment(maturity_date).format("YYYY/MM/DD") : null;
+
+                    // add payments due
+                    // first reset the array
+                    facility.payments_due = [];
+                    // for each object in nlsLoan.loanDetails.Payments_Due
+                    var paymentsDueData = nlsLoan.paymentsDue;
+                    Object.values(paymentsDueData).forEach(pmtDueData => {
+                        if (pmtDueData.Payment_Description === 'TOT PAYMENT') {
+                            facility.payments_due.push({
+                                payment_amount: Math.floor(pmtDueData.Payment_Amount * 100),
+                                payment_amount_remaining: Math.floor(pmtDueData.Payment_Remaining * 100),
+                                payment_due_date: moment(pmtDueData.Date_Due).format("YYYY/MM/DD")
+                            })
+                        }
+                    })
+
+                    // calc remaining term for loans with a populated amort schedule
+                    const amortSchedule = nlsLoan.amortizationSchedule;
+                    if(Object.keys(amortSchedule).length !== 0) {
+                        var termCount = 0;
+                        Object.values(amortSchedule).forEach(remainingPayment => {
+                            if(!remainingPayment.IsHistory) {
+                                termCount++;
+                            }
+                        })
+                        facility.remaining_term = termCount;
+                    }
+
+                    break;
+                default: console.log('cannot sync this type of credit product')
+                    break;
+            }
+            
+        } else {
+            console.log('nls error. Unable to synchronize');
+            return 'ERROR: Unable to synchronize'
+        }
+
+        // save facility
+        await facility.save();
+
+        console.log('Synced facility')
+        console.log(facility)
+
+        // Done
+        return "SUCCESS"
+
+    } catch (err) {
+        console.error(err.message);
+        return "ERROR: unexpected error"
+    }
+}
+
+
+// accrue a loan to a specific date
+const accrueNLSLoan = async (accountNumber, date) => {
+    // Generate Auth token
+    const nls_token = await generateNLSAuthToken();
+
+    try {
+        // NLS config
+        const url = `https://api.nortridgehosting.com/25.0/nls/xml-import?test=false`;
+        const auth = 'Bearer ' + nls_token;
+        const header = {'Content-Type': 'application/xml', 'Accept': 'application/json',
+        'Authorization': auth}
+        
+        // Create NLS data fields
+        const advance_date = moment(date, "YYYY-MM-DD").format("MM/DD/YYYY");
+    
+        // xml data
+        const xmlData = `<?xml version="1.0" encoding="UTF-8"?>
+            <NLS CommitBlock="1" EnforceTagExistence="1">
+                <TRANSACTIONS UpdateAccrualThru="${advance_date}">
+                    <PAYMENT LoanNumber="${accountNumber}" Amount="0.00" /> 
+                </TRANSACTIONS>
+            </NLS>`
+
+        console.log(`xml data: ${xmlData}`)
+        // Request
+        const response = await axios.post(url, xmlData, {headers: header})
+        console.log(response.data);
+        
+        // Revoke token
+        await revokeNLSAuthToken(nls_token);
+        return "accrual_complete"
+        
+    } catch (error) {
+        console.log('error trying to accrue nls loan')
+        console.log(error.response.data);
+
+        // Revoke token
+        await revokeNLSAuthToken(nls_token)
+        return "nls_error"
+    }
+}
+
 module.exports = {
+    accrueNLSLoan,
     createNLSConsumer,
     createNLSLoan,
     createNLSLineOfCredit,
-    retrieveNLSLoan
+    retrieveNLSLoan,
+    syncFacilityWithNLS
 }

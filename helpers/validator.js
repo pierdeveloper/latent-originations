@@ -1,6 +1,7 @@
 const { check, validationResult } = require('express-validator');
 const states = require('../helpers/coverage/states.json');
 const rejection_reasons = require('../helpers/rejectionReasons.json');
+const routingNumberValidator = require('bank-routing-number-validator');
 
 // Business borrower validation rules
 const businessValidationRules = () => {
@@ -166,16 +167,20 @@ const consumerValidationRules = () => {
             .isDate({format:"yyyy-mm-dd", strictMode:true}).optional({nullable: true}),
         check('facility_id', 'invalid facility id')
             .isString()
-
     ]
   }
 
   const bankDetailsValidationRules = () => {
     return [
-        check('repayment_bank_details.bank_account_number', 'Bank account number must be a string')
+        check('repayment_bank_details.bank_account_number', 'Bank account number contains invalid characters')
             .isInt().isLength({max: 100}),
-        check('repayment_bank_details.bank_account_routing', 'Bank account routing must be a string')
-            .isInt().isLength({max: 100})
+        check('repayment_bank_details.bank_account_routing', 'Bank account routing must be a valid routing number')
+            .isLength({max: 100})
+            .custom(value => {
+                return routingNumberValidator.ABARoutingNumberIsValid(value)
+            }),
+        check('repayment_bank_details.type', 'Bank account type must be one of: checking, savings')
+            .isIn(['checking', 'savings'])
     ]
   }
 
@@ -185,8 +190,15 @@ const consumerValidationRules = () => {
             .isEmail()
     ]
   }
-
+  
+  const advanceDateValidationRules = () => {
+    return [
+        check('date', 'Date must be formatted as yyyy-mm-dd')
+            .isDate({format:"yyyy-mm-dd", strictMode:true}),
+    ]
+  }
   module.exports = {
+    advanceDateValidationRules,
     businessValidationRules,
     consumerValidationRules,
     consumerUpdateValidationRules,
