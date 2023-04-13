@@ -20,6 +20,7 @@ const responseFilters = require('../../helpers/responseFilters.json');
 const { response } = require('express');
 const { bankDetailsValidationRules } = require('../../helpers/validator.js');
 const { WebClient } = require('@slack/web-api');
+const Statement = require('../../models/Statement.js');
 
 
 
@@ -392,7 +393,48 @@ router.get('/', [auth], async (req, res) => {
     }
 })
 
+// @route     GET statements for a facility
+// @desc      List all facilities for a facility
+// @access    Public
+router.get('/:id/statements', [auth], async (req, res) => {
+    console.log(req.headers)
+    console.log(req.body)
 
+    try {
+        const facility = await Facility.findOne({ id: req.params.id });
+        if(!facility || facility.client_id !== req.client_id) {
+            const error = getError("facility_not_found")
+            return res.status(error.error_status).json({ 
+                error_type: error.error_type,
+                error_code: error.error_code,
+                error_message: error.error_message
+            })
+        }
+
+        const statements = await Statement.find({ facility_id: facility.id })
+            .select(responseFilters['statement'] + ' -client_id');
+        // Response
+        res.json(statements);
+
+    } catch(err) {
+        console.error(err.message);
+        if(err.kind === 'ObjectId') {
+            const error = getError("invalid_facility_id")
+            return res.status(error.error_status).json({ 
+                error_type: error.error_type,
+                error_code: error.error_code,
+                error_message: error.error_message
+            })
+        }
+        console.error(err);
+        const error = getError("internal_server_error")
+        return res.status(error.error_status).json({ 
+            error_type: error.error_type,
+            error_code: error.error_code,
+            error_message: error.error_message
+        })
+    }
+})
 
 
 
