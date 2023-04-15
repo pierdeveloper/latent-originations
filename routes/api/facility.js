@@ -165,6 +165,7 @@ router.post('/', [auth], async (req, res) => {
                     throw new Error("NLS Error");
                 }
                 facility.nls_account_ref = nls_loan.nls_account_ref;
+                
                 break;
 
             case "consumer_revolving_line_of_credit":

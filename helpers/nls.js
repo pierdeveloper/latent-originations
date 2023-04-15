@@ -171,6 +171,8 @@ const createNLSLoan = async (facility) => {
 
         const nls_loan = response_data[0]
         let nls_account_ref = nls_loan['Acctrefno'];
+        console.log('details of created nls loan:')
+        console.log(nls_loan)
         
         // Revoke token
         await revokeNLSAuthToken(nls_token);

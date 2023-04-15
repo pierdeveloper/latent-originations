@@ -99,6 +99,4 @@ router.post('/facility/:id/advance_date', [auth, advanceDateValidationRules()], 
     }
 })
 
-
-
 module.exports = router;
