@@ -211,6 +211,14 @@ const FacilitySchema = new mongoose.Schema({
             type: Number,
             required: false
         }
+    },
+    dwolla_customer_id: {
+        type: String,
+        required: false
+    },
+    dwolla_funding_source_id: {
+        type: String,
+        required: false
     }
 
 });

@@ -71,7 +71,6 @@ router.post('/facility/:id/advance_date', [auth, advanceDateValidationRules()], 
         }
 
         // sync facility
-        //const syncFacilityTask = await syncNLSWithFacility(facility);
         const syncJob = await syncFacilityWithNLS(facility)
 
         // check for errors on syncing facility

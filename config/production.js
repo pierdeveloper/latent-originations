@@ -14,5 +14,11 @@ module.exports = {
     nls_scope: process.env.NLS_SCOPE,
     slack_bot_id: process.env.SLACK_BOT_ID,
     aes_secret_key: process.env.AES_SECRET_KEY,
-    aes_iv: process.env.AES_IV
+    aes_iv: process.env.AES_IV,
+    dwolla: {
+        client_id: process.env.DWOLLA_CLIENT_ID,
+        client_secret: process.env.DWOLLA_CLIENT_SECRET,
+        environment: 'production',
+        pier_funding_source_id: process.env.PIER_DWOLLA_FUNDING_SOURCE_ID
+    }
 }

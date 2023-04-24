@@ -192,6 +192,12 @@ const errors = {
         error_message: "Invalid or missing repayment bank account & routing info. Add repayment bank details before submitting a payment",
         error_status: 400,
         error_type: "PAYMENT_ERROR"
+    },
+    repayment_ach_disabled: {
+        error_code: "REPAYMENT_ACH_DISABLED",
+        error_message: "Your account is not enabled for ACH payments",
+        error_status: 400,
+        error_type: "PAYMENT_ERROR"
     }
 }
 

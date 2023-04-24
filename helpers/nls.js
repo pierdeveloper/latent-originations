@@ -425,8 +425,58 @@ const syncFacilityWithNLS = async (facility) => {
     }
 }
 
+// Post loan payment to NLS
+const postPaymentToNLS = async (facility, payment) => {
+    // Generate Auth token
+    const token = await generateNLSAuthToken();
+    const paymentDate = moment(payment.created_on).format("MM/DD/YYYY");
+    if(process.env === 'development') {paymentDate = moment(config.get('today')).format("MM/DD/YYYY")}
+    console.log('received NLS payment post request')
+    console.log(facility)
+    console.log(payment)
+    try {
+        // NLS config
+        const url = `https://api.nortridgehosting.com/25.0/nls/xml-import?test=false`;
+        const auth = 'Bearer ' + token;
+        const header = {'Content-Type': 'application/xml', 'Accept': 'application/json',
+        'Authorization': auth}
 
-// accrue a loan to a specific date
+        // xml data
+        const xmlData = 
+            `<?xml version="1.0" encoding="UTF-8"?>
+            <NLS CommitBlock="1" EnforceTagExistence="1">
+                <TRANSACTIONS>
+                    <PAYMENT 
+                        LoanNumber="${facility.account_number}" 
+                        Amount="${payment.amount / 100}" 
+                        EffectiveDate="${paymentDate}"
+                    />
+                </TRANSACTIONS>
+            </NLS>`
+
+        console.log(`xml data: ${xmlData}`)
+        // Request
+        const response = await axios.post(url, xmlData, {headers: header})
+        console.log('finished axios post request')
+        console.log(response.data);
+        
+        // Revoke token
+        await revokeNLSAuthToken(token);
+        return "payment_posted"
+        
+    } catch (error) {
+        // Revoke token
+        await revokeNLSAuthToken(token)
+
+        console.log('error trying to post nls loan payment')
+        console.log(error.response.data);
+
+        
+        return "nls_error"
+    }
+}
+
+// accrue a loan to a specific date (sandbox tool only)
 const accrueNLSLoan = async (accountNumber, date) => {
     // Generate Auth token
     const nls_token = await generateNLSAuthToken();
@@ -474,5 +524,6 @@ module.exports = {
     createNLSLoan,
     createNLSLineOfCredit,
     retrieveNLSLoan,
-    syncFacilityWithNLS
+    syncFacilityWithNLS,
+    postPaymentToNLS
 }

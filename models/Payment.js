@@ -49,6 +49,14 @@ const PaymentSchema = new mongoose.Schema({
     created_on: {
         type: Date,
         default: Date.now
+    },
+    dwolla_funding_source_id: {
+        type: String,
+        required: false
+    },
+    dwolla_transfer_id: {
+        type: String,
+        required: false
     }
   
 });
