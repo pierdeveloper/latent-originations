@@ -104,6 +104,20 @@ const ApplicationSchema = new mongoose.Schema({
         type: String,
         required: false,
         default: "pending"
+    },
+    third_party_disbursement_destination: {
+        type: String,
+        required: false
+    }, 
+    credit_data: {
+        fico: {
+            type: Number,
+            required: false
+        },
+        has_bankruptcy_history: {
+            type: Boolean,
+            required: false
+        }
     }
 
 });

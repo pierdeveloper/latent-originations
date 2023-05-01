@@ -197,11 +197,22 @@ const consumerValidationRules = () => {
             .isDate({format:"yyyy-mm-dd", strictMode:true}),
     ]
   }
+
+  const creditPolicyRuleValidationRules = () => {
+    return [
+        check('property', 'The property specified is not supported')
+            .isIn(['fico', 'has_bankruptcy_history']),
+        check('operator', 'The operator field specified is not supported')
+            .isIn(['greater_than', 'equal_to'])
+    ]
+}
+
   module.exports = {
     advanceDateValidationRules,
     businessValidationRules,
     consumerValidationRules,
     consumerUpdateValidationRules,
+    creditPolicyRuleValidationRules,
     customerValidationRules,
     applicationValidationRules,
     offerValidationRules,

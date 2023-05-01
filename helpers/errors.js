@@ -67,6 +67,12 @@ const errors = {
         error_status: 400,
         error_type: "APPLICATION_ERROR"
     },
+    application_cannot_be_evaluated: {
+        error_code: "APPLICATION_CANNOT_BE_EVALUATED",
+        error_message: "The application's status must be pending in order to evaluate it",
+        error_status: 400,
+        error_type: "APPLICATION_ERROR"
+    },
     borrower_not_found: {
         error_code: "BORROWER_NOT_FOUND",
         error_message: "The borrower resource does not exist",
@@ -198,6 +204,48 @@ const errors = {
         error_message: "Your account is not enabled for ACH payments",
         error_status: 400,
         error_type: "PAYMENT_ERROR"
+    },
+    credit_policy_not_found: {
+        error_code: "CREDIT_POLICY_NOT_FOUND",
+        error_message: "The credit policy resource does not exist",
+        error_status: 404,
+        error_type: "CREDIT_POLICY_ERROR"
+    },
+    credit_policy_not_in_drafted_state: {
+        error_code: "CREDIT_POLICY_NOT_IN_DRAFTED_STATE",
+        error_message: "The credit policy must be in a drafted state in order to submit it for approval",
+        error_status: 400,
+        error_type: "CREDIT_POLICY_ERROR"
+    },
+    credit_policy_not_in_approved_state: {
+        error_code: "CREDIT_POLICY_NOT_IN_APPROVED_STATE",
+        error_message: "The credit policy must be in an approved state in order to deploy it",
+        error_status: 400,
+        error_type: "CREDIT_POLICY_ERROR"
+    },
+    credit_policy_changes_not_allowed: {
+        error_code: "CREDIT_POLICY_CHANGES_NOT_ALLOWED",
+        error_message: "The credit policy may not be changed in its current state. Create a new one to make changes",
+        error_status: 400,
+        error_type: "CREDIT_POLICY_ERROR"
+    },
+    credit_policy_no_rules: {
+        error_code: "CREDIT_POLICY_NO_RULES",
+        error_message: "Cannot deploy or submit a policy with no rules",
+        error_status: 400,
+        error_type: "CREDIT_POLICY_ERROR"
+    },
+    credit_policy_offer_limits_incomplete: {
+        error_code: "CREDIT_POLICY_OFFER_LIMITS_INCOMPLETE",
+        error_message: "The credit policy's offer limits are incomplete. Please make sure all offer limits are specified",
+        error_status: 400,
+        error_type: "CREDIT_POLICY_ERROR"
+    },
+    invalid_credit_policy_id: {
+        error_code: "INVALID_CREDIT_POLICY_ID",
+        error_message: "The credit_policy_id specified is invalid",
+        error_status: 400,
+        error_type: "CREDIT_POLICY_ERROR"
     }
 }
 

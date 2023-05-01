@@ -34,10 +34,12 @@
         "Multiple Returned checks or Insufficient Fund Fees detected", 
     "fraud_risk_too_high" : 
         "Bank account has been flagged as potential fraud risk",
-    "bankruptcy" : 
-        "Outstanding balance from previous loan",  
+    "has_bankruptcy_history" : 
+        "History of bankruptcy",  
     "processor_suspended" : 
         "Payment processor is unable to authenticate user",
     "cash_flow_verification_failed" : 
-        "Cash flow analysis - income funds are quickly depleted from bank account after income deposit"
+        "Cash flow analysis - income funds are quickly depleted from bank account after income deposit",
+    "credit_score_too_low" : 
+        "Your credit score does not meet our requirement"
 }

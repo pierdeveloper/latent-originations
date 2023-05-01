@@ -59,6 +59,7 @@ app.use('/api/rejection_reasons', require('./routes/api/rejection_reasons'));
 app.use('/api/customers', require('./routes/api/customer'));
 app.use('/api/sandbox', require('./routes/api/sandbox'));
 app.use('/api/webhooks', require('./routes/api/webhook'));
+app.use('/api/credit_policies', require('./routes/api/credit_policy'));
 
 const webhookEventEmitter = new EventEmitter();
 
