@@ -48,7 +48,7 @@ const pullSoftExperianReport = async (consumer) => {
     let decrypted_ssn = decrypt(encrypted_ssn)
 
     var payload = {}
-    if (process.env.NODE_ENV === 'production') {
+    if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'staging') {
         payload = {
             "firstName": consumer.first_name,
             "lastName": consumer.last_name,
