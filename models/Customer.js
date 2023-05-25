@@ -63,6 +63,11 @@ const CustomerSchema = new mongoose.Schema({
         default: false,
         required: true
     },
+    underwriting_enabled: {
+        type: Boolean,
+        default: false,
+        required: true
+    },
     duplicate_ssn_whitelist: {
         type: Array,
         default: []

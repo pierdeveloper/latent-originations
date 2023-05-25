@@ -2,6 +2,7 @@ const express = require('express');
 const { getError } = require('../../helpers/errors.js');
 const { v4: uuidv4 } = require('uuid');
 const auth = require('../../middleware/auth');
+const { encrypt, decrypt } = require('../../helpers/crypto');
 const router = express.Router();
 const Borrower = require('../../models/Borrower');
 const Application = require('../../models/Application');
@@ -21,6 +22,7 @@ const { response } = require('express');
 const { bankDetailsValidationRules } = require('../../helpers/validator.js');
 const { WebClient } = require('@slack/web-api');
 const Statement = require('../../models/Statement.js');
+const pierFormats = require('../../helpers/formats.js');
 
 
 
@@ -111,10 +113,13 @@ router.post('/', [auth], async (req, res) => {
         facilityFields.facility_id = 'fac_' + uuidv4().replace(/-/g, '');
         facilityFields.account_number = Math.floor(Math.random() * 900000000) + 100000000;
         facilityFields.autopay_enabled = false
-        facilityFields.origination_date = moment(loan_agreement.signature_timestamp).format("YYYY/MM/DD");
+        const format = pierFormats.shortDate
+        console.log('pier date format: ' + format)
+        facilityFields.origination_date = moment(loan_agreement.signature_timestamp).format(pierFormats.shortDate)
         if(!nls_group_name || nls_group_name === "") {
             facilityFields.nls_group_name = "DEFAULT"
         } else { facilityFields.nls_group_name = nls_group_name}
+        // set facility.
         
 
         
@@ -186,6 +191,8 @@ router.post('/', [auth], async (req, res) => {
             throw new Error("NLS Sync Error");
         }
 
+        // Add Dwolla user to facility
+
         // ping slack for prod facilities
         if(process.env.NODE_ENV === 'production'){
             console.log('running slack script')
@@ -243,7 +250,11 @@ router.post('/:id/repayment_bank_details', [auth, bankDetailsValidationRules()],
         return res.status(400).json(response);
     }
 
-    const {repayment_bank_details} = req.body
+    const {
+        bank_routing_number,
+        bank_account_number,
+        type
+    } = req.body
 
     try {
         // verify facility exists
@@ -256,13 +267,27 @@ router.post('/:id/repayment_bank_details', [auth, bankDetailsValidationRules()],
                 error_message: error.error_message
             })
         }
+        console.log(facility);
+        // TODO: encrypt bank account number
+        const encrypted_bank_account_number = encrypt(bank_account_number)
 
+        // Build bank account object
+        const bank_account = {
+            bank_routing_number,
+            bank_account_number: encrypted_bank_account_number,
+            type
+        }
+        
+        // Set repayment bank details
+        facility.repayment_bank_details = bank_account;
 
-        facility.repayment_bank_details = repayment_bank_details;
+        // Save and respond
         await facility.save();
 
         facility = await Facility.findOne({ id: req.params.id })
             .select(responseFilters['facility'] + ' -client_id');
+        
+        facility.repayment_bank_details.bank_account_number = decrypt(facility.repayment_bank_details.bank_account_number)
         
         console.log(facility);
         res.json(facility)
@@ -347,6 +372,8 @@ router.get('/:id', [auth], async (req, res) => {
         // Response
         let facilityResponse = await Facility.findOne({ id: facility.id, client_id: req.client_id })
             .select(responseFilters['facility'] + ' -client_id');
+
+        facilityResponse.repayment_bank_details.bank_account_number = decrypt(facilityResponse.repayment_bank_details.bank_account_number)
         res.json(facilityResponse);
 
     } catch(err) {
@@ -379,6 +406,19 @@ router.get('/', [auth], async (req, res) => {
     try {
         const facilities = await Facility.find({ client_id: req.client_id })
             .select(responseFilters['facility'] + ' -client_id');
+        
+        // loop through facilities and decrypt each bank account number in repayment bank details
+        for(let i = 0; i < facilities.length; i++) {
+            if(facilities[i].repayment_bank_details) {
+                if(facilities[i].repayment_bank_details.bank_account_number) {
+                    if(facilities[i].repayment_bank_details.bank_account_number.length < 30) {
+                        continue; // skip existing unencrypted numbers
+                    } else {
+                        facilities[i].repayment_bank_details.bank_account_number = decrypt(facilities[i].repayment_bank_details.bank_account_number)
+                    } 
+                }
+            }
+        }
 
         console.log(facilities); 
         res.json(facilities);

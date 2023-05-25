@@ -16,6 +16,7 @@ const { getDocSpringSubmission,
 const Consumer = require('../../models/Consumer.js');
 const { retrieveNLSLoan } = require('../../helpers/nls.js');
 const { WebClient } = require('@slack/web-api');
+const pierFormats = require('../../helpers/formats.js');
  
 
 // @route     GET statement by id
@@ -196,7 +197,7 @@ router.patch('/generate/:id', async (req, res) => {
 
         // Create statement and save
         const statement_id = 'stmt_' + uuidv4().replace(/-/g, '');
-        const statement_date = moment(next_statement_date).format('YYYY/MM/DD')
+        const statement_date = moment(next_statement_date).format(pierFormats.shortDate)
 
         let statement = new Statement({
             id: statement_id,
@@ -253,9 +254,9 @@ const runStatementGenerateJob = async () => {
             }
 
             // check if billing date is today or in the past
-            var next_statement_date = moment(facility.next_billing_date, "YYYY/MM/DD");
+            var next_statement_date = moment(facility.next_billing_date, pierFormats.shortDate);
             const today = process.env.NODE_ENV === 'development' ? 
-                moment(config.get('current_date')).format('YYYY/MM/DD') : moment().format('YYYY/MM/DD');
+                moment(config.get('current_date')).format(pierFormats.shortDate) : moment().format(pierFormats.shortDate);
 
             if(next_statement_date.isSame(today, 'day')) {
                 console.log('need to generate statement!')
@@ -310,7 +311,7 @@ const runStatementGenerateJob = async () => {
 
                 // Create statement and save
                 const statement_id = 'stmt_' + uuidv4().replace(/-/g, '');
-                const statement_date = moment(next_statement_date).format('YYYY/MM/DD')
+                const statement_date = moment(next_statement_date).format(pierFormats.shortDates)
 
                 let statement = new Statement({
                     id: statement_id,

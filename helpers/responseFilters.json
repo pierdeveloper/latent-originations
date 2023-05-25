@@ -2,6 +2,6 @@
     "facility": "-_id -__v -cif_number -nls_account_ref -nls_group_name",
     "consumer": "-_id -__v -ssn -cif_number",
     "statement": "-_id -__v -ds_submission_id -created_on",
-    "payment": "-_id -__v -bank_account_number -bank_account_routing -bank_account_type -dwolla_funding_source_id",
+    "payment": "-_id -__v -bank_account_number -bank_routing_number -bank_account_type -dwolla_funding_source_id",
     "credit_policy": "-_id -__v"
 }

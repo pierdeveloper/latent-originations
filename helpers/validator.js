@@ -172,14 +172,14 @@ const consumerValidationRules = () => {
 
   const bankDetailsValidationRules = () => {
     return [
-        check('repayment_bank_details.bank_account_number', 'Bank account number contains invalid characters')
-            .isInt().isLength({max: 100}),
-        check('repayment_bank_details.bank_account_routing', 'Bank account routing must be a valid routing number')
+        check('bank_routing_number', 'Bank account routing must be a valid routing number')
             .isLength({max: 100})
             .custom(value => {
                 return routingNumberValidator.ABARoutingNumberIsValid(value)
             }),
-        check('repayment_bank_details.type', 'Bank account type must be one of: checking, savings')
+        check('bank_account_number', 'Bank account number contains invalid characters')
+            .isInt().isLength({max: 100}),
+        check('type', 'Bank account type must be one of: checking, savings')
             .isIn(['checking', 'savings'])
     ]
   }

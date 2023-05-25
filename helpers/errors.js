@@ -205,6 +205,18 @@ const errors = {
         error_status: 400,
         error_type: "PAYMENT_ERROR"
     },
+    payment_not_found: {
+        error_code: "PAYMENT_NOT_FOUND",
+        error_message: "The payment resource does not exist",
+        error_status: 404,
+        error_type: "PAYMENT_ERROR"
+    },
+    invalid_payment_id: {
+        error_code: "INVALID_PAYMENT_ID",
+        error_message: "The payment_id specified is invalid",
+        error_status: 400,
+        error_type: "PAYMENT_ERROR"
+    },
     credit_policy_not_found: {
         error_code: "CREDIT_POLICY_NOT_FOUND",
         error_message: "The credit policy resource does not exist",

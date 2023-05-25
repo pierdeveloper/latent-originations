@@ -1,9 +1,14 @@
 const axios = require('axios').default;
 const moment = require('moment');
 const config = require('config');
+const { decrypt } = require('../helpers/crypto.js');
 
 
-const baseUrl = config.get('dwolla.environment') !== 'production' ? 'https://api-sandbox.dwolla.com' : 'https://api.dwolla.com';
+//const baseUrl = config.get('dwolla.environment') !== 'production' ? 'https://api-sandbox.dwolla.com' : 'https://api.dwolla.com';
+
+const baseUrl = process.env.NODE_ENV !== 'production'
+    ? 'https://api-sandbox.dwolla.com'
+    : 'https://api.dwolla.com';
 
 // GENERATE DWOLLA TOKEN
 const generateDwollaToken = async () => {
@@ -75,11 +80,14 @@ const listDwollaCustomers = async () => {
 const addDwollaFundingSource = async (facility) => {
     const token = await generateDwollaToken();
     const bank_details = facility.repayment_bank_details;
+    const routing_number = bank_details.bank_routing_number;
+    const encrypted_account_number = bank_details.bank_account_number;
+    const decrypted_account_number = decrypt(encrypted_account_number);
     const dwolla_customer_id = facility.dwolla_customer_id;
 
     const payload = {
-        routingNumber: bank_details.bank_account_routing,
-        accountNumber: bank_details.bank_account_number,
+        routingNumber: routing_number,
+        accountNumber: decrypted_account_number,
         bankAccountType: bank_details.type,
         name: `Loan Repayment obo ${facility.nls_group_name}`
     }

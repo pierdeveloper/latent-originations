@@ -26,7 +26,7 @@ const PaymentSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    bank_account_routing: {
+    bank_routing_number: {
         type: String,
         required: true
     },

@@ -36,6 +36,10 @@
         "Bank account has been flagged as potential fraud risk",
     "has_bankruptcy_history" : 
         "History of bankruptcy",  
+    "unable_to_verify_credit_information":
+        "Unable to verify credit information",
+    "credit_file_frozen":
+        "Credit file is currently frozen",
     "processor_suspended" : 
         "Payment processor is unable to authenticate user",
     "cash_flow_verification_failed" : 

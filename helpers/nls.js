@@ -1,6 +1,7 @@
 const axios = require('axios').default;
 const moment = require('moment');
 const config = require('config');
+const pierFormats = require('../helpers/formats');
 
 // get auth token
 const generateNLSAuthToken = async () => {
@@ -119,7 +120,7 @@ const createNLSLoan = async (facility) => {
         const cif_number = facility.cif_number;
         const nls_group_name = facility.nls_group_name;
         const account_number = facility.account_number;
-        const origination_date = moment(facility.origination_date).format("YYYY/MM/DD"); // set facility og date based on our format
+        const origination_date = moment(facility.origination_date).format(pierFormats.shortDate); // set facility og date based on our format
         const nls_origination_date = moment(origination_date).format("MM/DD/YYYY") // convert to nls format
         const amount = facility.terms.amount / 100;
         const term = facility.terms.term;
@@ -204,7 +205,7 @@ const createNLSLineOfCredit = async (facility) => {
         const cif_number = facility.cif_number;
         const nls_group_name = facility.nls_group_name;
         const account_number = facility.account_number;
-        const origination_date = moment(facility.origination_date).format("YYYY/MM/DD");
+        const origination_date = moment(facility.origination_date).format(pierFormats.shortDate);
         const nls_origination_date = moment(origination_date).format("MM/DD/YYYY");
         const amount = facility.terms.amount / 100;
         //const term = facility.terms.term;
@@ -362,16 +363,16 @@ const syncFacilityWithNLS = async (facility) => {
                     facility.balance = Math.floor(nlsLoan.loanDetails.Current_Principal_Balance * 100);
                     facility.monthly_payment = Math.floor(nlsLoan.paymentDetails.Next_Payment_Total_Amount * 100); // redundant: deprecate!
                     facility.next_payment_amount = Math.floor(nlsLoan.paymentDetails.Next_Payment_Total_Amount * 100);
-                    facility.next_payment_due_date = moment(nlsLoan.paymentDetails.Next_Principal_Payment_Date).format("YYYY/MM/DD");
-                    facility.current_payment_due_date = moment(nlsLoan.paymentDetails.Current_Principal_Payment_Date).format("YYYY/MM/DD");
+                    facility.next_payment_due_date = moment(nlsLoan.paymentDetails.Next_Principal_Payment_Date).format(pierFormats.shortDate);
+                    facility.current_payment_due_date = moment(nlsLoan.paymentDetails.Current_Principal_Payment_Date).format(pierFormats.shortDate);
                     const last_payment_date = nlsLoan.paymentDetails.Last_Payment_Date;
-                    facility.last_payment_date = last_payment_date ? moment(last_payment_date).format("YYYY/MM/DD") : null;
-                    facility.principal_paid_thru = moment(nlsLoan.loanDetails.Principal_Paid_Thru_Date).format("YYYY/MM/DD");
-                    facility.next_billing_date = moment(nlsLoan.loanDetails.Next_Billing_Date).format("YYYY/MM/DD");
-                    facility.interest_accrued_thru =  moment(nlsLoan.loanDetails.Interest_Accrued_Thru_Date).format("YYYY/MM/DD");
-                    facility.next_accrual_cutoff_date = moment(nlsLoan.loanDetails.Next_Accrual_Cutoff).format("YYYY/MM/DD");
+                    facility.last_payment_date = last_payment_date ? moment(last_payment_date).format(pierFormats.shortDate) : null;
+                    facility.principal_paid_thru = moment(nlsLoan.loanDetails.Principal_Paid_Thru_Date).format(pierFormats.shortDate);
+                    facility.next_billing_date = moment(nlsLoan.loanDetails.Next_Billing_Date).format(pierFormats.shortDate);
+                    facility.interest_accrued_thru =  moment(nlsLoan.loanDetails.Interest_Accrued_Thru_Date).format(pierFormats.shortDate);
+                    facility.next_accrual_cutoff_date = moment(nlsLoan.loanDetails.Next_Accrual_Cutoff).format(pierFormats.shortDate);
                     const maturity_date = nlsLoan.loanDetails.Curr_Maturity_Date;
-                    facility.scheduled_payoff_date = maturity_date ? moment(maturity_date).format("YYYY/MM/DD") : null;
+                    facility.scheduled_payoff_date = maturity_date ? moment(maturity_date).format(pierFormats.shortDate) : null;
 
                     // add payments due
                     // first reset the array
@@ -383,7 +384,7 @@ const syncFacilityWithNLS = async (facility) => {
                             facility.payments_due.push({
                                 payment_amount: Math.floor(pmtDueData.Payment_Amount * 100),
                                 payment_amount_remaining: Math.floor(pmtDueData.Payment_Remaining * 100),
-                                payment_due_date: moment(pmtDueData.Date_Due).format("YYYY/MM/DD")
+                                payment_due_date: moment(pmtDueData.Date_Due).format(pierFormats.shortDate)
                             })
                         }
                     })
@@ -431,6 +432,7 @@ const postPaymentToNLS = async (facility, payment) => {
     const token = await generateNLSAuthToken();
     const paymentDate = moment(payment.created_on).format("MM/DD/YYYY");
     if(process.env === 'development') {paymentDate = moment(config.get('today')).format("MM/DD/YYYY")}
+
     console.log('received NLS payment post request')
     console.log(facility)
     console.log(payment)

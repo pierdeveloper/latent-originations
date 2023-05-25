@@ -17,6 +17,8 @@ const valid_rejection_reasons = require('../../helpers/rejectionReasons.json');
 const Customer = require('../../models/Customer.js');
 const {CreditPolicy} = require('../../models/CreditPolicy.js');
 const rejectionReasons = require('../../helpers/rejectionReasons.json');
+const {generateCRSTokenTest, pullSoftExperianReport, experianBankruptcyCodes} = require('../../helpers/crs.js');
+const { ConsoleLogger } = require('@slack/logger');
 
 // @route     POST application
 // @desc      Create a credit application
@@ -95,6 +97,53 @@ router.post('/', [auth, applicationValidationRules()], async (req, res) => {
     }
 });
 
+// temp crs testing endpoint
+router.post('/crs', [auth], async (req, res) => {
+    
+    const consumer = {
+        first_name: "ANDERSON",
+        last_name: "LAURIE",
+        address: {
+            line_1: "9817 LOOP BLVD",
+            line_2: "APT G",
+            city: "CALIFORNIA CITY",
+            state: "CA",
+            zip: "935051352"
+        },
+        date_of_birth: "1998-08-01",
+        ssn: "5e938569e92cb9d33204089904b55b80",
+        phone: "0000000000"
+    }
+
+    const payload = {
+        "firstName": "ANDERSON",
+        "lastName": "LAURIE",
+        "nameSuffix": "SR",
+        "street1": "9817 LOOP BLVD",
+        "street2": "APT G",
+        "city": "CALIFORNIA CITY",
+        "state": "CA",
+        "zip": "935051352",
+        "ssn": "666455730",
+        "dob": "1998-08-01",
+        "phone": "0000000000"
+    }
+    // pull report
+    const experianReport = await pullSoftExperianReport(consumer)
+
+/*
+    const ficoScore = experianReport.riskModel[0].score
+    const publicRecord = experianReport.publicRecord
+    const underwritingData = {
+        fico_score: ficoScore,
+        public_record: publicRecord
+    }
+    */
+    res.status(200).json(experianReport)
+
+})
+
+
 // @route POST applications/evaluate
 // @desc Evaluate a credit application
 // @access Public
@@ -102,8 +151,11 @@ router.post('/:id/evaluate', [auth, offerValidationRules()], async (req, res) =>
     console.log(req.headers)
     console.log(req.body)
 
-    // if process.env.NODE_ENV is production, return product_unsupported error
-    if(process.env.NODE_ENV === 'production') {
+    // get client config
+    const customer = await Customer.findOne({ client_id: req.client_id })
+    
+    // require underwriting enabled for production
+    if(process.env.NODE_ENV !== 'development' && !customer.underwriting_enabled) {
         const error = getError("unsupported_product")
         return res.status(error.error_status).json({
             error_type: error.error_type,
@@ -181,7 +233,6 @@ router.post('/:id/evaluate', [auth, offerValidationRules()], async (req, res) =>
             }
         }
 
-
         // grab borrower
         let borrower = await Borrower.findOne({ id: application.borrower_id })
         if(!borrower || borrower.client_id !== req.client_id) {
@@ -194,11 +245,8 @@ router.post('/:id/evaluate', [auth, offerValidationRules()], async (req, res) =>
             })
         }
 
-
         /////
-        // pull in customer config
-        let customer = await Customer.findOne({client_id: req.client_id });
-
+       
         // get applicant info
         let consumer = await Consumer.findOne({ id: application.borrower_id })
         //verify state is supported (ie it's not PR, guam etc)
@@ -239,7 +287,6 @@ router.post('/:id/evaluate', [auth, offerValidationRules()], async (req, res) =>
         // verify if either limit type 1 
         const limit_1 = state.limit_1
         const limit_2 = state.limit_2
-
 
         // check type 1
         if ((offer.amount >= limit_1.amount.min && 
@@ -303,17 +350,101 @@ router.post('/:id/evaluate', [auth, offerValidationRules()], async (req, res) =>
 
 
         // TODO: need to have a gate here to only pull credit when necessary!
+        // check if credit should be pulled
 
-        // TODO: pull credit from CRS
+        // TODO: pull credit from CRS if necessary
         /*
         let credit = crs.pullCredit(consumer)
+        
+
+        // perform validations on credit factors (ie it exists, is not missing/null, etc)
 
         // TODO: map credit report to application
         application.credit_data.fico = credit.fico
         application.credit_data.bankruptcy = credit.bankruptcy
         */
 
+        const experianReport = await pullSoftExperianReport(consumer)
+
+        // check for null report case
+        if (!experianReport || experianReport === null) {
+            const error = getError("internal_server_error")
+            console.log('experian report object from CRS pull method is null or undefined')
+            return res.status(error.error_status).json({
+                error_type: error.error_type,
+                error_code: error.error_code,
+                error_message: error.error_message
+            })
+        }
+
+        // check for no hit
+        const informationalMessages = experianReport.informationalMessage
+        let noHitDetected = informationalMessages?.some((msg) => {
+            return msg.messageNumber === '07'
+        })
+
+        if(noHitDetected) {
+            console.log('no hit scenario detected. Reject the application!')
+            const rejection_reason = rejectionReasons['unable_to_verify_credit_information']
+            application.rejection_reasons.push(rejection_reason)
+        }
+
+        // check for frozen account
+        const statements = experianReport.statement
+        let frozenAccountDetected = statements?.some((statement) => {
+            return statement.type === '25'
+        })
+
+        if(frozenAccountDetected) {
+            console.log('frozen account detected. Reject the application!')
+            const rejection_reason = rejectionReasons['credit_file_frozen']
+            application.rejection_reasons.push(rejection_reason)
+        }
+
+        var ficoScore = ""
+        var publicRecord = []
+        var tradeline = []
+
+        // grab fico score
+        if(experianReport.riskModel?.length > 0) {
+            console.log(experianReport.riskModel.length)
+            ficoScore = experianReport.riskModel[0].score
+        } else { ficoScore = null }
+
+        if(experianReport.publicRecord?.length > 0) {
+            publicRecord = experianReport.publicRecord
+        }
+        if(experianReport.tradeline?.length > 0) {
+            tradeline = experianReport.tradeline
+        }
+
+        console.log('experian status codes')
+        console.log(experianBankruptcyCodes)
+        let has_bankruptcy_history_in_public_record = publicRecord.some((record) => {
+            return experianBankruptcyCodes.publicRecord.includes(record.status)
+        })
+
+        let has_bankruptcy_history_in_tradeline = tradeline.some((record) => {
+            return experianBankruptcyCodes.tradeline.includes(record.status)
+        })
+        
+        console.log('public record')
+        console.log(publicRecord)
+        
+        if(!application.credit_data.fico) {
+            application.credit_data.fico = ficoScore 
+        }
+        
+        if(!application.credit_data.has_bankruptcy_history) {
+            application.credit_data.has_bankruptcy_history = (
+                has_bankruptcy_history_in_public_record ||
+                has_bankruptcy_history_in_tradeline) ? true : false
+        }
+        
+
+        console.log(application)
         //  set default values for credit data if missing in dev/sandbox
+        /*
         if(process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'sandbox') {
             if(application.credit_data.fico === undefined) {
                 application.credit_data.fico = 750
@@ -321,7 +452,7 @@ router.post('/:id/evaluate', [auth, offerValidationRules()], async (req, res) =>
             if(application.credit_data.has_bankruptcy_history === undefined) {
                 application.credit_data.has_bankruptcy_history = false
             }
-        }
+        }*/
 
         // check if credit meets policy
         // loop thru each rule in credit policy
@@ -329,6 +460,7 @@ router.post('/:id/evaluate', [auth, offerValidationRules()], async (req, res) =>
         let credit_policy_rules_length = credit_policy_rules.length
         let credit_policy_rules_passed = 0
         for(let i = 0; i < credit_policy_rules_length; i++) {
+            if(noHitDetected || frozenAccountDetected) { break }
             let rule = credit_policy_rules[i]
             let rule_passed = false
             switch (rule.property) {
@@ -387,7 +519,6 @@ router.post('/:id/evaluate', [auth, offerValidationRules()], async (req, res) =>
         application.decisioned_on = Date.now();
         await application.save()
 
-            
         // respond with application
         application = await Application.findOne({ id: req.params.id })
             .select('-_id -__v -client_id -credit_data');
@@ -406,7 +537,6 @@ router.post('/:id/evaluate', [auth, offerValidationRules()], async (req, res) =>
         })
     }
 })
-
 
 
 // @route PATCH applications/reject

@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 const moment = require('moment');
+const BankAccountSchema = require('./shared_schemas/BankAccount');
 
 const FacilitySchema = new mongoose.Schema({
     id: {
@@ -57,19 +58,8 @@ const FacilitySchema = new mongoose.Schema({
         required: false
     },
     repayment_bank_details: {
-        bank_account_routing: {
-            type: String,
-            required: false
-        },
-        bank_account_number: {
-            type: String,
-            required: false
-        },
-        type: {
-            type: String,
-            required: false,
-            enum: ['checking', 'savings']
-        }
+        type: BankAccountSchema,
+        required: false
     },
     balance: {
         type: Number,

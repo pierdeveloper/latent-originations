@@ -1,6 +1,7 @@
 const axios = require('axios').default;
 const moment = require('moment');
 const config = require('config');
+const pierFormats = require('../helpers/formats');
 
 
 /*
@@ -59,7 +60,9 @@ const createDocSpringSubmission = async (template_id, doc_data_fields) => {
   }
 
 // Helper function - generate data fields for docspring loan doc submission
-const generateDocspringDataFields = (borrower_type, borrower, application, isSigned) => {
+const generateDocspringDataFields = (borrower_type, borrower, application, isSigned, templateId = null) => {
+    console.log('running docspring doc fields populator')
+    console.log(borrower_type, borrower, application, isSigned, templateId)
     
     const offer = application.offer;
     const doc_data_fields = {}
@@ -128,6 +131,7 @@ const generateDocspringDataFields = (borrower_type, borrower, application, isSig
                 doc_data_fields.annual_fee = `${formatter.format(offer.annual_fee / 100)}`
                 doc_data_fields.origination_fee = `${formatter.format(offer.origination_fee / 100)}`
                 doc_data_fields.whitespace = true;
+                console.log('end of consumer loc case')
                 break;
             case "consumer_closed_line_of_credit":
                 doc_data_fields.email = `${consumer.email}`;
@@ -194,6 +198,27 @@ const generateDocspringDataFields = (borrower_type, borrower, application, isSig
             default: break;
         }
     }
+
+    // add custom fields
+    if(templateId) {
+        const pier_street_address = "575 Market Street, Suite 717"
+        const pier_city_state_zip = "San Francisco, CA 94105"
+        switch(templateId) {
+
+            case "tpl_33T96QN3G54Mzars9r":
+                // Goodcash custom LOC doc 
+                doc_data_fields.pier_address = pier_street_address
+                doc_data_fields.pier_city_state_zip = pier_city_state_zip
+                doc_data_fields.pier_full_address = pier_street_address + ", " + pier_city_state_zip
+                doc_data_fields.pier_address_2 = pier_street_address
+                doc_data_fields.pier_city_state_zip_2 = pier_city_state_zip
+                doc_data_fields.whitespace = undefined;
+                doc_data_fields.origination_fee = undefined;
+                doc_data_fields.annual_fee = undefined;
+                doc_data_fields.account_number = undefined;
+                break;
+        }
+    }
     return doc_data_fields;
 }
                                                           
@@ -246,7 +271,7 @@ const generateDocspringStatementDataFields = (facility, borrower_details, nls_lo
     }
 
     // set end date to billing date - 1
-    const period_end = moment(facility.next_billing_date, "YYYY/MM/DD").subtract(1, "days").format("M/D");
+    const period_end = moment(facility.next_billing_date, pierFormats.shortDate).subtract(1, "days").format("M/D");
     
 
 

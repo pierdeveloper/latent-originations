@@ -120,11 +120,13 @@ router.post('/', [auth, paymentValidationRules()], async (req, res) => {
 
         }
 
+        console.log(facility)
+
         // check that facility has repayment bank info
         const bank_details = facility.repayment_bank_details;
         if(!bank_details || 
             !bank_details.bank_account_number ||
-            !bank_details.bank_account_routing) {
+            !bank_details.bank_routing_number) {
                 const error = getError("missing_repayment_bank_details")
                 return res.status(error.error_status).json({ 
                     error_type: error.error_type,
@@ -147,7 +149,7 @@ router.post('/', [auth, paymentValidationRules()], async (req, res) => {
         }
         facility.dwolla_funding_source_id = dwolla_funding_source_id
         await facility.save()
-
+        console.log(facility)
         // create the payment id
         const payment_id = 'pmt_' + uuidv4().replace(/-/g, '');
 
@@ -160,7 +162,7 @@ router.post('/', [auth, paymentValidationRules()], async (req, res) => {
             date,
             transfer_type,
             bank_account_number: facility.repayment_bank_details.bank_account_number,
-            bank_account_routing: facility.repayment_bank_details.bank_account_routing,
+            bank_routing_number: facility.repayment_bank_details.bank_routing_number,
             bank_account_type: facility.repayment_bank_details.type,
             dwolla_funding_source_id: dwolla_funding_source_id
         })
@@ -193,6 +195,75 @@ router.post('/', [auth, paymentValidationRules()], async (req, res) => {
         res.json(payment);
 
     } catch (err) {
+        console.error(err);
+        const error = getError("internal_server_error")
+        return res.status(error.error_status).json({ 
+            error_type: error.error_type,
+            error_code: error.error_code,
+            error_message: error.error_message
+        })
+    }
+})
+
+// @route     GET payment by id
+// @desc      Retrieve a payment's details
+// @access    Public
+router.get('/:id', [auth], async (req, res) => {
+    console.log(req.headers)
+    console.log(req.body)
+
+    try {
+        const payment = await Payment.findOne({ id: req.params.id });
+        if(!payment || payment.client_id !== req.client_id) {
+            const error = getError("payment_not_found")
+            return res.status(error.error_status).json({ 
+                error_type: error.error_type,
+                error_code: error.error_code,
+                error_message: error.error_message
+            })
+        }
+
+        // Response
+        let paymentResponse = await Payment.findOne({ id: req.params.id, client_id: req.client_id })
+            .select(responseFilters['payment'] + ' -client_id');
+
+        res.json(paymentResponse);
+
+    } catch(err) {
+        console.error(err.message);
+        if(err.kind === 'ObjectId') {
+            const error = getError("invalid_payment_id")
+            return res.status(error.error_status).json({ 
+                error_type: error.error_type,
+                error_code: error.error_code,
+                error_message: error.error_message
+            })
+        }
+        console.error(err);
+        const error = getError("internal_server_error")
+        return res.status(error.error_status).json({ 
+            error_type: error.error_type,
+            error_code: error.error_code,
+            error_message: error.error_message
+        })
+    }
+})
+
+// @route     GET payments
+// @desc      List all payments
+// @access    Public
+router.get('/', [auth], async (req, res) => {
+    console.log(req.headers)
+    console.log(req.body)
+
+    try {
+        const payments = await Payment.find({ client_id: req.client_id })
+            .select(responseFilters['payment'] + ' -client_id');
+
+        console.log(payments); 
+        res.json(payments);
+
+    } catch(err) {
         console.error(err);
         const error = getError("internal_server_error")
         return res.status(error.error_status).json({ 

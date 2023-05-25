@@ -96,7 +96,8 @@ router.patch('/:id', async (req, res) => {
             custom_loan_agreement,
             nls_group_name,
             duplicate_ssn_whitelist,
-            repayment_ach_enabled } = req.body;
+            repayment_ach_enabled,
+            underwriting_enabled } = req.body;
 
         const customerFields = {};
         if(company_name) customerFields.company_name = company_name;
@@ -107,6 +108,7 @@ router.patch('/:id', async (req, res) => {
         if(nls_group_name) customerFields.nls_group_name = nls_group_name;
         if(duplicate_ssn_whitelist) customerFields.duplicate_ssn_whitelist = duplicate_ssn_whitelist;
         if(repayment_ach_enabled) customerFields.repayment_ach_enabled = repayment_ach_enabled;
+        if(underwriting_enabled) customerFields.underwriting_enabled = underwriting_enabled;
 
         console.log(customerFields)
     

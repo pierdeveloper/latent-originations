@@ -18,8 +18,11 @@ module.exports = {
     dwolla: {
         client_id: process.env.DWOLLA_CLIENT_ID,
         client_secret: process.env.DWOLLA_CLIENT_SECRET,
-        environment: 'sandbox',
         pier_funding_source_id: process.env.PIER_DWOLLA_FUNDING_SOURCE_ID
+    },
+    crs: {
+        client_id: process.env.CRS_CLIENT_ID,
+        secret: process.env.CRS_SECRET
     }
 
 }
