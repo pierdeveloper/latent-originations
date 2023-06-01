@@ -141,10 +141,10 @@ const consumerValidationRules = () => {
             .isInt({min:0, max:50000}),
         check('offer.origination_fee', 'Origination fee must be an integer greater than or equal to 0')
             .isInt({min:0}),
-        check('offer.repayment_frequency', 'Repayment frequency must be one of: weekly, biweekly, monthly')
-            .isIn(['weekly', 'biweekly', 'monthly']).optional({nullable: true}),
-        check('offer.term', 'Term must be an integer >= 6 and <= 120')
-            .isInt({min:6, max:120}).optional({nullable: true}),
+        check('offer.repayment_frequency', 'Repayment frequency must be one of: biweekly, semi_monthly, monthly')
+            .isIn(['biweekly', 'semi_monthly', 'monthly']).optional({nullable: true}),
+        check('offer.term', 'Term must be an integer >= 3 and <= 120')
+            .isInt({min:3, max:120}).optional({nullable: true}),
     ]
   }
 

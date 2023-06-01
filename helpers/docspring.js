@@ -2,6 +2,7 @@ const axios = require('axios').default;
 const moment = require('moment');
 const config = require('config');
 const pierFormats = require('../helpers/formats');
+const { calculateAPR } = require('../helpers/nls.js');
 
 
 /*
@@ -60,7 +61,7 @@ const createDocSpringSubmission = async (template_id, doc_data_fields) => {
   }
 
 // Helper function - generate data fields for docspring loan doc submission
-const generateDocspringDataFields = (borrower_type, borrower, application, isSigned, templateId = null) => {
+const generateDocspringDataFields = async (borrower_type, borrower, application, isSigned, templateId = null) => {
     console.log('running docspring doc fields populator')
     console.log(borrower_type, borrower, application, isSigned, templateId)
     
@@ -78,6 +79,8 @@ const generateDocspringDataFields = (borrower_type, borrower, application, isSig
             style: 'currency',
             currency: 'USD',
         });
+        const origination_fee_amount = (offer.origination_fee / 10000) * offer.amount
+        console.log(`og fee amt ${origination_fee_amount}`)
         doc_data_fields.date = today.toLocaleDateString('en-us', dateOptions);
         doc_data_fields.amount = `${formatter.format(offer.amount / 100)}`;
         doc_data_fields.apr = `${offer.interest_rate / 100}%`;
@@ -93,32 +96,54 @@ const generateDocspringDataFields = (borrower_type, borrower, application, isSig
             case "consumer_installment_loan":
                 doc_data_fields.address = `${consumer.address.line_1} ${address_line_2}`;
                 doc_data_fields.city_state_zip = `${consumer.address.city} ${consumer.address.state} ${consumer.address.zip}`;
+                
+                // set payments per year variable to 12, 24 or 26 depending on application.offer.repayment_frequency
+                const payments_per_year = offer.repayment_frequency === 'monthly' 
+                    ? 12 : offer.repayment_frequency === 'biweekly' 
+                    ? 26 : 24;
+
+                const amt = offer.amount / 100 + origination_fee_amount / 100;
                 // payment amount
                 const periodic_payment_amount = calculate_periodic_payment(
-                    offer.amount / 100,
+                    amt,
                     offer.term,
-                    12,
+                    payments_per_year,
                     offer.interest_rate / 10000
                 );
                 doc_data_fields.payment_amount = `${formatter.format(periodic_payment_amount)}`
                 doc_data_fields.payment_amount_2 = `${formatter.format(periodic_payment_amount)}`
+
+                const apr = await calculateAPR(offer, periodic_payment_amount);
+                doc_data_fields.apr = `${apr.toFixed(2)}%`;
                 doc_data_fields.n_payments = (offer.term - 1);
-                const finance_charge = offer.interest_rate === 0 ? (0) : (offer.term * periodic_payment_amount) - (offer.amount / 100); // for zero interest, we want to avoid rounding to non zero fin charge
+                const finance_charge = (offer.interest_rate && offer.origination_fee === 0) 
+                    ? (0) 
+                    : (offer.term * periodic_payment_amount) - (offer.amount / 100); // for zero interest, we want to avoid rounding to non zero fin charge
                 doc_data_fields.finance_charge = `${formatter.format(finance_charge)}`; 
-                const total_of_payments = offer.interest_rate === 0 ? (offer.amount / 100) : (offer.term * periodic_payment_amount); // for zero interest, we want to avoid rounding to non zero fin charge
+                const total_of_payments = (offer.interest_rate && offer.origination_fee === 0)
+                    ? (offer.amount / 100) 
+                    : (offer.term * periodic_payment_amount); // for zero interest, we want to avoid rounding to non zero fin charge
                 doc_data_fields.total_of_payments = `${formatter.format(total_of_payments)}`
 
-                const first_payment_date = moment().add(1,'months').format("MM/DD/YYYY");
-                const payments_due = `Monthly beginning ${first_payment_date}`;
+                //const today2 =  moment().format("MM/DD/YYYY");
+                const first_payment_date2 = payments_per_year === 12 
+                    ? moment().add(1,'months').format("MM/DD/YYYY")
+                    : moment().add(2,'weeks').format("MM/DD/YYYY");
+
+                //const first_payment_date = moment().add(1,'months').format("MM/DD/YYYY");
+
+                const payment_period_text = payments_per_year === 12 ? 'Monthly' : payments_per_year === 26 ? 'Biweekly' : 'Semi-monthly';
+                const payments_due = `${payment_period_text} beginning ${first_payment_date2}`;
                 doc_data_fields.payments_due = payments_due;
-                const final_due_date = moment().add(offer.term,'months').format("MM/DD/YYYY");
+                const final_due_date = payments_per_year === 12
+                    ? moment().add(offer.term,'months').format("MM/DD/YYYY")
+                    : moment().add(offer.term * 2,'weeks').format("MM/DD/YYYY");
+                
                 doc_data_fields.final_payment_due = final_due_date;
-
-
                 doc_data_fields.amount_to_you = `${formatter.format(offer.amount / 100)}`;
                 doc_data_fields.total_financed = `${formatter.format(offer.amount / 100)}`;
-                doc_data_fields.origination_fee = "$0.00";
-                doc_data_fields.total_loan_amount = `${formatter.format(offer.amount / 100)}`;
+                doc_data_fields.origination_fee = `${formatter.format(origination_fee_amount / 100)}`;
+                doc_data_fields.total_loan_amount = `${formatter.format(offer.amount / 100 + origination_fee_amount / 100)}`;
                 doc_data_fields.borrower_name = `${consumer.first_name} ${consumer.last_name}`;
                 console.log('logging doc data fields')
                 console.log(doc_data_fields);

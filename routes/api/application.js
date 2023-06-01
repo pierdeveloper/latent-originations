@@ -808,7 +808,9 @@ router.post('/:id/approve', [auth, offerValidationRules()], async (req, res) => 
             const limit_1 = state.limit_1
             const limit_2 = state.limit_2
 
-
+            console.log(offer)
+            console.log(limit_1)
+            console.log(limit_2)
             // check type 1
             if ((offer.amount >= limit_1.amount.min && 
                 offer.amount <= limit_1.amount.max &&

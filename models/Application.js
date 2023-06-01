@@ -79,7 +79,11 @@ const ApplicationSchema = new mongoose.Schema({
             type: Number,
             required: false
         },
-        repayment_frequency: {
+        repayment_frequency: { // deprecated
+            type: String,
+            required: false
+        },
+        payment_period: {
             type: String,
             required: false
         },

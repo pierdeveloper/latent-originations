@@ -8,11 +8,12 @@ const { validationResult } = require('express-validator');
 const { advanceDateValidationRules } = require('../../helpers/validator.js');
 const Facility = require('../../models/Facility');
 const responseFilters = require('../../helpers/responseFilters.json');
+const { generateStatement } = require('../../helpers/statements.js');
 
 
 
-// @route     POST payments
-// @desc      Add a payment submission
+// @route     POST advance date
+// @desc      Advance the accrued_thru date for a facility
 // @access    Public
 router.post('/facilities/:id/advance_date', [auth, advanceDateValidationRules()], async (req, res) => {
     console.log(req.headers)
@@ -55,6 +56,10 @@ router.post('/facilities/:id/advance_date', [auth, advanceDateValidationRules()]
             })
         }
 
+        // TODO:
+        // confirm requested data is after current date
+
+
         console.log(facility)
 
         // submit nls accrual
@@ -82,6 +87,9 @@ router.post('/facilities/:id/advance_date', [auth, advanceDateValidationRules()]
             }
             return res.status(400).json(error);
         }
+
+        // run statement generator (this will only create a statement if needed)
+        await generateStatement(facility)
 
         let facilityResponse = await Facility.findOne({ id: facility.id, client_id: req.client_id })
             .select(responseFilters['facility'] + ' -client_id');

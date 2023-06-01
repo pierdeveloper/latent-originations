@@ -15,7 +15,7 @@
                 "max": 5000000
             },
             "max_apr": 3600,
-            "max_origination_fee": 100
+            "max_origination_fee": 500
         }
     },
     "AK": {
@@ -33,7 +33,7 @@
                 "max": 2500000
             },
             "max_apr": 1000,
-            "max_origination_fee": 100
+            "max_origination_fee": 500
         }
     },
     "AZ": {
@@ -51,7 +51,7 @@
                 "max": 5000000
             },
             "max_apr": 3600,
-            "max_origination_fee": 100
+            "max_origination_fee": 500
         }    
     },
     "AR": {
@@ -69,7 +69,7 @@
                 "max": 5000000
             },
             "max_apr": 1700,
-            "max_origination_fee": 100
+            "max_origination_fee": 500
         }   
     },
     "CA": {},
@@ -88,7 +88,7 @@
                 "max": 5000000
             },
             "max_apr": 1200,
-            "max_origination_fee": 100
+            "max_origination_fee": 500
         }  
     },
     "CT": {
@@ -106,7 +106,7 @@
                 "max": 1500000
             },
             "max_apr": 1200,
-            "max_origination_fee": 100
+            "max_origination_fee": 500
         }  
     },
     "DE": {},
@@ -125,7 +125,7 @@
                 "max": 5000000
             },
             "max_apr": 3600,
-            "max_origination_fee": 100
+            "max_origination_fee": 500
         } 
     },
     "FL": {
@@ -143,7 +143,7 @@
                 "max": 5000000
             },
             "max_apr": 1800,
-            "max_origination_fee": 100
+            "max_origination_fee": 500
         } 
     },
     "GA": {
@@ -161,7 +161,7 @@
                 "max": 5000000
             },
             "max_apr": 3600,
-            "max_origination_fee": 100
+            "max_origination_fee": 500
         } 
     },
     "HI": {
@@ -179,7 +179,7 @@
                 "max": 5000000
             },
             "max_apr": 1200,
-            "max_origination_fee": 100
+            "max_origination_fee": 500
         } 
     },
     "ID": {},
@@ -218,7 +218,7 @@
                 "max": 5000000
             },
             "max_apr": 2100,
-            "max_origination_fee": 100
+            "max_origination_fee": 500
         } 
     },
     "KS": {
@@ -236,7 +236,7 @@
                 "max": 5000000
             },
             "max_apr": 1500,
-            "max_origination_fee": 100
+            "max_origination_fee": 500
         } 
     },
     "KY": {},
@@ -256,7 +256,7 @@
                 "max": 5000000
             },
             "max_apr": 1800,
-            "max_origination_fee": 100
+            "max_origination_fee": 500
         } 
     },
     "MD": {},
@@ -275,7 +275,7 @@
                 "max": 5000000
             },
             "max_apr": 2000,
-            "max_origination_fee": 100
+            "max_origination_fee": 500
         } 
     },
     "MI": {
@@ -293,7 +293,7 @@
                 "max": 5000000
             },
             "max_apr": 2500,
-            "max_origination_fee": 100
+            "max_origination_fee": 500
         }
     },
     "MN": {
@@ -311,7 +311,7 @@
                 "max": 5000000
             },
             "max_apr": 800,
-            "max_origination_fee": 100
+            "max_origination_fee": 500
         } 
     },
     "MS": {},
@@ -330,7 +330,7 @@
                 "max": 5000000
             },
             "max_apr": 3600,
-            "max_origination_fee": 100
+            "max_origination_fee": 500
         } 
     },
     "MT": {},
@@ -361,7 +361,7 @@
                 "max": 5000000
             },
             "max_apr": 1600,
-            "max_origination_fee": 100
+            "max_origination_fee": 500
         } 
     },
     "NM": {},
@@ -380,7 +380,7 @@
                 "max": 5000000
             },
             "max_apr": 1600,
-            "max_origination_fee": 100
+            "max_origination_fee": 500
         } 
     },
     "NC": {
@@ -398,7 +398,7 @@
                 "max": 2500000
             },
             "max_apr": 1600,
-            "max_origination_fee": 100
+            "max_origination_fee": 500
         } 
     },
     "ND": {},
@@ -418,7 +418,7 @@
                 "max": 5000000
             },
             "max_apr": 1000,
-            "max_origination_fee": 100
+            "max_origination_fee": 500
         } 
     },
     "OR": {
@@ -436,7 +436,7 @@
                 "max": 5000000
             },
             "max_apr": 1200,
-            "max_origination_fee": 100
+            "max_origination_fee": 500
         } 
     },
     "PA": {
@@ -454,7 +454,7 @@
                 "max": 2500000
             },
             "max_apr": 600,
-            "max_origination_fee": 100
+            "max_origination_fee": 500
         } 
     },
     "RI": {},
@@ -473,7 +473,7 @@
                 "max": 5000000
             },
             "max_apr": 1800,
-            "max_origination_fee": 100
+            "max_origination_fee": 500
         } 
     },
     "SD": {},
@@ -492,7 +492,7 @@
                 "max": 5000000
             },
             "max_apr": 725,
-            "max_origination_fee": 100
+            "max_origination_fee": 500
         } 
     },
     "TX": {
@@ -510,7 +510,7 @@
                 "max": 5000000
             },
             "max_apr": 1000,
-            "max_origination_fee": 100
+            "max_origination_fee": 500
         } 
     },
     "UT": {
@@ -528,7 +528,7 @@
                 "max": 5000000
             },
             "max_apr": 3600,
-            "max_origination_fee": 100
+            "max_origination_fee": 500
         } 
     },
     "VT": {},
@@ -547,7 +547,7 @@
                 "max": 5000000
             },
             "max_apr": 1200,
-            "max_origination_fee": 100
+            "max_origination_fee": 500
         } 
     },
     "WA": {},
@@ -566,7 +566,7 @@
                 "max": 5000000
             },
             "max_apr": 1800,
-            "max_origination_fee": 100
+            "max_origination_fee": 500
         } 
     },
     "WI": {
@@ -584,7 +584,7 @@
                 "max": 5000000
             },
             "max_apr": 1800,
-            "max_origination_fee": 100
+            "max_origination_fee": 500
         } 
     },
     "WY": {}

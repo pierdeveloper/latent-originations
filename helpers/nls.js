@@ -109,6 +109,9 @@ const createNLSLoan = async (facility) => {
     // Generate Auth token
     const nls_token = await generateNLSAuthToken();
 
+    console.log(`attempting to create nls loan for facility`)
+    console.log(facility)
+
     try {
         // NLS config
         const url = `https://api.nortridgehosting.com/25.0/nls/xml-import?test=false`;
@@ -125,7 +128,24 @@ const createNLSLoan = async (facility) => {
         const amount = facility.terms.amount / 100;
         const term = facility.terms.term;
         const interest_rate = facility.terms.interest_rate / 100;
+        const repayment_frequency = facility.terms.repayment_frequency;
+        const term_type = facility.terms.repayment_frequency === 'monthly' ? 'Months' : 'Payments'
+        const billing_cutoff = facility.terms.repayment_frequency === 'monthly' ? -15 : -10
+        var payment_period = '';
+        switch (repayment_frequency) {
+            case 'monthly': payment_period = 'MO'; break;
+            case 'biweekly': payment_period = 'BW'; break;
+            case 'weekly': payment_period = 'WE'; break;
+            case 'semi_monthly': payment_period = 'SM'; break;
+            default: 
+                // throw error
+                console.log('error: invalid repayment frequency')
+                await revokeNLSAuthToken(nls_token)
+                return 'nls_error'
 
+        }
+
+        console.log(`payment period: ${payment_period}`)
         const xmlData = `<?xml version="1.0" encoding="UTF-8"?>
             <NLS CommitBlock="1" EnforceTagExistence="1">
             <LOAN 
@@ -137,8 +157,12 @@ const createNLSLoan = async (facility) => {
                 OriginationDate="${nls_origination_date}" 
                 LoanAmount="${amount}"
                 InterestMethod="FA"
+                PrincipalPaymentPeriod="${payment_period}"
+                InterestPaymentPeriod="${payment_period}"
                 Term="${term}"
                 TermDue="${term}"
+                TermType="${term_type}"
+                BillingCutoff="${billing_cutoff}"
                 >
                 <LOANINTERESTRATERECORD
                 InterestType="0"    
@@ -181,7 +205,7 @@ const createNLSLoan = async (facility) => {
         
     } catch (error) {
         console.log('error trying to create nls loan')
-        console.log(error.response.data);
+        console.log(error.response);
 
         // Revoke token
         await revokeNLSAuthToken(nls_token)
@@ -520,8 +544,77 @@ const accrueNLSLoan = async (accountNumber, date) => {
     }
 }
 
+// calculate apr for loan terms
+const calculateAPR = async (offerTerms, monthlyPayment) => {
+    // Generate Auth token
+    const nls_token = await generateNLSAuthToken();
+
+    try {
+        // NLS config
+        const url = `https://api.nortridgehosting.com/25.0/nls/apr`;
+        const auth = 'Bearer ' + nls_token;
+        
+        const header = {'Authorization': auth, 'content-type': 'application/x-www-form-urlencoded'}
+
+        console.log('calculating apr')
+        console.log(offerTerms)
+        console.log(monthlyPayment)
+
+        const origination_fee_amount = (offerTerms.origination_fee / 10000) * (offerTerms.amount / 100);
+        const loanAmount = offerTerms.amount / 100;
+        const paymentPeriod = offerTerms.repayment_frequency === 'monthly' 
+            ? 'MO' 
+            : offerTerms.repayment_frequency === 'biweekly' ? "BW"
+            : offerTerms.repayment_frequency === 'semi_monthly' ? "SM" 
+            : "MO" // temporary default to monthly
+
+
+        let payload = {
+            LoanAmount: loanAmount,
+            FirstPaymentAmount: monthlyPayment,
+            RegularPaymentAmount: monthlyPayment,
+            NumberOfPayments: offerTerms.term,
+            PaymentPeriod: paymentPeriod,
+            OddDaysInFirstPeriod: 0,
+            PeriodsInFirstPeriod: 1,
+            LastPaymentAmount: monthlyPayment
+        }
+        console.log(payload)
+
+        // axios call
+        let response = await axios.post(url, payload, {headers: header})
+        console.log(response.data);
+
+        const apr_raw = response.data.payload.data
+
+        if(!apr_raw) {
+            throw new Error('nls error')
+        }
+        // round to 2 decimal places
+        const apr = Math.round(apr_raw * 100) / 100
+
+        console.log(`apr: ${apr}`)
+        
+        // Revoke token
+        await revokeNLSAuthToken(nls_token);
+        
+        // Return rounded apr
+        return apr
+        
+    } catch (error) {
+        console.log('error trying to accrue nls loan')
+        console.log(error.response.data);
+
+        // Revoke token
+        await revokeNLSAuthToken(nls_token)
+        return "nls_error"
+    }
+
+}
+
 module.exports = {
     accrueNLSLoan,
+    calculateAPR,
     createNLSConsumer,
     createNLSLoan,
     createNLSLineOfCredit,

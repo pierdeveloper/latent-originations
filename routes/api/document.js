@@ -102,7 +102,7 @@ router.post('/', [auth], async (req, res) => {
         const template_id = is_custom_loan_doc ? client.custom_loan_agreement.template_id :
             docspringTemplates[application.credit_type] 
 
-        const doc_data_fields = generateDocspringDataFields(borrower.type, docspringBorrower, application, false, template_id)
+        const doc_data_fields = await generateDocspringDataFields(borrower.type, docspringBorrower, application, false, template_id)
         
         // Create DS submission
         const docspring_pending_submission = await createDocSpringSubmission(template_id, doc_data_fields)
@@ -219,7 +219,7 @@ router.post('/:id/sign', [auth], async (req, res) => {
         const template_id = is_custom_loan_doc ? client.custom_loan_agreement.template_id :
             docspringTemplates[application.credit_type] 
 
-        const doc_data_fields = generateDocspringDataFields(borrower.type, docspringBorrower, application, true, template_id)
+        const doc_data_fields = await generateDocspringDataFields(borrower.type, docspringBorrower, application, true, template_id)
 
         // Create new signed DS submission
         const docspring_pending_submission = await createDocSpringSubmission(template_id, doc_data_fields)

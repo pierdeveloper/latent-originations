@@ -17,6 +17,7 @@ const Consumer = require('../../models/Consumer.js');
 const { retrieveNLSLoan } = require('../../helpers/nls.js');
 const { WebClient } = require('@slack/web-api');
 const pierFormats = require('../../helpers/formats.js');
+const { generateStatement, runStatementGenerateJob } = require('../../helpers/statements.js');
  
 
 // @route     GET statement by id
@@ -105,14 +106,18 @@ router.patch('/generate', async (req, res) => {
         return res.status(401).send('Unauthorized')
     }
 
-    runStatementGenerateJob()
+    // pull in all facilities
+    const facilities = await Facility.find({});
+
+    runStatementGenerateJob(facilities)
 
     res.json({msg: 'Started statement generation job'})
 
 })
 
+
  // @route    PATCH statements/generate/{id}
-// @desc      Generate statement for a facility
+// @desc      Generate statement for a facility 
 // @access    Private
 router.patch('/generate/:id', async (req, res) => {
     console.log(req.headers)
@@ -124,264 +129,28 @@ router.patch('/generate/:id', async (req, res) => {
         return res.status(401).send('Unauthorized')
     }
 
+    // grab facility and check that it exists
     const facility = await Facility.findOne({ id: req.params.id });
-    console.log(facility)
-
-
-    // skip unsupported credit types
-    switch (facility.credit_type) {
-        case 'consumer_revolving_line_of_credit':
-        case 'commercial_installment_loan':
-        case 'commercial_revolving_line_of_credit':
-        case 'commercial_bnpl':
-            console.log('Statements for this credit type not supported yet');
-            res.status(400).json({msg: 'Statements for this credit type not supported yet'})
-            break;
-        default: break;
+    if(!facility) {
+        return res.status(404).json({msg: 'facility not found'})
     }
 
-    // check if billing date is today or in the past
-    var next_statement_date = moment(facility.next_billing_date);
-    //const today = moment();
-    const today = process.env.NODE_ENV === 'development' ? moment(config.get('current_date')) : moment();
+    // generate statement
+    const job = await generateStatement(facility)
 
-    if(next_statement_date.isSameOrBefore(today, 'day')) {
-        console.log('need to generate statement!')
-        console.log(facility);
-        // todo: check that existing statement note already created
-        // check that client config has statements enabled
-        let customer = await Customer.findOne({client_id: facility.client_id });
-
-        // pull in borrower details
-        const borrower_details = await Consumer.findOne({id: facility.borrower_id});
-        console.log(`borrower details: ${borrower_details}`)
-
-        // pull in nls loan details
-        const nls_loan_details = await retrieveNLSLoan(facility.nls_account_ref);
-        console.log(`nls loan details: ${nls_loan_details}`)
-        if(nls_loan_details === 'nls_error') { return res.status(500).json({msg: 'error retrieving nls loan details'}) }
-
-        // Generate docspring data fields
-        const statement_data_fields = generateDocspringStatementDataFields(facility, borrower_details, nls_loan_details)
-
-        // Get template id
-        const template_id = docspringTemplates.statements[facility.credit_type] 
-
-        // Create DS submission
-        const docspring_pending_submission = await createDocSpringSubmission(template_id, statement_data_fields)
-
-        // If it's not created properly then error
-        if(docspring_pending_submission.status !== "success") {
-            console.log('error creating docspring statement submission')
-            res.status(400).json({msg: 'error creating docspring statement submission'})
-        }
-        // log the submission id
-        console.log('successful submission id:')
-        console.log(docspring_pending_submission.submission.id)      
-
-        // Artificial latency for ds to prepare submission
-        var waitTill = new Date(new Date().getTime() + 3 * 1000);
-        while(waitTill > new Date()){}
-
-        // Get the submission
-        const submission_id = docspring_pending_submission.submission.id
-        const docspring_submission = await getDocSpringSubmission(submission_id)
-        const statement_url = docspring_submission.permanent_download_url
-        console.log(`statement url: ${statement_url}`)
-
-        // If statement doesn't have a url then error
-        if (statement_url === null) {
-            console.log('error creating docspring statement submission')
-            res.status(400).json({msg: 'error creating docspring statement submission'})
-        }
-
-        // Create statement and save
-        const statement_id = 'stmt_' + uuidv4().replace(/-/g, '');
-        const statement_date = moment(next_statement_date).format(pierFormats.shortDate)
-
-        let statement = new Statement({
-            id: statement_id,
-            statement_date: statement_date,
-            url: statement_url,
-            facility_id: facility.id,
-            ds_submission_id: submission_id,
-            client_id: facility.client_id
-        })
-        await statement.save()
-
-        console.log(`statement generated: ${statement}`)
-        res.status(200).json({msg: 'statement generated', statement: statement})
-                        
+    // respond
+    if(job.status === "success") {
+        res.status(200).json({msg: 'statement generated', statement: job.statement})
+    } else if(job.status === "skipped") {
+        res.status(400).json({status: job.status, msg: job.msg})
+    } else if (job.status === 'error') {
+        res.status(400).json({status: job.status, msg: job.msg})
     } else {
-        console.log('No statement required yet for this facility')
-        res.status(400).json({msg: 'No statement required yet for this facility'})
+        res.status(500).json({msg: 'unexpected error generating statement'})
     }   
-
-    
-
 })
 
 
-// Statement generation job
-const runStatementGenerateJob = async () => {
-    const time_initiated = moment()
-    var time_completed = moment()
-    var status = 'failed'
-    const errorsList = [];
-    const skipped = [];
-    var facilities = [];
-    var sync_count = 0;
-
-    try {
-        // grab all facilities
-        facilities = await Facility.find();
-        
-        // loop thru each facility
-        for (let i = 0; i < facilities.length; i++) {
-
-            var facility = facilities[i];
-
-            // skip unsupported credit types
-            switch (facility.credit_type) {
-                case 'consumer_revolving_line_of_credit':
-                case 'commercial_installment_loan':
-                case 'commercial_revolving_line_of_credit':
-                case 'commercial_bnpl':
-                    console.log('Statements for this credit type not supported yet. Skipping it');
-                    skipped.push(facility.id)
-                    continue;
-                default: break;
-            }
-
-            // check if billing date is today or in the past
-            var next_statement_date = moment(facility.next_billing_date, pierFormats.shortDate);
-            const today = process.env.NODE_ENV === 'development' ? 
-                moment(config.get('current_date')).format(pierFormats.shortDate) : moment().format(pierFormats.shortDate);
-
-            if(next_statement_date.isSame(today, 'day')) {
-                console.log('need to generate statement!')
-                console.log(facility);
-                // todo: check that existing statement note already created
-                // check that client config has statements enabled
-                let customer = await Customer.findOne({client_id: facility.client_id });
-
-                // pull in borrower details
-                const borrower_details = await Consumer.findOne({id: facility.borrower_id});
-                console.log(`borrower details: ${borrower_details}`)
-
-                // pull in nls loan details
-                const nls_loan_details = await retrieveNLSLoan(facility.nls_account_ref);
-                console.log(`nls loan details: ${nls_loan_details}`)
-
-                // Generate docspring data fields
-                const statement_data_fields = generateDocspringStatementDataFields(facility, borrower_details, nls_loan_details)
-
-                // Get template id
-                const template_id = docspringTemplates.statements[facility.credit_type] 
-
-                // Create DS submission
-                const docspring_pending_submission = await createDocSpringSubmission(template_id, statement_data_fields)
-
-                // If it's not created properly then error
-                if(docspring_pending_submission.status !== "success") {
-                    console.log('error creating docspring statement submission')
-                    errors.push(facility.facility_id)
-                    break;
-                }
-                // log the submission id
-                console.log('successful submission id:')
-                console.log(docspring_pending_submission.submission.id)      
-
-                // Artificial latency for ds to prepare submission
-                var waitTill = new Date(new Date().getTime() + 3 * 1000);
-                while(waitTill > new Date()){}
-
-                // Get the submission
-                const submission_id = docspring_pending_submission.submission.id
-                const docspring_submission = await getDocSpringSubmission(submission_id)
-                const statement_url = docspring_submission.permanent_download_url
-                console.log(`statement url: ${statement_url}`)
-
-                // If statement doesn't have a url then error
-                if (statement_url === null) {
-                    console.log('error creating docspring statement submission')
-                    errors.push(facility.facility_id)
-                    break;
-                }
-
-                // Create statement and save
-                const statement_id = 'stmt_' + uuidv4().replace(/-/g, '');
-                const statement_date = moment(next_statement_date).format(pierFormats.shortDates)
-
-                let statement = new Statement({
-                    id: statement_id,
-                    statement_date: statement_date,
-                    url: statement_url,
-                    facility_id: facility.id,
-                    ds_submission_id: submission_id,
-                    client_id: facility.client_id
-                })
-                await statement.save()
-
-                sync_count++;
-                console.log(`statement generated: ${statement}`)
-                                
-            } else { 
-                console.log('No statement required yet for this facility')
-                skipped.push(facility.id)
-            }        
-            
-        }
-
-        time_completed = moment();
-        status = 'completed'
-        console.log('statement loop job complete')
-        
-
-    } catch (err) {
-        time_completed = moment();
-        console.log({error: 'critical error running statement generation job'})
-        console.log(err)
-    }   
-
-    // report the job
-    const duration = moment.duration(time_completed.diff(time_initiated)).asSeconds()
-    const jobReport = new Job({
-        facility_count: facilities.length,
-        sync_count: sync_count,
-        skipped: skipped,
-        errorsList: errorsList,
-        time_initiated: time_initiated,
-        time_completed: time_completed,
-        type: 'statement',
-        env: process.env.NODE_ENV,
-        status: status,
-        duration: duration
-    })
-    jobReport.save();
-    console.log(jobReport);
-
-    // ping slack for prod and sandbox facilities
-    if(process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'sandbox') {
-        console.log('running slack script')
-        const slack = new WebClient(config.get('slack_bot_id'));
-        (async () => {
-            try {
-                const greeting = '🔄 A cron job has finished running 🔄'
-                const result = slack.chat.postMessage({
-                    channel: '#crons',
-                    text: greeting + '\n' + '\n' + `*Type:* Statement` +'\n' + `*Env:* ${process.env.NODE_ENV}` +'\n' + 
-                        `*Status:* ${status}` + '\n' + `*Facility count:* ${facilities.length}` +'\n' + `*Sync count:* ${sync_count}`
-                        + '\n' + `*Skipped:* ${skipped}` +'\n' + `*Errors:* ${errorsList}`
-                        + '\n' + `*Time initiated:* ${time_initiated}` +'\n' + `*Time completed:* ${time_completed}`
-                        + '\n' + `*Duration:* ${duration}`
-                });
-            }
-            catch (error) { console.error(error); }
-        })();
-    }
-
-}
 
 module.exports = router;
  

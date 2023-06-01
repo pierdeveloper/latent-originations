@@ -373,7 +373,9 @@ router.get('/:id', [auth], async (req, res) => {
         let facilityResponse = await Facility.findOne({ id: facility.id, client_id: req.client_id })
             .select(responseFilters['facility'] + ' -client_id');
 
-        facilityResponse.repayment_bank_details.bank_account_number = decrypt(facilityResponse.repayment_bank_details.bank_account_number)
+        if(facilityResponse.repayment_bank_details?.bank_account_number) {
+            facilityResponse.repayment_bank_details.bank_account_number = decrypt(facilityResponse.repayment_bank_details.bank_account_number)
+        }
         res.json(facilityResponse);
 
     } catch(err) {
