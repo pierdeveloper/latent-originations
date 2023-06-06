@@ -81,7 +81,7 @@ const ApplicationSchema = new mongoose.Schema({
             required: false
         },
         origination_fee: {
-            type: Number,
+            type: Schema.Types.Mixed,
             required: false
         },
         repayment_frequency: { // deprecated
@@ -130,5 +130,17 @@ const ApplicationSchema = new mongoose.Schema({
     }
 
 });
+
+const OriginationFeeSchema = new mongoose.Schema({
+    fee: {
+        type: Number,
+        required: false
+    },
+    fee_type: {
+        type: String,
+        enum: ['fixed', 'percentage'],
+        required: false
+    },
+})
 
 module.exports = Application = mongoose.model('application', ApplicationSchema)

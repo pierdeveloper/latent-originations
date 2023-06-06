@@ -869,6 +869,7 @@ router.post('/:id/approve', [auth, offerValidationRules()], async (req, res) => 
                 })
             }
         }
+
         
     } catch(err) {
         console.error(err);
@@ -933,7 +934,15 @@ router.get('/', [auth], async (req, res) => {
     console.log(req.body)
 
     try {
-        const applications = await Application.find({ client_id: req.client_id })
+
+        // Create an initial query object containing the `client_id`
+        let query = { client_id: req.client_id };
+
+        // If `borrower_id` is provided, add it to the query object
+        if(req.query.borrower_id) {
+            query.borrower_id = req.query.borrower_id;
+        }
+        const applications = await Application.find(query)
             .select('-_id -__v -client_id');
         
         console.log(applications);

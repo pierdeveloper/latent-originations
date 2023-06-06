@@ -207,9 +207,20 @@ const consumerValidationRules = () => {
     ]
 }
 
+const checkOfferValidationRules = () => {
+    return [
+        check('state', "State must be valid 2-digit US state abbreviation")
+            .isIn(states.states),
+        check('offers', "Offers list cannot be empty and must have at least one offer")
+            .isArray()
+            .custom(values => values.length > 0)
+    ]
+}
+
   module.exports = {
     advanceDateValidationRules,
     businessValidationRules,
+    checkOfferValidationRules,
     consumerValidationRules,
     consumerUpdateValidationRules,
     creditPolicyRuleValidationRules,

@@ -5,6 +5,8 @@ const consumer_state_limits = require('../../helpers/coverage/consumer.json');
 const commercial_state_limits = require('../../helpers/coverage/commercial.json');
 const Customer = require('../../models/Customer');
 const { getError } = require('../../helpers/errors.js');
+const { checkOfferValidationRules } = require('../../helpers/validator.js');
+const { validationResult } = require('express-validator');
 
 // @route     GET commercial credit coverage
 // @desc      Retrieve list of commercial credit coverage by state
@@ -59,5 +61,118 @@ router.get('/consumer', [auth], async (req, res) => {
     }
 })
 
+
+// @route     POST /check_offers
+// @desc      Check a set of offers against our limits for a given state
+// @access    Public
+
+router.post('/check_offers', [auth, checkOfferValidationRules()], async (req, res) => {
+    console.log(req.headers)
+    console.log(req.body)
+
+    // validate that state is valid and offers is array with length > 0
+    const errors = validationResult(req);
+    if(!errors.isEmpty()) {
+        const response = {
+            error_type: "API_ERROR",
+            error_code: "INVALID_INPUT",
+            error_message: "A value provided in the body is incorrect. See error_detail for more",
+            error_detail: errors.array()
+        }
+        return res.status(400).json(response);
+    }
+
+    const {
+        state, 
+        offers 
+    } = req.body
+
+
+    // validate that all offers have an id field
+    const offer_ids = offers.map(offer => offer.id);
+    const offer_ids_with_id = offer_ids.filter(id => id !== undefined);
+    if(offer_ids.length !== offer_ids_with_id.length) {
+        const response = {
+            error_type: "API_ERROR",
+            error_code: "INVALID_INPUT",
+            error_message: "A value provided in the body is incorrect. See error_detail for more",
+            error_detail: "Each offer must have an id"
+        }
+        return res.status(400).json(response);
+    }
+
+    // validate that each offer has a unique id
+    const unique_ids = new Set(offer_ids);
+    if(offer_ids.length !== unique_ids.size) {
+        const response = {
+            error_type: "API_ERROR",
+            error_code: "INVALID_INPUT",
+            error_message: "A value provided in the body is incorrect. See error_detail for more",
+            error_detail: "Each offer must have a unique id"
+        }
+        return res.status(400).json(response);
+    }
+
+    // create response object
+    const check_offers_response = {}
+
+    // for each offer, check if it is within our limits
+    for(let i = 0; i < offers.length; i++) {
+        const offer = offers[i];
+        const offer_id = offer.id;
+
+        // check if offer amount is within our limits
+        var offer_amount_within_limits = false // default false
+
+
+        const state_thresholds = consumer_state_limits[state]
+
+        // verify Pier has limits for the state
+        if(Object.keys(state_thresholds).length === 0) {
+            console.log('no pier limits exist');
+        } 
+
+        
+        // verify if either limit type 1 
+        const limit_1 = state_thresholds.limit_1
+        const limit_2 = state_thresholds.limit_2
+
+        console.log(state_thresholds)
+
+        // check type 1
+        if ((offer.amount >= limit_1.amount.min && 
+            offer.amount <= limit_1.amount.max &&
+            offer.origination_fee <= limit_1.max_origination_fee &&
+            offer.interest_rate <= limit_1.max_apr) ||
+            // check type 2
+            (
+                offer.amount >= limit_2?.amount.min && 
+                offer.amount <= limit_2?.amount.max &&
+                offer.interest_rate <= limit_2?.max_apr &&
+                offer.origination_fee <= limit_2?.max_origination_fee
+            )) {
+                // accept approval if offer meets type 1 or type 2
+                console.log('offer limits are valid! time to underwrite..')
+
+                // update bool
+                offer_amount_within_limits = true
+
+
+        } else {
+            // otherwise reject
+            console.log('unsupported limits')
+        }
+
+        // add offer to response object
+        check_offers_response[offer_id] = {
+            is_compliant: offer_amount_within_limits
+        }
+    }
+
+    // return response
+    console.log(check_offers_response)
+    res.json(check_offers_response);
+
+})
 
 module.exports = router;
