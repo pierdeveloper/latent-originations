@@ -27,6 +27,11 @@ const ApplicationSchema = new mongoose.Schema({
         required: true
     },
     offer: {
+        type: {
+            type: String,
+            enum: ['loan', 'revolving_line_of_credit'],
+            required: false
+        },
         amount: {
             type: Number,
             required: false

@@ -19,6 +19,8 @@ const {CreditPolicy} = require('../../models/CreditPolicy.js');
 const rejectionReasons = require('../../helpers/rejectionReasons.json');
 const {generateCRSTokenTest, pullSoftExperianReport, experianBankruptcyCodes} = require('../../helpers/crs.js');
 const { ConsoleLogger } = require('@slack/logger');
+const { WebClient } = require('@slack/web-api');
+const config = require('config');
 
 // @route     POST application
 // @desc      Create a credit application
@@ -40,7 +42,11 @@ router.post('/', [auth, applicationValidationRules()], async (req, res) => {
 
     try {
         const client_id = req.client_id;
-        const { borrower_id, credit_type, third_party_disbursement_destination  } = req.body
+        const { 
+            borrower_id, 
+            credit_type, 
+            third_party_disbursement_destination,
+        } = req.body
         // check that borrower exists
         let borrower = await Borrower.findOne({ id: borrower_id })
         if(!borrower || borrower.client_id !== req.client_id) {
@@ -519,10 +525,30 @@ router.post('/:id/evaluate', [auth, offerValidationRules()], async (req, res) =>
         application.decisioned_on = Date.now();
         await application.save()
 
+
+        // notify slack
+        if(process.env.NODE_ENV === 'production'){
+            console.log('running slack script')
+            const slack = new WebClient(config.get('slack_bot_id'));
+            (async () => {
+                try {
+                    const greeting = 'A customer application has been underwritten!'
+                    const application_id = application.id;
+                    const decision = application.status;
+                    const credit_data = application.credit_data;
+                    const result = slack.chat.postMessage({
+                        channel: '#general',
+                        text: greeting + '\n' + `*Application:* ${application_id}` +'\n' + `*Decision:* ${decision}` +'\n' + 
+                            `*Decision criteria:* ${credit_data}`
+                    });
+                }
+                catch (error) { console.error(error); }
+            })();
+        }
+        
         // respond with application
         application = await Application.findOne({ id: req.params.id })
             .select('-_id -__v -client_id -credit_data');
-        
         console.log(application);
         res.json(application)
         
