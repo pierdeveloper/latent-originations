@@ -232,7 +232,7 @@ const generateDocspringDataFields = async (borrower_type, borrower, application,
         const pier_city_state_zip = "San Francisco, CA 94105"
         switch(templateId) {
 
-            case "tpl_33T96QN3G54Mzars9r":
+            case "tpl_XEEqGbEyFskM72rQkp":
                 // Goodcash custom LOC doc 
                 doc_data_fields.pier_address = pier_street_address
                 doc_data_fields.pier_city_state_zip = pier_city_state_zip
