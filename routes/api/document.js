@@ -104,6 +104,7 @@ router.post('/', [auth], async (req, res) => {
 
         const doc_data_fields = await generateDocspringDataFields(borrower.type, docspringBorrower, application, false, template_id)
         
+        console.log(`template_id: ${template_id}`)
         // Create DS submission
         const docspring_pending_submission = await createDocSpringSubmission(template_id, doc_data_fields)
         

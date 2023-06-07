@@ -118,7 +118,7 @@ const generateDocspringDataFields = async (borrower_type, borrower, application,
                 const apr = await calculateAPR(offer, periodic_payment_amount);
                 doc_data_fields.apr = `${apr.toFixed(2)}%`;
                 doc_data_fields.n_payments = (offer.term - 1);
-                const finance_charge = (offer.interest_rate && offer.origination_fee === 0) 
+                const finance_charge = (offer.interest_rate === 0 && offer.origination_fee === 0) 
                     ? (0) 
                     : (offer.term * periodic_payment_amount) - (disbursement_amount); // for zero interest, we want to avoid rounding to non zero fin charge
                 doc_data_fields.finance_charge = `${formatter.format(finance_charge)}`; 
