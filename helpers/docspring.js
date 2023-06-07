@@ -102,10 +102,12 @@ const generateDocspringDataFields = async (borrower_type, borrower, application,
                     ? 12 : offer.repayment_frequency === 'biweekly' 
                     ? 26 : 24;
 
-                const amt = offer.amount / 100 + origination_fee_amount / 100;
+                const loan_amount = offer.amount / 100;
+                const disbursement_amount = loan_amount - origination_fee_amount / 100;
+
                 // payment amount
                 const periodic_payment_amount = calculate_periodic_payment(
-                    amt,
+                    loan_amount,
                     offer.term,
                     payments_per_year,
                     offer.interest_rate / 10000
@@ -118,7 +120,7 @@ const generateDocspringDataFields = async (borrower_type, borrower, application,
                 doc_data_fields.n_payments = (offer.term - 1);
                 const finance_charge = (offer.interest_rate && offer.origination_fee === 0) 
                     ? (0) 
-                    : (offer.term * periodic_payment_amount) - (offer.amount / 100); // for zero interest, we want to avoid rounding to non zero fin charge
+                    : (offer.term * periodic_payment_amount) - (disbursement_amount); // for zero interest, we want to avoid rounding to non zero fin charge
                 doc_data_fields.finance_charge = `${formatter.format(finance_charge)}`; 
                 const total_of_payments = (offer.interest_rate && offer.origination_fee === 0)
                     ? (offer.amount / 100) 
@@ -140,10 +142,10 @@ const generateDocspringDataFields = async (borrower_type, borrower, application,
                     : moment().add(offer.term * 2,'weeks').format("MM/DD/YYYY");
                 
                 doc_data_fields.final_payment_due = final_due_date;
-                doc_data_fields.amount_to_you = `${formatter.format(offer.amount / 100)}`;
-                doc_data_fields.total_financed = `${formatter.format(offer.amount / 100)}`;
+                doc_data_fields.amount_to_you = `${formatter.format(disbursement_amount)}`;
+                doc_data_fields.total_financed = `${formatter.format(disbursement_amount)}`;
                 doc_data_fields.origination_fee = `${formatter.format(origination_fee_amount / 100)}`;
-                doc_data_fields.total_loan_amount = `${formatter.format(offer.amount / 100 + origination_fee_amount / 100)}`;
+                doc_data_fields.total_loan_amount = `${formatter.format(disbursement_amount + origination_fee_amount / 100)}`;
                 doc_data_fields.borrower_name = `${consumer.first_name} ${consumer.last_name}`;
                 console.log('logging doc data fields')
                 console.log(doc_data_fields);
