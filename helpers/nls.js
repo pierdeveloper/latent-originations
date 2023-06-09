@@ -563,10 +563,10 @@ const calculateAPR = async (offerTerms, monthlyPayment) => {
         const origination_fee_amount = (offerTerms.origination_fee / 10000) * (offerTerms.amount / 100);
         const loanAmount = offerTerms.amount / 100 - origination_fee_amount;
         const paymentPeriod = offerTerms.repayment_frequency === 'monthly' 
-            ? 'MO' 
-            : offerTerms.repayment_frequency === 'biweekly' ? "BW"
-            : offerTerms.repayment_frequency === 'semi_monthly' ? "SM" 
-            : "MO" // temporary default to monthly
+            ? 'MO' : offerTerms.repayment_frequency === 'biweekly' 
+            ? "BW" : offerTerms.repayment_frequency === 'semi_monthly' 
+            ? "SM" : offerTerms.repayment_frequency === 'weekly'
+            ? "WE" : "MO" // temporary default to monthly
 
 
         let payload = {

@@ -109,7 +109,7 @@ const consumerValidationRules = () => {
         check('credit_type', 'Credit type is invalid')
             .isIn(['consumer_installment_loan', 'consumer_revolving_line_of_credit', 'consumer_closed_line_of_credit',
                 'consumer_bnpl', 'commercial_installment_loan', 'commercial_revolving_line_of_credit', 'commercial_closed_line_of_credit',
-                'commercial_bnpl' ])
+                'commercial_bnpl', 'commercial_net_terms' /*todo: remove this*/ ])
     ]
   }
 
@@ -142,7 +142,7 @@ const consumerValidationRules = () => {
         check('offer.origination_fee', 'Origination fee must be an integer greater than or equal to 0')
             .isInt({min:0}),
         check('offer.repayment_frequency', 'Repayment frequency must be one of: biweekly, semi_monthly, monthly')
-            .isIn(['biweekly', 'semi_monthly', 'monthly']).optional({nullable: true}),
+            .isIn(['weekly', 'biweekly', 'semi_monthly', 'monthly']).optional({nullable: true}),
         check('offer.term', 'Term must be an integer >= 3 and <= 120')
             .isInt({min:3, max:120}).optional({nullable: true}),
     ]

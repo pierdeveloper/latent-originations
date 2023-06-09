@@ -39,7 +39,8 @@ const createDocSpringSubmission = async (template_id, doc_data_fields) => {
       }
     catch (error) {
         console.log('CAUGHT DOCSPRING ERROR')
-        console.log(error)
+        // log errors
+        console.log(error.response.data)
     }
 }
     
@@ -79,6 +80,7 @@ const generateDocspringDataFields = async (borrower_type, borrower, application,
             style: 'currency',
             currency: 'USD',
         });
+        const repayment_frequency = offer.repayment_frequency
         const origination_fee_amount = (offer.origination_fee / 10000) * offer.amount
         console.log(`og fee amt ${origination_fee_amount}`)
         doc_data_fields.date = today.toLocaleDateString('en-us', dateOptions);
@@ -97,10 +99,11 @@ const generateDocspringDataFields = async (borrower_type, borrower, application,
                 doc_data_fields.address = `${consumer.address.line_1} ${address_line_2}`;
                 doc_data_fields.city_state_zip = `${consumer.address.city} ${consumer.address.state} ${consumer.address.zip}`;
                 
-                // set payments per year variable to 12, 24 or 26 depending on application.offer.repayment_frequency
-                const payments_per_year = offer.repayment_frequency === 'monthly' 
-                    ? 12 : offer.repayment_frequency === 'biweekly' 
-                    ? 26 : 24;
+                // set payments per year variable to 12, 24 or 26 depending on repayment_frequency
+                const payments_per_year = repayment_frequency === 'monthly' 
+                    ? 12 : repayment_frequency === 'biweekly' 
+                    ? 26 : repayment_frequency === 'weekly'
+                    ? 52 : 24;
 
                 const loan_amount = offer.amount / 100;
                 const disbursement_amount = loan_amount - origination_fee_amount / 100;
@@ -122,24 +125,30 @@ const generateDocspringDataFields = async (borrower_type, borrower, application,
                     ? (0) 
                     : (offer.term * periodic_payment_amount) - (disbursement_amount); // for zero interest, we want to avoid rounding to non zero fin charge
                 doc_data_fields.finance_charge = `${formatter.format(finance_charge)}`; 
-                const total_of_payments = (offer.interest_rate && offer.origination_fee === 0)
+                const total_of_payments = (offer.interest_rate === 0 && offer.origination_fee === 0)
                     ? (offer.amount / 100) 
                     : (offer.term * periodic_payment_amount); // for zero interest, we want to avoid rounding to non zero fin charge
                 doc_data_fields.total_of_payments = `${formatter.format(total_of_payments)}`
 
-                //const today2 =  moment().format("MM/DD/YYYY");
-                const first_payment_date2 = payments_per_year === 12 
-                    ? moment().add(1,'months').format("MM/DD/YYYY")
-                    : moment().add(2,'weeks').format("MM/DD/YYYY");
+                // set first payment date
+                const first_payment_date = repayment_frequency === 'monthly'
+                    ? moment().add(1,'months').format("MM/DD/YYYY") : repayment_frequency === 'biweekly'
+                    ? moment().add(2,'weeks').format("MM/DD/YYYY") : repayment_frequency === 'weekly'
+                    ? moment().add(1,'weeks').format("MM/DD/YYYY") : moment().add(2,'weeks').format("MM/DD/YYYY"); // todo need to fix for semi_monthly!
 
-                //const first_payment_date = moment().add(1,'months').format("MM/DD/YYYY");
 
-                const payment_period_text = payments_per_year === 12 ? 'Monthly' : payments_per_year === 26 ? 'Biweekly' : 'Semi-monthly';
-                const payments_due = `${payment_period_text} beginning ${first_payment_date2}`;
+                const payment_period_text = payments_per_year === 12 
+                    ? 'Monthly' : payments_per_year === 26 
+                    ? 'Biweekly' : payments_per_year === 52
+                    ? 'Weekly' : 'Semi-monthly';
+
+                const payments_due = `${payment_period_text} beginning ${first_payment_date}`;
                 doc_data_fields.payments_due = payments_due;
-                const final_due_date = payments_per_year === 12
-                    ? moment().add(offer.term,'months').format("MM/DD/YYYY")
-                    : moment().add(offer.term * 2,'weeks').format("MM/DD/YYYY");
+
+                const final_due_date = repayment_frequency === 'monthly'
+                    ? moment().add(offer.term,'months').format("MM/DD/YYYY") : repayment_frequency === 'biweekly'
+                    ? moment().add(offer.term * 2,'weeks').format("MM/DD/YYYY") : repayment_frequency === 'weekly'
+                    ? moment().add(offer.term,'weeks').format("MM/DD/YYYY") : moment().add(offer.term * 2,'weeks').format("MM/DD/YYYY"); // todo need to fix for semi_monthly!
                 
                 doc_data_fields.final_payment_due = final_due_date;
                 doc_data_fields.amount_to_you = `${formatter.format(disbursement_amount)}`;
@@ -201,10 +210,11 @@ const generateDocspringDataFields = async (borrower_type, borrower, application,
                 break;
             case "commercial_bnpl": 
                 break;
+            case "commercial_net_terms":
             case "commercial_revolving_line_of_credit":
                 doc_data_fields.date = today.toLocaleDateString('en-us', dateOptions);
-                doc_data_fields.account_number = `${application.id}`;
-                doc_data_fields.annual_fee = `${formatter.format(offer.annual_fee / 100)}`
+                doc_data_fields.account_number = "M-02938";
+                doc_data_fields.annual_fee = "$0.00";
                 doc_data_fields.origination_fee = `${formatter.format(offer.origination_fee / 100)}`
                 doc_data_fields.credit_limit = `${formatter.format(offer.amount / 100)}`;
                 doc_data_fields.apr = `${offer.interest_rate / 100}%`;
@@ -496,6 +506,7 @@ const docspringTemplates = {
     consumer_bnpl: "tpl_eyyPPRERjTyn2Z4QJy",
     consumer_revolving_line_of_credit: "tpl_m5cpPsgcqxk2RzM2cN",
     consumer_closed_line_of_credit: "",
+    commercial_net_terms:"tpl_CbSMf49ckCdT6fLNYh",
     commercial_installment_loan: "",
     commercial_bnpl: "",
     commercial_revolving_line_of_credit: "tpl_CbSMf49ckCdT6fLNYh",

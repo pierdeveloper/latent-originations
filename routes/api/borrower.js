@@ -66,6 +66,9 @@ router.post('/business', [auth, businessValidationRules()], async (req, res) => 
 
         await borrower.save();
 
+        const cif_number = Math.floor(Math.random() * 900000000000000) + 100000000000000;
+        beneficial_owners[0].cif_number = cif_number;
+
         // create business and set the borrower_id on it
         business = new Business({
             address,
@@ -82,6 +85,8 @@ router.post('/business', [auth, businessValidationRules()], async (req, res) => 
             phone,
             state_of_incorporation
         });
+
+        let nlsSuccess = await createNLSConsumer(beneficial_owners[0]); // todo fix this temporary hack!
         
         await business.save();
 

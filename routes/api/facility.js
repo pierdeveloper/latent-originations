@@ -79,7 +79,7 @@ router.post('/', [auth], async (req, res) => {
         let application = await Application.findOne({ id: loan_agreement.application_id })
 
         // Only allow supported products
-        if(!['consumer_bnpl', 'consumer_revolving_line_of_credit', 'consumer_installment_loan'].includes(application.credit_type)) {
+        if(!['consumer_bnpl', 'consumer_revolving_line_of_credit', 'consumer_installment_loan', 'commercial_net_terms'].includes(application.credit_type)) {
             const error = getError("unsupported_product")
             return res.status(error.error_status).json({ 
                 error_type: error.error_type,
@@ -139,13 +139,19 @@ router.post('/', [auth], async (req, res) => {
                 break;
         }
         
+        const cif_number = borrowerDetails.cif_number 
+        ? borrowerDetails.cif_number 
+        : application.credit_type = 'commercial_net_terms' 
+            ? borrowerDetails.beneficial_owners[0].cif_number
+            : null
+
         
         // create facility
         facility = new Facility({
             id: facilityFields.facility_id,
             application_id: facilityFields.application_id,
             borrower_id: facilityFields.borrower_id,
-            cif_number: borrowerDetails.cif_number,
+            cif_number: cif_number,
             loan_agreement_id: loan_agreement_id,
             client_id,
             account_number: facilityFields.account_number,
@@ -159,9 +165,13 @@ router.post('/', [auth], async (req, res) => {
             remaining_term: facilityFields.remaining_term,
         })
         
+        if(facilityFields.credit_type === 'commercial_net_terms') {
+            facility.balance = application.offer.amount
+        }
         
         // Create the NLS Loan based on credit type
         switch (facilityFields.credit_type) {
+            case "commercial_net_terms":
             case "consumer_installment_loan":
             case "consumer_bnpl":
                 const nls_loan = await createNLSLoan(facility);

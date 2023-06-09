@@ -762,14 +762,12 @@ router.post('/:id/approve', [auth, offerValidationRules()], async (req, res) => 
             if ((offer.amount >= limit_1.amount.min && 
                 offer.amount <= limit_1.amount.max &&
                 offer.interest_rate <= limit_1.max_apr &&
-                offer.apr <= limit_1.max_apr &&
                 limit_1.business_types.includes(business_type)) ||
                 // type 2
                 (
                     offer.amount >= limit_2?.amount.min &&
                     offer.amount <= limit_2?.amount.max &&
                     offer.interest_rate <= limit_2?.max_apr &&
-                    offer.apr <= limit_2?.max_apr &&
                     limit_2?.business_types.includes(business_type)
                 )) {
                     // accept approval if offer meets type 1 or type 2

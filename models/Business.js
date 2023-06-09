@@ -74,6 +74,10 @@ const BusinessSchema = new mongoose.Schema({
             ssn: {
                 type: String,
                 required: true
+            },
+            cif_number: {
+                type: String,
+                required: false
             }
         }
     ],
