@@ -439,24 +439,7 @@
             "max_origination_fee": 500
         } 
     },
-    "PA": {
-        "limit_1": {
-            "amount": {
-                "min": 5000,
-                "max": 500000
-            },
-            "max_apr": 0,
-            "max_origination_fee": 0
-        },
-        "limit_2": {
-            "amount": {
-                "min": 500000,
-                "max": 2500000
-            },
-            "max_apr": 600,
-            "max_origination_fee": 500
-        } 
-    },
+    "PA": {},
     "RI": {},
     "SC": {
         "limit_1": {
