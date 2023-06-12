@@ -7,6 +7,8 @@ const Customer = require('../../models/Customer');
 const { getError } = require('../../helpers/errors.js');
 const { checkOfferValidationRules } = require('../../helpers/validator.js');
 const { validationResult } = require('express-validator');
+const { calculateAPR } = require('../../helpers/nls.js');
+const { calculate_periodic_payment } = require('../../helpers/docspring.js');
 
 // @route     GET commercial credit coverage
 // @desc      Retrieve list of commercial credit coverage by state
@@ -163,9 +165,39 @@ router.post('/check_offers', [auth, checkOfferValidationRules()], async (req, re
             console.log('unsupported limits')
         }
 
-        // add offer to response object
-        check_offers_response[offer_id] = {
-            is_compliant: offer_amount_within_limits
+        // ~~~~~ 
+        //calculate APR
+        // ~~~~~
+
+        
+        // calc loan amount
+        const loan_amount = offer.amount / 100;
+        //const disbursement_amount = loan_amount - origination_fee_amount / 100;
+        const repayment_frequency = offer.repayment_frequency;
+        // calc payments per year
+        const payments_per_year = repayment_frequency === 'monthly' 
+            ? 12 : repayment_frequency === 'biweekly' 
+            ? 26 : repayment_frequency === 'semi_monthly'
+            ? 24 : repayment_frequency === 'weekly'
+            ? 52 : null;
+
+        // calc periodic payment amount
+        const periodic_payment_amount = calculate_periodic_payment(
+            loan_amount,
+            offer.term,
+            payments_per_year,
+            offer.interest_rate / 10000
+        );
+
+        console.log('periodic payment amount: ', periodic_payment_amount)
+        // calc offer
+        var apr = await calculateAPR(offer, periodic_payment_amount);
+        console.log('APR: ', apr)
+        if(apr === 'nls_error') { apr = null} else { apr = apr * 100}
+         // add offer to response object
+         check_offers_response[offer_id] = {
+            is_compliant: offer_amount_within_limits,
+            apr: apr
         }
     }
 
