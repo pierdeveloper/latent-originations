@@ -9,6 +9,7 @@ const { checkOfferValidationRules } = require('../../helpers/validator.js');
 const { validationResult } = require('express-validator');
 const { calculateAPR } = require('../../helpers/nls.js');
 const { calculate_periodic_payment } = require('../../helpers/docspring.js');
+const { moher } = require('../../helpers/coverage/moher.js');
 
 // @route     GET commercial credit coverage
 // @desc      Retrieve list of commercial credit coverage by state
@@ -134,34 +135,15 @@ router.post('/check_offers', [auth, checkOfferValidationRules()], async (req, re
             console.log('no pier limits exist');
         } 
 
-        
-        // verify if either limit type 1 
-        const limit_1 = state_thresholds.limit_1
-        const limit_2 = state_thresholds.limit_2
 
-        console.log(state_thresholds)
+        const isOfferCompliant = moher(offer, state)
 
-        // check type 1
-        if ((offer.amount >= limit_1.amount.min && 
-            offer.amount <= limit_1.amount.max &&
-            offer.origination_fee <= limit_1.max_origination_fee &&
-            offer.interest_rate <= limit_1.max_apr) ||
-            // check type 2
-            (
-                offer.amount >= limit_2?.amount.min && 
-                offer.amount <= limit_2?.amount.max &&
-                offer.interest_rate <= limit_2?.max_apr &&
-                offer.origination_fee <= limit_2?.max_origination_fee
-            )) {
-                // accept approval if offer meets type 1 or type 2
-                console.log('offer limits are valid! time to underwrite..')
-
-                // update bool
-                offer_amount_within_limits = true
-
-
+        if(isOfferCompliant) {
+            console.log('offer limits are valid!')
+            // update bool
+            offer_amount_within_limits = true
         } else {
-            // otherwise reject
+            // unsupported
             console.log('unsupported limits')
         }
 
@@ -169,7 +151,6 @@ router.post('/check_offers', [auth, checkOfferValidationRules()], async (req, re
         //calculate APR
         // ~~~~~
 
-        
         // calc loan amount
         const loan_amount = offer.amount / 100;
         //const disbursement_amount = loan_amount - origination_fee_amount / 100;
@@ -193,7 +174,7 @@ router.post('/check_offers', [auth, checkOfferValidationRules()], async (req, re
         // calc offer
         var apr = await calculateAPR(offer, periodic_payment_amount);
         console.log('APR: ', apr)
-        if(apr === 'nls_error') { apr = null} else { apr = apr * 100}
+        if(apr === 'nls_error') { apr = null} 
          // add offer to response object
          check_offers_response[offer_id] = {
             is_compliant: offer_amount_within_limits,

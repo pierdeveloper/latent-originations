@@ -590,8 +590,8 @@ const calculateAPR = async (offerTerms, monthlyPayment) => {
         if(!apr_raw) {
             throw new Error('nls error')
         }
-        // round to 2 decimal places
-        const apr = Math.round(apr_raw * 100) / 100
+        // convert to bps integer
+        const apr = parseInt((apr_raw.toFixed(2) * 100).toFixed(0))
 
         console.log(`apr: ${apr}`)
         

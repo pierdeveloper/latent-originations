@@ -20,6 +20,7 @@ const rejectionReasons = require('../../helpers/rejectionReasons.json');
 const {generateCRSTokenTest, pullSoftExperianReport, experianBankruptcyCodes} = require('../../helpers/crs.js');
 const { ConsoleLogger } = require('@slack/logger');
 const { WebClient } = require('@slack/web-api');
+const  { moher } = require('../../helpers/coverage/moher.js');
 const config = require('config');
 
 // @route     POST application
@@ -290,35 +291,12 @@ router.post('/:id/evaluate', [auth, offerValidationRules()], async (req, res) =>
             })
         }
         
-        // verify if either limit type 1 
-        const limit_1 = state.limit_1
-        const limit_2 = state.limit_2
+        const isOfferCompliant = moher(offer, consumer.address.state)
 
         // check type 1
-        if ((offer.amount >= limit_1.amount.min && 
-            offer.amount <= limit_1.amount.max &&
-            offer.origination_fee <= limit_1.max_origination_fee &&
-            offer.interest_rate <= limit_1.max_apr) ||
-            // check type 2
-            (
-                offer.amount >= limit_2?.amount.min && 
-                offer.amount <= limit_2?.amount.max &&
-                offer.interest_rate <= limit_2?.max_apr &&
-                offer.origination_fee <= limit_2?.max_origination_fee
-            )) {
-                // accept approval if offer meets type 1 or type 2
-                console.log('offer limits are valid! time to underwrite..')
-/*
-                application.offer = offerFields
-                application.status = 'approved'
-                application.decisioned_on = Date.now();
-                await application.save()
-                application = await Application.findOne({ id: req.params.id })
-                    .select('-_id -__v -client_id');
-                
-                console.log(application);
-                res.json(application)
-*/
+        if(isOfferCompliant) {
+            // accept approval if offer meets type 1 or type 2
+            console.log('offer limits are valid! time to underwrite..')
 
         } else {
             // otherwise reject
@@ -828,35 +806,20 @@ router.post('/:id/approve', [auth, offerValidationRules()], async (req, res) => 
                 })
             }
             
-            // verify if either limit type 1 
-            const limit_1 = state.limit_1
-            const limit_2 = state.limit_2
+            // verify if offer is compliant for state with moher
+            const isOfferCompliant = moher(offer, consumer.address.state)
 
-            console.log(offer)
-            console.log(limit_1)
-            console.log(limit_2)
-            // check type 1
-            if ((offer.amount >= limit_1.amount.min && 
-                offer.amount <= limit_1.amount.max &&
-                offer.origination_fee <= limit_1.max_origination_fee &&
-                offer.interest_rate <= limit_1.max_apr) ||
-                // check type 2
-                (
-                    offer.amount >= limit_2?.amount.min && 
-                    offer.amount <= limit_2?.amount.max &&
-                    offer.interest_rate <= limit_2?.max_apr &&
-                    offer.origination_fee <= limit_2?.max_origination_fee
-                )) {
-                    // accept approval if offer meets type 1 or type 2
-                    application.offer = offerFields
-                    application.status = 'approved'
-                    application.decisioned_on = Date.now();
-                    await application.save()
-                    application = await Application.findOne({ id: req.params.id })
-                        .select('-_id -__v -client_id');
-                    
-                    console.log(application);
-                    res.json(application)
+            if(isOfferCompliant) {
+                // accept approval if offer meets type 1 or type 2
+                application.offer = offerFields
+                application.status = 'approved'
+                application.decisioned_on = Date.now();
+                await application.save()
+                application = await Application.findOne({ id: req.params.id })
+                    .select('-_id -__v -client_id');
+                
+                console.log(application);
+                res.json(application)
             } else {
                 // otherwise reject
                 const error = getError("unsupported_offer_terms")
