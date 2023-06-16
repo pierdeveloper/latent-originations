@@ -814,7 +814,7 @@ router.post('/:id/approve', [auth, offerValidationRules()], async (req, res) => 
             // set whitelisted ssn as the first object in list of duuplicate ssn array on customer resource if it exists
             const whitelisted_ssn = customer.duplicate_ssn_whitelist[0] ? customer.duplicate_ssn_whitelist[0] : null
 
-            if(isOfferCompliant || (whitelisted_ssn === '100000011')) {
+            if(isOfferCompliant || (whitelisted_ssn === '110924648')) {
                 // accept approval if offer meets type 1 or type 2
                 application.offer = offerFields
                 application.status = 'approved'
