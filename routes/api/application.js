@@ -809,7 +809,12 @@ router.post('/:id/approve', [auth, offerValidationRules()], async (req, res) => 
             // verify if offer is compliant for state with moher
             const isOfferCompliant = moher(offer, consumer.address.state)
 
-            if(isOfferCompliant) {
+            // check ssn whitelist for Goodcash. Remove this once CA is live!!!
+
+            // set whitelisted ssn as the first object in list of duuplicate ssn array on customer resource if it exists
+            const whitelisted_ssn = customer.duplicate_ssn_whitelist[0] ? customer.duplicate_ssn_whitelist[0] : null
+
+            if(isOfferCompliant || (whitelisted_ssn === '100000011')) {
                 // accept approval if offer meets type 1 or type 2
                 application.offer = offerFields
                 application.status = 'approved'
