@@ -72,7 +72,24 @@
             "max_origination_fee": 500
         }   
     },
-    "CA": {},
+    "CA": {
+        "limit_1": {
+            "amount": {
+                "min": 0,
+                "max": 0
+            },
+            "max_apr": 0,
+            "max_origination_fee": 0
+        },
+        "limit_2": {
+            "amount": {
+                "min": 0,
+                "max": 0
+            },
+            "max_apr": 1200,
+            "max_origination_fee": 500
+        } 
+    },
     "CO": {
         "limit_1": {
             "amount": {
@@ -417,7 +434,7 @@
                 "max": 5000000
             },
             "max_apr": 2500,
-            "max_origination_fee": 0
+            "max_origination_fee": 0    
         }
     },
     "OK": {

@@ -814,6 +814,9 @@ router.post('/:id/approve', [auth, offerValidationRules()], async (req, res) => 
             // set whitelisted ssn as the first object in list of duuplicate ssn array on customer resource if it exists
             const whitelisted_ssn = customer.duplicate_ssn_whitelist[0] ? customer.duplicate_ssn_whitelist[0] : null
 
+            console.log(`whitelisted_ssn: ${whitelisted_ssn}`)
+            console.log(`application.credit_type: ${application.credit_type}`)
+
             if(isOfferCompliant || 
                 // temp whitelist for good cash prod testing
                 (whitelisted_ssn === '110924648' && application.credit_type === 'consumer_revolving_line_of_credit')) {
