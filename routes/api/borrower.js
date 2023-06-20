@@ -12,6 +12,7 @@ const { businessValidationRules, consumerValidationRules, consumerUpdateValidati
 const {createNLSConsumer} = require('../../helpers/nls.js');
 const responseFilters = require('../../helpers/responseFilters.json');
 const config = require('config');
+const Customer = require('../../models/Customer.js');
 
 
 // @route     POST user
@@ -226,9 +227,22 @@ router.post('/consumer', [auth, consumerValidationRules()], async (req, res) => 
             phone,
             ssn } = req.body
 
+        const customer = await Customer.findOne({ client_id });
+
+        // confirm the address is not blacklisted for this customer
+        const blacklisted_states = customer.blacklisted_states;
+        if(blacklisted_states.includes(address.state)) {
+            const error = getError("unsupported_state")
+            return res.status(error.error_status).json({
+                error_type: error.error_type,
+                error_code: error.error_code,
+                error_message: error.error_message
+            })
+        } 
+
         // encrypt ssn
         const encrypted_ssn = encrypt(ssn);
-        //console.log(`encrypted ssn: ${encrypted_ssn}`)
+
 
         // create borrower
         const borrower_id = 'bor_' + uuidv4().replace(/-/g, '');

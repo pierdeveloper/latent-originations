@@ -13,6 +13,7 @@ const Consumer = require('../models/Consumer.js');
 const { retrieveNLSLoan } = require('./nls.js');
 const { WebClient } = require('@slack/web-api');
 const pierFormats = require('./formats.js');
+const Customer = require('../models/Customer');
 
 
 // utility function to generate a statement for a given facility. Responds w/ statement obj or an error
@@ -29,6 +30,17 @@ const generateStatement = async (facility) => {
             console.log('Statements for this credit type not supported for your api keys');
             return {status: "skipped", msg: 'Statements for this credit type not supported for your api keys'}
         default: break;
+    }
+
+    // in production, skip statements if not enabled for this customer
+    var customer_config = {};
+    if(process.env.NODE_ENV === 'production') {
+        customer_config = await Customer.findOne({client_id: facility.client_id });
+        const statements_enabled = customer_config.statements_enabled;
+        if(!statements_enabled) {
+            console.log('Statements not enabled for this customer');
+            return {status: "skipped", msg: 'Statements not enabled for this customer'}
+        }
     }
 
     // check if billing date is today or in the past

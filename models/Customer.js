@@ -72,9 +72,17 @@ const CustomerSchema = new mongoose.Schema({
         type: Array,
         default: []
     },
+    blacklisted_states: {
+        type: Array,
+        default: []
+    },
     nls_group_name: {
         type: String,
         required: false
+    },
+    statements_enabled: {
+        type: Boolean,
+        default: false
     }/*,
     billing: {
         start_date: {

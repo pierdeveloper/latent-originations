@@ -97,18 +97,21 @@ router.patch('/:id', async (req, res) => {
             nls_group_name,
             duplicate_ssn_whitelist,
             repayment_ach_enabled,
-            underwriting_enabled } = req.body;
+            underwriting_enabled,
+            blacklisted_states } = req.body;
 
         const customerFields = {};
         if(company_name) customerFields.company_name = company_name;
+        if(blacklisted_states) customerFields.blacklisted_states = blacklisted_states;
         if(dba_name) customerFields.dba_name = dba_name;
         if(email) customerFields.email = email;
-        customerFields.consumer_non_zero_enabled = consumer_non_zero_enabled;
+        if(consumer_non_zero_enabled) customerFields.consumer_non_zero_enabled = consumer_non_zero_enabled;
         if(custom_loan_agreement) customerFields.custom_loan_agreement = custom_loan_agreement;
         if(nls_group_name) customerFields.nls_group_name = nls_group_name;
         if(duplicate_ssn_whitelist) customerFields.duplicate_ssn_whitelist = duplicate_ssn_whitelist;
         if(repayment_ach_enabled) customerFields.repayment_ach_enabled = repayment_ach_enabled;
         if(underwriting_enabled) customerFields.underwriting_enabled = underwriting_enabled;
+        if(statements_enabled) customerFields.statements_enabled = statements_enabled;
 
         console.log(customerFields)
     

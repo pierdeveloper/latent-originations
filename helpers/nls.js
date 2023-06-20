@@ -569,14 +569,17 @@ const calculateAPR = async (offerTerms, monthlyPayment) => {
             ? "WE" : "MO" // temporary default to monthly
 
 
+        const oddDaysInFirstPeriod = 0;
+        const periodsInFirstPeriod = 1;
+        
         let payload = {
             LoanAmount: loanAmount,
             FirstPaymentAmount: monthlyPayment,
             RegularPaymentAmount: monthlyPayment,
             NumberOfPayments: offerTerms.term,
             PaymentPeriod: paymentPeriod,
-            OddDaysInFirstPeriod: 0,
-            PeriodsInFirstPeriod: 1,
+            OddDaysInFirstPeriod: oddDaysInFirstPeriod,
+            PeriodsInFirstPeriod: periodsInFirstPeriod,
             LastPaymentAmount: monthlyPayment
         }
         console.log(payload)

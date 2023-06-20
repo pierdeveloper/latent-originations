@@ -43,6 +43,12 @@ const errors = {
         error_status: 400,
         error_type: "BORROWER_ERROR"
     },
+    unsupported_state: {
+        error_code: "UNSUPPORTED_STATE",
+        error_message: "This state is not supported for your API keys. Contact Pier to enable",
+        error_status: 400,
+        error_type: "BORROWER_ERROR"
+    },
     application_not_found: {
         error_code: "APPLICATION_NOT_FOUND",
         error_message: "The application resource does not exist",
