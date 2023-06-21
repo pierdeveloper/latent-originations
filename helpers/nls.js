@@ -545,7 +545,7 @@ const accrueNLSLoan = async (accountNumber, date) => {
 }
 
 // calculate apr for loan terms
-const calculateAPR = async (offerTerms, monthlyPayment) => {
+const calculateAPR = async (offerTerms, periodicPayment) => {
     // Generate Auth token
     const nls_token = await generateNLSAuthToken();
 
@@ -558,29 +558,48 @@ const calculateAPR = async (offerTerms, monthlyPayment) => {
 
         console.log('calculating apr')
         console.log(offerTerms)
-        console.log(monthlyPayment)
+        console.log(periodicPayment)
 
         const origination_fee_amount = (offerTerms.origination_fee / 10000) * (offerTerms.amount / 100);
         const loanAmount = offerTerms.amount / 100 - origination_fee_amount;
-        const paymentPeriod = offerTerms.repayment_frequency === 'monthly' 
-            ? 'MO' : offerTerms.repayment_frequency === 'biweekly' 
-            ? "BW" : offerTerms.repayment_frequency === 'semi_monthly' 
-            ? "SM" : offerTerms.repayment_frequency === 'weekly'
-            ? "WE" : "MO" // temporary default to monthly
+        const paymentPeriod = offerTerms.repayment_frequency === 'monthly' ? 'MO' 
+            : offerTerms.repayment_frequency === 'biweekly' ? "BW" 
+            : offerTerms.repayment_frequency === 'semi_monthly' ? "SM" 
+            : offerTerms.repayment_frequency === 'semi_monthly_first_15th' ? "SM" 
+            : offerTerms.repayment_frequency === 'semi_monthly_last_15th' ? "SM" 
+            : offerTerms.repayment_frequency === 'weekly'? "WE" 
+            : "SM" // temporary default to semi_monthly
 
+        const first_payment_date = offerTerms.first_payment_date;
 
-        const oddDaysInFirstPeriod = 0;
-        const periodsInFirstPeriod = 1;
-        
+        // default values for first payment period
+        var oddDaysInFirstPeriod = 0;
+        var periodsInFirstPeriod = 1;
+
+        // if first payment date has been passed, set the period
+        if(first_payment_date) {
+            periodsInFirstPeriod = 0; // we set the period in days rather than periods
+
+            const first_payment_date_moment = moment(first_payment_date, "YYYY-MM-DD");
+            const today = moment();
+            const days = first_payment_date_moment.diff(today, 'days');
+            
+            console.log(`days difference: ${days}`)
+            
+            oddDaysInFirstPeriod = days;
+            
+        }
+
+                
         let payload = {
             LoanAmount: loanAmount,
-            FirstPaymentAmount: monthlyPayment,
-            RegularPaymentAmount: monthlyPayment,
+            FirstPaymentAmount: periodicPayment,
+            RegularPaymentAmount: periodicPayment,
             NumberOfPayments: offerTerms.term,
             PaymentPeriod: paymentPeriod,
             OddDaysInFirstPeriod: oddDaysInFirstPeriod,
             PeriodsInFirstPeriod: periodsInFirstPeriod,
-            LastPaymentAmount: monthlyPayment
+            LastPaymentAmount: periodicPayment
         }
         console.log(payload)
 

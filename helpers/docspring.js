@@ -3,6 +3,7 @@ const moment = require('moment');
 const config = require('config');
 const pierFormats = require('../helpers/formats');
 const { calculateAPR } = require('../helpers/nls.js');
+const { validationResult } = require('express-validator');
 
 
 /*
@@ -100,10 +101,10 @@ const generateDocspringDataFields = async (borrower_type, borrower, application,
                 doc_data_fields.city_state_zip = `${consumer.address.city} ${consumer.address.state} ${consumer.address.zip}`;
                 
                 // set payments per year variable to 12, 24 or 26 depending on repayment_frequency
-                const payments_per_year = repayment_frequency === 'monthly' 
-                    ? 12 : repayment_frequency === 'biweekly' 
-                    ? 26 : repayment_frequency === 'weekly'
-                    ? 52 : 24;
+                const payments_per_year = repayment_frequency === 'monthly' ? 12 
+                    : repayment_frequency === 'biweekly' ? 26 
+                    : repayment_frequency === 'weekly' ? 52 
+                    : 24;
 
                 const loan_amount = offer.amount / 100;
                 const disbursement_amount = loan_amount - origination_fee_amount / 100;
@@ -131,25 +132,84 @@ const generateDocspringDataFields = async (borrower_type, borrower, application,
                     : (offer.term * periodic_payment_amount); // for zero interest, we want to avoid rounding to non zero fin charge
                 doc_data_fields.total_of_payments = `${formatter.format(total_of_payments)}`
 
+                // TODO: move this function into helper file!
+                // date incrementer for semi monthly date calcs
+                function incrementSemiMonthly(start_date, cadence, intervals) {
+                    var t = moment(start_date, "MM/DD/YYYY");
+
+                    // loop through for each interval
+                    for (let i = 0; i < intervals; i++) {
+                        switch (cadence) {
+                            case 'semi_monthly_first_15th':
+                                // if t is the 1st of the month set it to the 15th
+                                if (t.date() === 1) {
+                                    t.date(15);
+                                } else {
+                                    // else set t to the 1st of the next month
+                                    t.add(1, 'months').date(1);
+                                }
+                                break;
+                            case 'semi_monthly_last_15th':
+                                // if t is the last day of the month set it to the 15th of the next month
+                                if (t.date() === t.daysInMonth()) {
+                                    t.add(1, 'months').date(15);
+                                } else {
+                                    // else set t to the last day of the month
+                                    t.endOf('month');
+                                }
+                                break;
+                            default:
+                                // add 15 days to t
+                                t.add(15, 'days');
+                                break;
+                        }   
+                    }
+                    return t;
+                  }
+
                 // set first payment date
-                const first_payment_date = repayment_frequency === 'monthly'
-                    ? moment().add(1,'months').format("MM/DD/YYYY") : repayment_frequency === 'biweekly'
-                    ? moment().add(2,'weeks').format("MM/DD/YYYY") : repayment_frequency === 'weekly'
-                    ? moment().add(1,'weeks').format("MM/DD/YYYY") : moment().add(2,'weeks').format("MM/DD/YYYY"); // todo need to fix for semi_monthly!
+                var first_payment_date = ""
+                if(offer.first_payment_date) {
+                    first_payment_date = moment(offer.first_payment_date, "YYYY-MM-DD").format("MM/DD/YYYY");
+                } else {
+                    switch (repayment_frequency) {
+                        case 'monthly':
+                            first_payment_date = moment().add(1,'months').format("MM/DD/YYYY");
+                            break;
+                        case 'biweekly':
+                            first_payment_date = moment().add(2,'weeks').format("MM/DD/YYYY");
+                            break;
+                        case 'weekly':
+                            first_payment_date = moment().add(1,'weeks').format("MM/DD/YYYY");
+                            break;
+                        case 'semi_monthly':
+                            first_payment_date = moment().add(15,'days').format("MM/DD/YYYY");
+                            break;
+                        case 'semi_monthly_first_15th':
+                            first_payment_date = incrementSemiMonthly(moment().format("MM/DD/YYYY"), 'semi_monthly_first_15th', 1).format("MM/DD/YYYY");
+                            break;
+                        case 'semi_monthly_last_15th':
+                            first_payment_date = incrementSemiMonthly(moment().format("MM/DD/YYYY"), 'semi_monthly_last_15th', 1).format("MM/DD/YYYY");
+                            break;
+                        default:
+                            first_payment_date = moment().add(1,'months').format("MM/DD/YYYY");
+                    }
+                }
 
-
-                const payment_period_text = payments_per_year === 12 
-                    ? 'Monthly' : payments_per_year === 26 
-                    ? 'Biweekly' : payments_per_year === 52
-                    ? 'Weekly' : 'Semi-monthly';
+                const payment_period_text = payments_per_year === 12 ? 'Monthly' 
+                    : payments_per_year === 26 ? 'Biweekly' 
+                    : payments_per_year === 52 ? 'Weekly' 
+                    : 'Semi-monthly';
 
                 const payments_due = `${payment_period_text} beginning ${first_payment_date}`;
                 doc_data_fields.payments_due = payments_due;
+                                
 
                 const final_due_date = repayment_frequency === 'monthly'
-                    ? moment().add(offer.term,'months').format("MM/DD/YYYY") : repayment_frequency === 'biweekly'
-                    ? moment().add(offer.term * 2,'weeks').format("MM/DD/YYYY") : repayment_frequency === 'weekly'
-                    ? moment().add(offer.term,'weeks').format("MM/DD/YYYY") : moment().add(offer.term * 2,'weeks').format("MM/DD/YYYY"); // todo need to fix for semi_monthly!
+                    ? moment(first_payment_date, "MM/DD/YYYY").add(offer.term-1,'months').format("MM/DD/YYYY") : repayment_frequency === 'biweekly'
+                    ? moment(first_payment_date, "MM/DD/YYYY").add((offer.term-1) * 2,'weeks').format("MM/DD/YYYY") : repayment_frequency === 'weekly'
+                    ? moment(first_payment_date, "MM/DD/YYYY").add(offer.term-1,'weeks').format("MM/DD/YYYY") 
+                    : incrementSemiMonthly(first_payment_date, repayment_frequency, offer.term-1).format("MM/DD/YYYY"); 
                 
                 doc_data_fields.final_payment_due = final_due_date;
                 doc_data_fields.amount_to_you = `${formatter.format(disbursement_amount)}`;
@@ -524,7 +584,7 @@ const docspringTemplates = {
 // HELPER FUNCTION - CALCULATE PERIODIC PAYMENTS
 
 const calculate_periodic_payment = (amount, n_payments, payments_per_year, apr) => {
-    const i = apr/payments_per_year;
+    const i = apr/payments_per_year; // called apr but it's really the periodic interest rate
     const a = amount;
     const n = n_payments;
     

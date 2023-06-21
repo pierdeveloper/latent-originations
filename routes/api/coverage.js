@@ -5,11 +5,13 @@ const consumer_state_limits = require('../../helpers/coverage/consumer.json');
 const commercial_state_limits = require('../../helpers/coverage/commercial.json');
 const Customer = require('../../models/Customer');
 const { getError } = require('../../helpers/errors.js');
-const { checkOfferValidationRules } = require('../../helpers/validator.js');
+const { checkOfferValidationRules, offerValidationRules } = require('../../helpers/validator.js');
 const { validationResult } = require('express-validator');
 const { calculateAPR } = require('../../helpers/nls.js');
 const { calculate_periodic_payment } = require('../../helpers/docspring.js');
 const { moher } = require('../../helpers/coverage/moher.js');
+const validator = require('validator');
+const moment = require('moment');
 
 // @route     GET commercial credit coverage
 // @desc      Retrieve list of commercial credit coverage by state
@@ -127,6 +129,16 @@ router.post('/check_offers', [auth, checkOfferValidationRules()], async (req, re
         // check if offer amount is within our limits
         var offer_amount_within_limits = false // default false
 
+        // check validations on offer
+        // ** NOTE! these validations are defined separately in this file, so the validator.js is not used here
+        const offer_passes_validations = validateOffer(offer);
+        if(!offer_passes_validations) {
+            check_offers_response[offer_id] = {
+                is_compliant: offer_amount_within_limits,
+                apr: null
+            }
+            continue;
+        }
 
         const state_thresholds = consumer_state_limits[state]
 
@@ -156,11 +168,13 @@ router.post('/check_offers', [auth, checkOfferValidationRules()], async (req, re
         //const disbursement_amount = loan_amount - origination_fee_amount / 100;
         const repayment_frequency = offer.repayment_frequency;
         // calc payments per year
-        const payments_per_year = repayment_frequency === 'monthly' 
-            ? 12 : repayment_frequency === 'biweekly' 
-            ? 26 : repayment_frequency === 'semi_monthly'
-            ? 24 : repayment_frequency === 'weekly'
-            ? 52 : null;
+        const payments_per_year = repayment_frequency === 'monthly' ? 12
+            : repayment_frequency === 'biweekly' ? 26
+            : repayment_frequency === 'semi_monthly' ? 24
+            : repayment_frequency === 'semi_monthly_first_15th' ? 24
+            : repayment_frequency === 'semi_monthly_last_15th' ? 24
+            : repayment_frequency === 'weekly' ? 52
+            : 24;
 
         // calc periodic payment amount
         const periodic_payment_amount = calculate_periodic_payment(
@@ -187,5 +201,54 @@ router.post('/check_offers', [auth, checkOfferValidationRules()], async (req, re
     res.json(check_offers_response);
 
 })
+
+const validateOffer = (offer) => {
+    const checkIsIntAndInRange = (value, min, max) => {
+        if (!validator.isInt(value + '', {min, max})) {
+            return false;
+        }
+        return true;
+    };
+
+    const checkIsInArray = (value, array) => {
+        if (!validator.isIn(value, array)) {
+            return false;
+        }
+        return true;
+    };
+
+    const validRepaymentFrequencies = ['weekly', 'biweekly', 'semi_monthly_first_15th', 'semi_monthly_last_15th', 'semi_monthly', 'monthly'];
+    
+    // Common checks
+    if (!checkIsIntAndInRange(offer.amount, 0, Infinity)) return false;
+    if (!checkIsIntAndInRange(offer.interest_rate, 0, Infinity)) return false;
+    if (!checkIsIntAndInRange(offer.origination_fee, 0, Infinity)) return false;
+    if (offer.repayment_frequency != null && !checkIsInArray(offer.repayment_frequency, validRepaymentFrequencies)) return false;
+    if (offer.term != null && !checkIsIntAndInRange(offer.term, 3, 260)) return false;
+    
+    // Check first payment date
+    if (offer.first_payment_date) {
+        const date = moment(offer.first_payment_date, 'YYYY-MM-DD');
+        if (!date.isValid()) {
+            return false;
+        }
+        if (!date.isAfter(moment())) {
+            return false;
+        }
+        if (date.diff(moment(), 'days') > 45) {
+            return false;
+        }
+        if (offer.repayment_frequency === "semi_monthly_first_15th" && (date.date() !== 1 && date.date() !== 15)) {
+            return false;
+        }
+        if (offer.repayment_frequency === "semi_monthly_last_15th" && (date.date() !== 15 && date.date() !== date.daysInMonth())) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+
 
 module.exports = router;

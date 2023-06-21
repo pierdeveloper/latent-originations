@@ -84,6 +84,10 @@ const ApplicationSchema = new mongoose.Schema({
             type: Schema.Types.Mixed,
             required: false
         },
+        first_payment_date: {
+            type: String,
+            required: false
+        },
         repayment_frequency: { // deprecated
             type: String,
             required: false

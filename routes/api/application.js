@@ -655,6 +655,9 @@ router.post('/:id/approve', [auth, offerValidationRules()], async (req, res) => 
     if(offer.hasOwnProperty("third_party_disbursement_destination")) {
         offerFields.third_party_disbursement_destination = offer.third_party_disbursement_destination
     }
+    if(offer.hasOwnProperty("first_payment_date")) {
+        offerFields.first_payment_date = offer.first_payment_date
+    }
 
 
     try {

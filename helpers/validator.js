@@ -2,6 +2,7 @@ const { check, validationResult } = require('express-validator');
 const states = require('../helpers/coverage/states.json');
 const rejection_reasons = require('../helpers/rejectionReasons.json');
 const routingNumberValidator = require('bank-routing-number-validator');
+const moment = require('moment');
 
 // Business borrower validation rules
 const businessValidationRules = () => {
@@ -142,11 +143,47 @@ const consumerValidationRules = () => {
         check('offer.origination_fee', 'Origination fee must be an integer greater than or equal to 0')
             .isInt({min:0}),
         check('offer.repayment_frequency', 'Repayment frequency must be one of: biweekly, semi_monthly, monthly')
-            .isIn(['weekly', 'biweekly', 'semi_monthly', 'monthly']).optional({nullable: true}),
+            .isIn(['weekly', 'biweekly', 'semi_monthly_first_15th', 'semi_monthly_last_15th', 'semi_monthly', 'monthly']).optional({nullable: true}),
         check('offer.term', 'Term must be an integer >= 3 and <= 260')
             .isInt({min:3, max:260}).optional({nullable: true}),
+        check('offer.first_payment_date', 'First payment date format must conform to yyyy-mm-dd')
+            .isDate({format:"yyyy-mm-dd", strictMode:true}).optional({nullable: true})
+            .custom((value) => {
+                const inputDate = moment(value, 'YYYY-MM-DD');
+                const today = moment();
+                if (!inputDate.isAfter(today)) {
+                  throw new Error('First payment date invalid');
+                }
+                // validate that first payment date is not more than 45 days in the future
+                if (inputDate.diff(today, 'days') > 45) {
+                    throw new Error('First payment date cannot be more than 45 days in the future');
+                }
+                return true;
+              })
+            .if((value, { req }) => req.body.offer.repayment_frequency === "semi_monthly_first_15th")
+                .custom((value) => {
+                    const inputDate = moment(value, 'YYYY-MM-DD');
+                    // verify that date is the 1st or 15th
+                    if (inputDate.date() !== 1 && inputDate.date() !== 15) {
+                        throw new Error('First payment date must be the 1st or 15th of the month for this repayment frequency');
+                    }
+                    return true;
+                }),
+        check('offer.first_payment_date', 'First payment date format must conform to yyyy-mm-dd')
+            .if((value, { req }) => req.body.offer.repayment_frequency === "semi_monthly_last_15th")
+                .custom((value) => {
+                    console.log('validating first date field for this repay freq type!')
+                    const inputDate = moment(value, 'YYYY-MM-DD');
+                    // verify that date is the last day or 15th
+                    if (inputDate.date() !== 15 && inputDate.date() !== inputDate.daysInMonth()) {
+                        throw new Error('First payment date must be the last day or 15th of the month for this repayment frequency');
+                    }
+                    return true;
+                })
+
     ]
   }
+
 
 
   const rejectionValidationRules = () => {
