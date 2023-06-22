@@ -136,7 +136,10 @@ const createNLSLoan = async (facility) => {
             case 'monthly': payment_period = 'MO'; break;
             case 'biweekly': payment_period = 'BW'; break;
             case 'weekly': payment_period = 'WE'; break;
+            case 'semi_monthly_14': payment_period = 'S4'; break;
             case 'semi_monthly': payment_period = 'SM'; break;
+            case 'semi_monthly_first_15th': payment_period = 'SM'; break;
+            case 'semi_monthly_last_15th': payment_period = 'SM'; break;
             default: 
                 // throw error
                 console.log('error: invalid repayment frequency')
@@ -567,6 +570,7 @@ const calculateAPR = async (offerTerms, periodicPayment) => {
             : offerTerms.repayment_frequency === 'semi_monthly' ? "SM" 
             : offerTerms.repayment_frequency === 'semi_monthly_first_15th' ? "SM" 
             : offerTerms.repayment_frequency === 'semi_monthly_last_15th' ? "SM" 
+            : offerTerms.repayment_frequency === 'semi_monthly_14' ? "S4"
             : offerTerms.repayment_frequency === 'weekly'? "WE" 
             : "SM" // temporary default to semi_monthly
 

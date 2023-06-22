@@ -96,6 +96,10 @@ const ApplicationSchema = new mongoose.Schema({
             type: String,
             required: false
         },
+        periodic_payment: {
+            type: Number,
+            required: false
+        },
         term: {
             type: Number,
             required: false

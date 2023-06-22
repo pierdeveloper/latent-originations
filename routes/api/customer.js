@@ -98,6 +98,7 @@ router.patch('/:id', async (req, res) => {
             duplicate_ssn_whitelist,
             repayment_ach_enabled,
             underwriting_enabled,
+            statements_enabled,
             blacklisted_states } = req.body;
 
         const customerFields = {};

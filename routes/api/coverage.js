@@ -137,6 +137,7 @@ router.post('/check_offers', [auth, checkOfferValidationRules()], async (req, re
                 is_compliant: offer_amount_within_limits,
                 apr: null
             }
+            console.log('offer does not pass validations')
             continue;
         }
 
@@ -144,20 +145,14 @@ router.post('/check_offers', [auth, checkOfferValidationRules()], async (req, re
 
         // verify Pier has limits for the state
         if(Object.keys(state_thresholds).length === 0) {
-            console.log('no pier limits exist');
+            
+            check_offers_response[offer_id] = {
+                is_compliant: offer_amount_within_limits,
+                apr: null
+            }
+            console.log('no pier limits exist for this state');
+            continue;
         } 
-
-
-        const isOfferCompliant = moher(offer, state)
-
-        if(isOfferCompliant) {
-            console.log('offer limits are valid!')
-            // update bool
-            offer_amount_within_limits = true
-        } else {
-            // unsupported
-            console.log('unsupported limits')
-        }
 
         // ~~~~~ 
         //calculate APR
@@ -171,6 +166,7 @@ router.post('/check_offers', [auth, checkOfferValidationRules()], async (req, re
         const payments_per_year = repayment_frequency === 'monthly' ? 12
             : repayment_frequency === 'biweekly' ? 26
             : repayment_frequency === 'semi_monthly' ? 24
+            : repayment_frequency === 'semi_monthly_14' ? 24
             : repayment_frequency === 'semi_monthly_first_15th' ? 24
             : repayment_frequency === 'semi_monthly_last_15th' ? 24
             : repayment_frequency === 'weekly' ? 52
@@ -183,12 +179,27 @@ router.post('/check_offers', [auth, checkOfferValidationRules()], async (req, re
             payments_per_year,
             offer.interest_rate / 10000
         );
+        offer.periodic_payment = periodic_payment_amount;
 
         console.log('periodic payment amount: ', periodic_payment_amount)
         // calc offer
         var apr = await calculateAPR(offer, periodic_payment_amount);
         console.log('APR: ', apr)
         if(apr === 'nls_error') { apr = null} 
+
+        offer.apr = apr
+
+        const isOfferCompliant = moher(offer, state)
+
+        if(isOfferCompliant) {
+            console.log('offer limits are valid!')
+            // update bool
+            offer_amount_within_limits = true
+        } else {
+            // unsupported
+            console.log('unsupported limits')
+        }
+
          // add offer to response object
          check_offers_response[offer_id] = {
             is_compliant: offer_amount_within_limits,
@@ -217,28 +228,47 @@ const validateOffer = (offer) => {
         return true;
     };
 
-    const validRepaymentFrequencies = ['weekly', 'biweekly', 'semi_monthly_first_15th', 'semi_monthly_last_15th', 'semi_monthly', 'monthly'];
+    const validRepaymentFrequencies = ['weekly', 'biweekly', 'semi_monthly_first_15th', 'semi_monthly_last_15th', 'semi_monthly', 'semi_monthly_14', 'monthly'];
     
     // Common checks
-    if (!checkIsIntAndInRange(offer.amount, 0, Infinity)) return false;
-    if (!checkIsIntAndInRange(offer.interest_rate, 0, Infinity)) return false;
-    if (!checkIsIntAndInRange(offer.origination_fee, 0, Infinity)) return false;
-    if (offer.repayment_frequency != null && !checkIsInArray(offer.repayment_frequency, validRepaymentFrequencies)) return false;
-    if (offer.term != null && !checkIsIntAndInRange(offer.term, 3, 260)) return false;
+    if (!checkIsIntAndInRange(offer.amount, 0, Infinity)) {
+        console.log('amount does not pass validation')
+        return false;
+    } 
+    if (!checkIsIntAndInRange(offer.interest_rate, 0, Infinity)) {
+        console.log('interest rate does not pass validation')
+        return false;
+    }
+    if (!checkIsIntAndInRange(offer.origination_fee, 0, Infinity)) {
+        console.log('origination fee does not pass validation')
+        return false;
+    }
+    if (offer.repayment_frequency != null && !checkIsInArray(offer.repayment_frequency, validRepaymentFrequencies)) {
+        console.log('repayment frequency does not pass validation')
+        return false;
+    }
+    if (offer.term != null && !checkIsIntAndInRange(offer.term, 3, 260)) {
+        console.log('term does not pass validation')
+        return false;
+    }
     
     // Check first payment date
     if (offer.first_payment_date) {
         const date = moment(offer.first_payment_date, 'YYYY-MM-DD');
         if (!date.isValid()) {
+            console.log('first payment date does not pass validation bc it is not valid')
             return false;
         }
         if (!date.isAfter(moment())) {
+            console.log('first payment date does not pass validation bc it is not after today')
             return false;
         }
         if (date.diff(moment(), 'days') > 45) {
+            console.log('first payment date does not pass validation bc it is more than 45 days in the future')
             return false;
         }
         if (offer.repayment_frequency === "semi_monthly_first_15th" && (date.date() !== 1 && date.date() !== 15)) {
+
             return false;
         }
         if (offer.repayment_frequency === "semi_monthly_last_15th" && (date.date() !== 15 && date.date() !== date.daysInMonth())) {

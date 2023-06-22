@@ -22,6 +22,8 @@ const { ConsoleLogger } = require('@slack/logger');
 const { WebClient } = require('@slack/web-api');
 const  { moher } = require('../../helpers/coverage/moher.js');
 const config = require('config');
+const { calculateAPR } = require('../../helpers/nls.js');
+const { calculate_periodic_payment } = require('../../helpers/docspring.js');
 
 // @route     POST application
 // @desc      Create a credit application
@@ -808,6 +810,45 @@ router.post('/:id/approve', [auth, offerValidationRules()], async (req, res) => 
                     error_message: error.error_message
                 })
             }
+
+            // calculate periodic payment and apr if credit type is consumer_bnpl or consumer_installment_loan
+            if(application.credit_type === 'consumer_bnpl' || application.credit_type === 'consumer_installment_loan') {
+                // calc loan amount
+                const loan_amount = offer.amount / 100;
+                //const disbursement_amount = loan_amount - origination_fee_amount / 100;
+                const repayment_frequency = offer.repayment_frequency;
+                // calc payments per year
+                const payments_per_year = repayment_frequency === 'monthly' ? 12
+                    : repayment_frequency === 'biweekly' ? 26
+                    : repayment_frequency === 'semi_monthly' ? 24
+                    : repayment_frequency === 'semi_monthly_14' ? 24
+                    : repayment_frequency === 'semi_monthly_first_15th' ? 24
+                    : repayment_frequency === 'semi_monthly_last_15th' ? 24
+                    : repayment_frequency === 'weekly' ? 52
+                    : 24;
+
+                // calc periodic payment amount
+                const periodic_payment_amount = calculate_periodic_payment(
+                    loan_amount,
+                    offer.term,
+                    payments_per_year,
+                    offer.interest_rate / 10000
+                );
+                offerFields.periodic_payment = periodic_payment_amount;
+                offer.periodic_payment = periodic_payment_amount;
+
+                console.log('periodic payment amount: ', periodic_payment_amount)
+                // calc offer
+                var apr = await calculateAPR(offer, periodic_payment_amount);
+                console.log('APR: ', apr)
+                
+                offerFields.apr = apr;
+                offer.apr = apr
+            } else if (application.credit_type === 'consumer_revolving_line_of_credit') {
+                offer.apr = offer.interest_rate
+            }
+
+            
             
             // verify if offer is compliant for state with moher
             const isOfferCompliant = moher(offer, consumer.address.state)

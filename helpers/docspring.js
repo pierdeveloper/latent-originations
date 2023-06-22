@@ -158,9 +158,36 @@ const generateDocspringDataFields = async (borrower_type, borrower, application,
                                     t.endOf('month');
                                 }
                                 break;
-                            default:
-                                // add 15 days to t
-                                t.add(15, 'days');
+                            case 'semi_monthly_14':
+                                // if t is the 1 thru 14th of the month add 14 days
+                                if (t.date() <= 14) {
+                                    t.add(14, 'days');
+                                } else {
+                                    // else subtract 14 days and add one month
+                                    t.subtract(14, 'days').add(1, 'months');
+                                }
+                                break;
+                            default: // semi monthly 
+                                // if t is 1st thru 13th of the month add 15 days
+                                if (t.date() <= 13) {
+                                    t.add(15, 'days');
+                                
+                                // else if t is the 14th or 15th of the month, if t+15 is not in this month, set it to the last day, otherwise set it to t+15
+                                } else if (t.date() === 14 || t.date() === 15) {
+                                    if (t.add(15, 'days').month() !== t.month()) {
+                                        t.endOf('month');
+                                    } else {
+                                        t.add(15, 'days');
+                                    }
+                                // else if t is the 31st of the month, set t to the 15th of the next month
+                                } else if (t.date() === 31) {
+                                    t.add(1, 'months').date(15);
+                                }
+                                // else t is 17th thru 30th, set t to next month minus 15 days
+                                else {
+                                    t.subtract(15, 'days').add(1, 'months');
+
+                                }  
                                 break;
                         }   
                     }
@@ -184,6 +211,9 @@ const generateDocspringDataFields = async (borrower_type, borrower, application,
                             break;
                         case 'semi_monthly':
                             first_payment_date = moment().add(15,'days').format("MM/DD/YYYY");
+                            break;
+                        case 'semi_monthly_14':
+                            first_payment_date = incrementSemiMonthly(moment().format("MM/DD/YYYY"), 'semi_monthly_14', 1).format("MM/DD/YYYY");    
                             break;
                         case 'semi_monthly_first_15th':
                             first_payment_date = incrementSemiMonthly(moment().format("MM/DD/YYYY"), 'semi_monthly_first_15th', 1).format("MM/DD/YYYY");

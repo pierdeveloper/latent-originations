@@ -15,14 +15,14 @@ const moher = (offer, state) => {
         offer.amount >= limit_1.amount.min && 
         offer.amount <= limit_1.amount.max &&
         offer.origination_fee <= limit_1.max_origination_fee &&
-        offer.interest_rate <= limit_1.max_apr ) 
+        offer.apr <= limit_1.max_apr ) 
         {
             return true
         }
     else if(
         offer.amount >= limit_2?.amount.min && 
         offer.amount <= limit_2?.amount.max &&
-        offer.interest_rate <= limit_2?.max_apr &&
+        offer.apr <= limit_2?.max_apr &&
         offer.origination_fee <= limit_2?.max_origination_fee ) 
         {
             return true
