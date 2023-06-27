@@ -23,6 +23,7 @@ const { bankDetailsValidationRules } = require('../../helpers/validator.js');
 const { WebClient } = require('@slack/web-api');
 const Statement = require('../../models/Statement.js');
 const pierFormats = require('../../helpers/formats.js');
+const {createFacility} = require('../../helpers/facilities.js');
 
 
 
@@ -36,7 +37,21 @@ router.post('/', [auth], async (req, res) => {
 
     const client_id = req.client_id
     const { loan_agreement_id } = req.body
+    const facility = await createFacility(loan_agreement_id, client_id, false)
+    // Response
+    // if response has a key name error, return error
+    if(facility.error) {
+        const err = facility.error
+        return res.status(err.error_status).json({
+            error_type: err.error_type,
+            error_code: err.error_code,
+            error_message: err.error_message
+        })
+    } else {
+        res.json(facility);
+    }
 
+    /*
     try {
         // pull up the loan agreement
         let loan_agreement = await Document.findOne({ id: loan_agreement_id });
@@ -238,9 +253,11 @@ router.post('/', [auth], async (req, res) => {
             error_code: error.error_code,
             error_message: error.error_message
         })
-    }
+    }*/
     
 });
+
+
 
 // @route POST facility/{id}/repayment_bank_details
 // @desc Add bank account and routing number for repayment to facility

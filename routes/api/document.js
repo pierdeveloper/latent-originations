@@ -12,6 +12,7 @@ const { getDocSpringSubmission,
     docspringTemplates } = require('../../helpers/docspring.js')
 const Application = require('../../models/Application');
 const Customer = require('../../models/Customer.js');
+const { createFacility } = require('../../helpers/facilities.js');
 //const { webhookEventEmitter } = require('../../server');
 
 
@@ -268,6 +269,12 @@ router.post('/:id/sign', [auth], async (req, res) => {
             .select('-_id -__v -client_id -unsigned_submission_id -signed_submission_id');
         
         console.log(loan_agreement); 
+
+        // if facility_autocreate is true, create facility
+        if (client.facility_autocreate) {
+            console.log('auto creating facility for this customer')
+            createFacility(loan_agreement.id, client_id, true)    
+        }
         res.json(loan_agreement);
     } catch(err) {
         console.error(err.message);

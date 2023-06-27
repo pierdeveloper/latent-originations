@@ -146,6 +146,24 @@ const consumerValidationRules = () => {
             .isIn(['weekly', 'biweekly', 'semi_monthly_first_15th', 'semi_monthly_last_15th', 'semi_monthly', 'semi_monthly_14', 'monthly']).optional({nullable: true}),
         check('offer.term', 'Term must be an integer >= 3 and <= 260')
             .isInt({min:3, max:260}).optional({nullable: true}),
+        check('offer.term').custom((value, { req }) => {
+            if(req.body.offer.repayment_frequency === 'monthly' && value < 3) {
+                throw new Error('Term must be at least 3 for monthly payment period');
+            } else if(req.body.offer.repayment_frequency === 'semi_monthly' && value < 6) {
+                throw new Error('Term must be at least 6 for semi monthly payment period');
+            } else if(req.body.offer.repayment_frequency === 'semi_monthly_14' && value < 6) {
+                throw new Error('Term must be at least 6 for semi monthly payment period');
+            } else if(req.body.offer.repayment_frequency === 'semi_monthly_first_15' && value < 6) {
+                throw new Error('Term must be at least 6 for semi monthly payment period');
+            } else if(req.body.offer.repayment_frequency === 'semi_monthly_last_15' && value < 6) {
+                throw new Error('Term must be at least 6 for semi monthly payment period');
+            } else if(req.body.offer.repayment_frequency === 'biweekly' && value < 7) {
+                throw new Error('Term must be at least 7 for biweekly payment period');
+            } else if(req.body.offer.repayment_frequency === 'weekly' && value < 13) {
+                throw new Error('Term must be at least 13 for weekly monthly payment period');
+            }
+            return true;
+            }),
         check('offer.first_payment_date', 'First payment date format must conform to yyyy-mm-dd')
             .isDate({format:"yyyy-mm-dd", strictMode:true}).optional({nullable: true})
             .custom((value) => {

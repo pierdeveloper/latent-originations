@@ -83,7 +83,12 @@ const CustomerSchema = new mongoose.Schema({
     statements_enabled: {
         type: Boolean,
         default: false
-    }/*,
+    },
+    facility_autocreate: {
+        type: Boolean,
+        default: false
+    }
+    /*,
     billing: {
         start_date: {
             type: String,

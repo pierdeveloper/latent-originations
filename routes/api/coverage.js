@@ -247,7 +247,37 @@ const validateOffer = (offer) => {
         console.log('repayment frequency does not pass validation')
         return false;
     }
+    
+    // Term checks
     if (offer.term != null && !checkIsIntAndInRange(offer.term, 3, 260)) {
+        console.log('term does not pass validation')
+        return false;
+    }
+    if (offer.term != null && offer.repayment_frequency === 'weekly' && !checkIsIntAndInRange(offer.term, 13, 260)) {
+        console.log('term does not pass validation')
+        return false;
+    }
+    if (offer.term != null && offer.repayment_frequency === 'biweekly' && !checkIsIntAndInRange(offer.term, 7, 130)) {
+        console.log('term does not pass validation')
+        return false;
+    }
+    if (offer.term != null && offer.repayment_frequency === 'semi_monthly' && !checkIsIntAndInRange(offer.term, 6, 120)) {
+        console.log('term does not pass validation')
+        return false;
+    }
+    if (offer.term != null && offer.repayment_frequency === 'semi_monthly_14' && !checkIsIntAndInRange(offer.term, 6, 120)) {   
+        console.log('term does not pass validation')
+        return false;
+    }
+    if (offer.term != null && offer.repayment_frequency === 'semi_monthly_first_15th' && !checkIsIntAndInRange(offer.term, 6, 120)) {
+        console.log('term does not pass validation')
+        return false;
+    }
+    if (offer.term != null && offer.repayment_frequency === 'semi_monthly_last_15th' && !checkIsIntAndInRange(offer.term, 6, 120)) {
+        console.log('term does not pass validation')    
+        return false;
+    }
+    if (offer.term != null && offer.repayment_frequency === 'monthly' && !checkIsIntAndInRange(offer.term, 3, 60)) {
         console.log('term does not pass validation')
         return false;
     }

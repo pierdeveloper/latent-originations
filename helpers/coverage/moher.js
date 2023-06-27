@@ -5,7 +5,7 @@ const moher = (offer, state) => {
 
     // get state limits
     const state_limits = consumer_state_limits[state]
-    console.log(state_limits)
+    console.log(state_limits)  
     // set limits
     const limit_1 = state_limits.limit_1
     const limit_2 = state_limits.limit_2
