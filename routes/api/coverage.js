@@ -7,7 +7,7 @@ const Customer = require('../../models/Customer');
 const { getError } = require('../../helpers/errors.js');
 const { checkOfferValidationRules, offerValidationRules } = require('../../helpers/validator.js');
 const { validationResult } = require('express-validator');
-const { calculateAPR } = require('../../helpers/nls.js');
+const { calculateAPR, calculateAPRs, check_offer_aprs } = require('../../helpers/nls.js');
 const { calculate_periodic_payment } = require('../../helpers/docspring.js');
 const { moher } = require('../../helpers/coverage/moher.js');
 const validator = require('validator');
@@ -92,6 +92,30 @@ router.post('/check_offers', [auth, checkOfferValidationRules()], async (req, re
         offers 
     } = req.body
 
+    // validate that state has limits
+    const state_thresholds = consumer_state_limits[state]
+
+    // verify Pier has limits for the state
+    if(Object.keys(state_thresholds).length === 0) {
+        const response = {
+            error_type: "API_ERROR",
+            error_code: "INVALID_INPUT",
+            error_message: "A value provided in the body is incorrect. See error_detail for more",
+            error_detail: "State not supported"
+        }
+        return res.status(400).json(response);
+    } 
+
+    // validate that max offer count is 40
+    if(offers.length > 40) {
+        const response = {
+            error_type: "API_ERROR",
+            error_code: "INVALID_INPUT",
+            error_message: "A value provided in the body is incorrect. See error_detail for more",
+            error_detail: "Max offer count is 40"
+        }
+        return res.status(400).json(response);
+    }
 
     // validate that all offers have an id field
     const offer_ids = offers.map(offer => offer.id);
@@ -121,7 +145,17 @@ router.post('/check_offers', [auth, checkOfferValidationRules()], async (req, re
     // create response object
     const check_offers_response = {}
 
-    // for each offer, check if it is within our limits
+    // pre populate response object with offer ids
+    for(let i = 0; i < offers.length; i++) {
+        const offer = offers[i];
+        const offer_id = offer.id;
+        check_offers_response[offer_id] = {
+            is_compliant: null,
+            apr: null
+        }
+    }
+
+    // for each offer, check basic validations and calc periodic payment
     for(let i = 0; i < offers.length; i++) {
         const offer = offers[i];
         const offer_id = offer.id;
@@ -134,29 +168,13 @@ router.post('/check_offers', [auth, checkOfferValidationRules()], async (req, re
         const offer_passes_validations = validateOffer(offer);
         if(!offer_passes_validations) {
             check_offers_response[offer_id] = {
-                is_compliant: offer_amount_within_limits,
+                is_compliant: false,
                 apr: null
             }
             console.log('offer does not pass validations')
             continue;
         }
 
-        const state_thresholds = consumer_state_limits[state]
-
-        // verify Pier has limits for the state
-        if(Object.keys(state_thresholds).length === 0) {
-            
-            check_offers_response[offer_id] = {
-                is_compliant: offer_amount_within_limits,
-                apr: null
-            }
-            console.log('no pier limits exist for this state');
-            continue;
-        } 
-
-        // ~~~~~ 
-        //calculate APR
-        // ~~~~~
 
         // calc loan amount
         const loan_amount = offer.amount / 100;
@@ -182,14 +200,47 @@ router.post('/check_offers', [auth, checkOfferValidationRules()], async (req, re
         offer.periodic_payment = periodic_payment_amount;
 
         console.log('periodic payment amount: ', periodic_payment_amount)
+
+    }
+
+    // create an offers list with only offers that where is_compliant is null or true
+    const offers_to_check = offers.filter(offer => {
+        const offer_id = offer.id;
+        const is_compliant = check_offers_response[offer_id].is_compliant;
+        return is_compliant === null || is_compliant === true;
+    })
+
+    // calc aprs for each offer
+    const aprs = await calculateAPRs(offers_to_check);
+    //const aprs = {'25': 3000}
+
+    // update offers with aprs 
+    for(let i = 0; i < offers.length; i++) {
+        const offer = offers[i];
+        const offer_id = offer.id;
+        const apr = aprs[offer_id];
+        offer.apr = apr;
+    }
+    console.log('offers: ', offers)
+
+    // for each offer, check if it is within our limits
+    for(let i = 0; i < offers.length; i++) {
+        const offer = offers[i];
+        if(check_offers_response[offer.id].is_compliant === false) continue;
+        /*
+
         // calc offer
         var apr = await calculateAPR(offer, periodic_payment_amount);
         console.log('APR: ', apr)
         if(apr === 'nls_error') { apr = null} 
 
         offer.apr = apr
+        */
+        var offer_amount_within_limits = false // default false
 
         const isOfferCompliant = moher(offer, state)
+
+        var apr = offer.apr 
 
         if(isOfferCompliant) {
             console.log('offer limits are valid!')
@@ -198,10 +249,11 @@ router.post('/check_offers', [auth, checkOfferValidationRules()], async (req, re
         } else {
             // unsupported
             console.log('unsupported limits')
+            apr = null
         }
 
          // add offer to response object
-         check_offers_response[offer_id] = {
+         check_offers_response[offer.id] = {
             is_compliant: offer_amount_within_limits,
             apr: apr
         }
@@ -212,6 +264,8 @@ router.post('/check_offers', [auth, checkOfferValidationRules()], async (req, re
     res.json(check_offers_response);
 
 })
+
+
 
 const validateOffer = (offer) => {
     const checkIsIntAndInRange = (value, min, max) => {
@@ -247,7 +301,7 @@ const validateOffer = (offer) => {
         console.log('repayment frequency does not pass validation')
         return false;
     }
-    
+
     // Term checks
     if (offer.term != null && !checkIsIntAndInRange(offer.term, 3, 260)) {
         console.log('term does not pass validation')

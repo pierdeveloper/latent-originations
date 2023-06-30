@@ -218,7 +218,15 @@
             },
             "max_apr": 0,
             "max_origination_fee": 0
-        }
+        },
+        "limit_2": {
+            "amount": {
+                "min": 500000,
+                "max": 5000000
+            },
+            "max_apr": 2500,
+            "max_origination_fee": 500
+        } 
     },
     "IA": {
         "limit_1": {
@@ -434,7 +442,7 @@
                 "max": 5000000
             },
             "max_apr": 2500,
-            "max_origination_fee": 0    
+            "max_origination_fee": 300    
         }
     },
     "OK": {

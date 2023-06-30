@@ -3,8 +3,16 @@ const moment = require('moment');
 const config = require('config');
 const pierFormats = require('../helpers/formats');
 
+// NLS auth token
+var nlsToken = null;
+
 // get auth token
 const generateNLSAuthToken = async () => {
+    
+    // Return token if already generated
+    if(nlsToken) {
+        return nlsToken;
+    }
     const CLIENT_ID = config.get('nls_client_id');
     const CLIENT_SECRET = config.get('nls_secret');
     const USERNAME = config.get('nls_username');
@@ -29,6 +37,9 @@ const generateNLSAuthToken = async () => {
         const accessToken = response.data.access_token;
         const bearerToken = 'Bearer ' + accessToken;
         console.log('Bearer token:', bearerToken);
+        
+        // set the nls token and return it
+        nlsToken = bearerToken;
         return accessToken;
     
 }
@@ -52,6 +63,8 @@ const revokeNLSAuthToken = async (token) => {
 
     console.log("Revoking token..")
     let response = await axios.post(url, payload, {headers: header})
+    console.log("Token revoked")
+    nlsToken = null;
 
 }
 
@@ -638,9 +651,127 @@ const calculateAPR = async (offerTerms, periodicPayment) => {
 
 }
 
+// calculate aprs for a list of offers
+const calculateAPRs = async (offers) => {
+    // Generate Auth token
+    const nls_token = await generateNLSAuthToken();
+
+    // create response object
+    const aprs_response = {};
+
+    const delayInMilliseconds = 225;
+
+    // create a list of promise
+    const promises = offers.map(async (offer, index) => {
+        
+        const delayTime = Math.sqrt(index) * delayInMilliseconds;
+        console.log(`delay time: ${delayTime}`)
+        var waitTill = new Date(new Date().getTime() + delayTime);
+        while(waitTill > new Date()){}
+
+
+        const offer_id = offer.id;
+        const periodicPayment = offer.periodic_payment;
+
+        try {
+            // NLS config
+            const url = `https://api.nortridgehosting.com/25.0/nls/apr`;
+            const auth = 'Bearer ' + nls_token;
+            
+            const header = {'Authorization': auth, 'content-type': 'application/x-www-form-urlencoded'}
+    
+            console.log('calculating apr')
+            console.log(offer)
+            console.log(periodicPayment)
+    
+            const origination_fee_amount = (offer.origination_fee / 10000) * (offer.amount / 100);
+            const loanAmount = offer.amount / 100 - origination_fee_amount;
+            const paymentPeriod = offer.repayment_frequency === 'monthly' ? 'MO' 
+                : offer.repayment_frequency === 'biweekly' ? "BW" 
+                : offer.repayment_frequency === 'semi_monthly' ? "SM" 
+                : offer.repayment_frequency === 'semi_monthly_first_15th' ? "SM" 
+                : offer.repayment_frequency === 'semi_monthly_last_15th' ? "SM" 
+                : offer.repayment_frequency === 'semi_monthly_14' ? "S4"
+                : offer.repayment_frequency === 'weekly'? "WE" 
+                : "SM" // temporary default to semi_monthly
+    
+            const first_payment_date = offer.first_payment_date;
+    
+            // default values for first payment period
+            var oddDaysInFirstPeriod = 0;
+            var periodsInFirstPeriod = 1;
+    
+            // if first payment date has been passed, set the period
+            if(first_payment_date) {
+                periodsInFirstPeriod = 0; // we set the period in days rather than periods
+    
+                const first_payment_date_moment = moment(first_payment_date, "YYYY-MM-DD");
+                const today = moment();
+                const days = first_payment_date_moment.diff(today, 'days');
+                
+                console.log(`days difference: ${days}`)
+                
+                oddDaysInFirstPeriod = days;
+                
+            }
+    
+                    
+            let payload = {
+                LoanAmount: loanAmount,
+                FirstPaymentAmount: periodicPayment,
+                RegularPaymentAmount: periodicPayment,
+                NumberOfPayments: offer.term,
+                PaymentPeriod: paymentPeriod,
+                OddDaysInFirstPeriod: oddDaysInFirstPeriod,
+                PeriodsInFirstPeriod: periodsInFirstPeriod,
+                LastPaymentAmount: periodicPayment
+            }
+            console.log(payload)
+    
+            // axios call
+            let response = await axios.post(url, payload, {headers: header})
+            console.log(response.data);
+    
+            const apr_raw = response.data.payload.data
+    
+            if(!apr_raw) {
+                throw new Error('nls error')
+            }
+            // convert to bps integer
+            const apr = parseInt((apr_raw.toFixed(2) * 100).toFixed(0))
+    
+            console.log(`apr: ${apr}`)
+            aprs_response[offer_id] = apr;
+
+        } catch (error) {
+            console.log('error trying to accrue nls loan')
+            console.log(error.response.data);
+    
+            // Revoke token
+            await revokeNLSAuthToken(nls_token)
+            return "nls_error"
+        }
+
+    });
+
+     // execute all promises in parallel
+    await Promise.all(promises);
+    // Revoke token
+    await revokeNLSAuthToken(nls_token);
+
+    console.log('APRS RESPONSE')
+    console.log(aprs_response)
+
+    return aprs_response;
+              
+}
+
+
+
 module.exports = {
     accrueNLSLoan,
     calculateAPR,
+    calculateAPRs,
     createNLSConsumer,
     createNLSLoan,
     createNLSLineOfCredit,

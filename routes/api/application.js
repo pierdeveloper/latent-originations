@@ -901,9 +901,7 @@ router.post('/:id/approve', [auth, offerValidationRules()], async (req, res) => 
                 offer.apr = apr
             } else if (application.credit_type === 'consumer_revolving_line_of_credit') {
                 offer.apr = offer.interest_rate
-            }
-
-            
+            }      
             
             // verify if offer is compliant for state with moher
             const isOfferCompliant = moher(offer, consumer.address.state)
