@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 const moment = require('moment');
-const BankAccountSchema = require('./shared_schemas/BankAccount');
+const { BankAccountSchema, AutopaySchema } = require('./shared_schemas/BankAccount');
 
 const FacilitySchema = new mongoose.Schema({
     id: {
@@ -53,7 +53,11 @@ const FacilitySchema = new mongoose.Schema({
         required: false,
         default: "active"
     },
-    autopay_enabled: {
+    autopay: {
+        type: AutopaySchema,
+        required: false
+    },
+    autopay_enabled: { // deprecated!
         type: Boolean,
         required: false
     },
@@ -208,6 +212,10 @@ const FacilitySchema = new mongoose.Schema({
         required: false
     },
     dwolla_funding_source_id: {
+        type: String,
+        required: false
+    },
+    dwolla_autopay_funding_source_id: {
         type: String,
         required: false
     }

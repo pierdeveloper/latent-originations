@@ -264,6 +264,12 @@ const errors = {
         error_message: "The credit_policy_id specified is invalid",
         error_status: 400,
         error_type: "CREDIT_POLICY_ERROR"
+    },
+    autopay_already_disabled: {
+        error_code: "AUTOPAY_ALREADY_DISABLED",
+        error_message: "Autopay is already disabled for this facility",
+        error_status: 400,
+        error_type: "FACILITY_ERROR"
     }
 }
 

@@ -50,6 +50,8 @@ const generateStatement = async (facility) => {
 
     // need to generate statement when interest_accrued_thru date is one day before billing date ( since it lags 1 day); this is equivalent to moment() === billing date
     // if today is not the day before billing date, then we don't need to generate a statement
+    console.log(`today: ${today}`)
+    console.log(`next_statement_date: ${next_statement_date}`)
     if(!(today.isBefore(next_statement_date) && next_statement_date.diff(today, 'days') === 1)) {
         console.log('No statement required yet for this facility')
         return {status: "skipped", msg: 'No statement required yet for this facility'}

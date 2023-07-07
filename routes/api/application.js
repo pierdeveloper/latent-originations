@@ -907,7 +907,6 @@ router.post('/:id/approve', [auth, offerValidationRules()], async (req, res) => 
             const isOfferCompliant = moher(offer, consumer.address.state)
 
             // check ssn whitelist for Goodcash. Remove this once CA is live!!!
-
             // set whitelisted ssn as the first object in list of duuplicate ssn array on customer resource if it exists
             const whitelisted_ssn = customer.duplicate_ssn_whitelist[0] ? customer.duplicate_ssn_whitelist[0] : null
 

@@ -239,6 +239,24 @@ const consumerValidationRules = () => {
     ]
   }
 
+  const autopayValidationRules = () => {
+    return [
+        check('bank_account.bank_routing_number', 'Bank account routing must be a valid routing number')
+            .isLength({max: 100})
+            .custom(value => {
+                return routingNumberValidator.ABARoutingNumberIsValid(value)
+            }),
+        check('bank_account.bank_account_number', 'Bank account number contains invalid characters')
+            .isInt().isLength({max: 100}),
+        check('bank_account.type', 'Bank account type must be one of: checking, savings')
+            .isIn(['checking', 'savings']),
+        // check that additional_amount is a postive integer less than 10000000 and make it optional
+        check('additional_amount', 'additional_amount must be a positive integer less than 10000000')
+            .isInt({min: 0, max: 10000000}).optional({nullable: true})
+
+    ]
+}
+
   const customerValidationRules = () => {
     return [
         check('email', 'Must be valid email')
@@ -284,5 +302,6 @@ const checkOfferValidationRules = () => {
     offerValidationRules,
     rejectionValidationRules,
     paymentValidationRules,
+    autopayValidationRules,
     bankDetailsValidationRules
   }

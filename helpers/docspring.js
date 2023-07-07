@@ -390,7 +390,7 @@ const generateDocspringStatementDataFields = (facility, borrower_details, nls_lo
 
     // set period start and end date
     var period_start = "";
-    const today = process.env.NODE_ENV === 'development' ? moment(config.get('current_date')) : moment();
+    const today = moment(facility.interest_accrued_thru, pierFormats.shortDate)//process.env.NODE_ENV === 'development' ? moment(config.get('current_date')) : moment();
     // if it's the first (shortened) billing cycle, set start date to open date, else set it to last billing date
     if (today.isSameOrBefore(nls_loan_details.amortizationSchedule[1].Payment_Date, 'day')) {
         period_start = moment(nls_loan_details.loanDetails.Open_Date).format("M/D");

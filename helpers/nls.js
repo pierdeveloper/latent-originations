@@ -659,7 +659,7 @@ const calculateAPRs = async (offers) => {
     // create response object
     const aprs_response = {};
 
-    const delayInMilliseconds = 225;
+    const delayInMilliseconds = 175;
 
     // create a list of promise
     const promises = offers.map(async (offer, index) => {

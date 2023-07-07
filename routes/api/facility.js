@@ -19,7 +19,7 @@ const axios = require('axios');
 const config = require('config');
 const responseFilters = require('../../helpers/responseFilters.json');
 const { response } = require('express');
-const { bankDetailsValidationRules } = require('../../helpers/validator.js');
+const { bankDetailsValidationRules, autopayValidationRules } = require('../../helpers/validator.js');
 const { WebClient } = require('@slack/web-api');
 const Statement = require('../../models/Statement.js');
 const pierFormats = require('../../helpers/formats.js');
@@ -329,6 +329,139 @@ router.post('/:id/repayment_bank_details', [auth, bankDetailsValidationRules()],
         })
     }
 })
+
+// @route POST facility/{id}/enable_autopay
+// @desc Enable autopay for a facility
+// @access Public
+router.post('/:id/enable_autopay', [auth, autopayValidationRules()], async (req, res) => {
+    console.log(req.headers);
+    console.log(req.body); 
+
+    const errors = validationResult(req);
+    if(!errors.isEmpty()) {
+        const response = {
+            error_type: "APPLICATION_ERROR",
+            error_code: "INVALID_INPUT",
+            error_message: "A value provided in the body is incorrect. See error_detail for more",
+            error_detail: errors.array()
+        }
+        return res.status(400).json(response);
+    }
+
+    const {
+        bank_account,
+        additional_amount,
+    } = req.body
+
+    try {
+        // verify facility exists
+        let facility = await Facility.findOne({ id: req.params.id });
+        if(!facility || facility.client_id !== req.client_id) {
+            const error = getError("facility_not_found")
+            return res.status(error.error_status).json({ 
+                error_type: error.error_type,
+                error_code: error.error_code,
+                error_message: error.error_message
+            })
+        }
+        console.log(facility);
+        // TODO: encrypt bank account number
+        const encrypted_bank_account_number = encrypt(bank_account.bank_account_number)
+
+        // Build bank account object
+        const bank_account_fields = {
+            bank_routing_number: bank_account.bank_routing_number,
+            bank_account_number: encrypted_bank_account_number,
+            type: bank_account.type
+        }
+
+        // Build autopay object
+        const autopay_fields = {
+            additional_amount,
+            authorized: true,
+            authorization_timestamp: new Date(),
+            bank_account: bank_account_fields
+        }
+        
+        // Set repayment bank details
+        facility.autopay = autopay_fields;
+
+
+        // Save and respond
+        await facility.save();
+
+        facility = await Facility.findOne({ id: req.params.id })
+            .select(responseFilters['facility'] + ' -client_id');
+        
+        facility.autopay.bank_account.bank_account_number = decrypt(facility.autopay.bank_account.bank_account_number)
+        
+        console.log(facility);
+        res.json(facility)
+
+    } catch (err) {
+        console.error(err);
+        const error = getError("internal_server_error")
+        return res.status(error.error_status).json({ 
+            error_type: error.error_type,
+            error_code: error.error_code,
+            error_message: error.error_message
+        })
+    }
+})
+
+// @route POST facility/{id}/disable_autopay
+// @desc Enable autopay for a facility
+// @access Public
+router.post('/:id/disable_autopay', [auth], async (req, res) => {
+    console.log(req.headers);
+    console.log(req.body); 
+
+    try {
+        // verify facility exists
+        let facility = await Facility.findOne({ id: req.params.id });
+        if(!facility || facility.client_id !== req.client_id) {
+            const error = getError("facility_not_found")
+            return res.status(error.error_status).json({ 
+                error_type: error.error_type,
+                error_code: error.error_code,
+                error_message: error.error_message
+            })
+        }
+        console.log(facility);
+
+        // check that autopay is enabled
+        if(!facility.autopay?.authorized) {
+            const error = getError("autopay_already_disabled")
+            return res.status(error.error_status).json({
+                error_type: error.error_type,
+                error_code: error.error_code,
+                error_message: error.error_message
+            })
+        }
+
+        // disable autopay
+        facility.autopay = undefined;
+        
+        // Save and respond
+        await facility.save();
+
+        facility = await Facility.findOne({ id: req.params.id })
+            .select(responseFilters['facility'] + ' -client_id');
+        
+        console.log(facility);
+        res.json(facility)
+
+    } catch (err) {
+        console.error(err);
+        const error = getError("internal_server_error")
+        return res.status(error.error_status).json({ 
+            error_type: error.error_type,
+            error_code: error.error_code,
+            error_message: error.error_message
+        })
+    }
+})
+
 
 // @route POST facility/close
 // @desc Close a facility

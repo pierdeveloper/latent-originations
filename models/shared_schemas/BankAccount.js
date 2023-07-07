@@ -16,4 +16,24 @@ const BankAccountSchema = new mongoose.Schema({
     }
 }, { _id: false });
 
-module.exports = BankAccountSchema;
+const AutopaySchema = new mongoose.Schema({
+    authorized: {
+        type: Boolean,
+        required: false
+    },
+    bank_account: {
+        type: BankAccountSchema,
+        required: false
+    },
+    authorization_timestamp: {
+        type: Date,
+        required: false
+    },
+    additional_amount: {
+        type: Number,
+        required: false
+    }
+}, { _id: false });
+
+
+module.exports = {BankAccountSchema, AutopaySchema};

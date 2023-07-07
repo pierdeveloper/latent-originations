@@ -26,6 +26,7 @@ const ApplicationStatuses = Object.freeze({
     ACCEPTED: 'accepted',
     DECLINED: 'declined',
     INCOMPLETE: 'incomplete',
+    REJECTED: 'rejected'
 });
 
 // Base Offer Schema
