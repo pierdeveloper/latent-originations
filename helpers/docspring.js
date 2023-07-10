@@ -345,6 +345,9 @@ const generateDocspringDataFields = async (borrower_type, borrower, application,
                 doc_data_fields.annual_fee = undefined;
                 doc_data_fields.account_number = undefined;
                 break;
+            case "tpl_T74cEGpLEaE5hxSGZA":
+                // Pull custom loan doc
+                // No custom fields :)
         }
     }
     return doc_data_fields;
