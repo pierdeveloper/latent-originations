@@ -10,6 +10,7 @@ const helmet = require('helmet');
 const EventEmitter = require('events');
 
 
+
 const app = express();
 
 // connect database
@@ -52,6 +53,7 @@ app.use('/api/borrowers', require('./routes/api/borrower'));
 app.use('/api/applications', require('./routes/api/application'));
 app.use('/api/loan_agreements', require('./routes/api/document'));
 app.use('/api/facilities', require('./routes/api/facility'));
+app.use('/api/facilities/:facility_id/disbursements', require('./routes/api/disbursement'));
 app.use('/api/statements', require('./routes/api/statement'));
 app.use('/api/payments', require('./routes/api/payment'));
 app.use('/api/coverage', require('./routes/api/coverage'));

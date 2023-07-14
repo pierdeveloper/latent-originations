@@ -24,6 +24,7 @@ const { WebClient } = require('@slack/web-api');
 const Statement = require('../../models/Statement.js');
 const pierFormats = require('../../helpers/formats.js');
 const {createFacility} = require('../../helpers/facilities.js');
+const Disbursement = require('../../models/Disbursement.js');
 
 
 
@@ -510,6 +511,31 @@ router.post('/:id/close', [auth], async (req, res) => {
     }
 })
 
+// @route     GET disbursements for all facilities
+// @desc      List all disbursements
+// @access    Public
+router.get('/disbursements', [auth], async (req, res) => {
+    console.log(req.headers)
+    console.log(req.body)
+
+    try {
+        const disbursements = await Disbursement.find({ client_id: req.client_id })
+            .select(responseFilters['disbursement'] + ' -client_id');
+        // Response
+        res.json(disbursements);
+
+    } catch(err) {
+        console.error(err.message);
+        
+        const error = getError("internal_server_error")
+        return res.status(error.error_status).json({ 
+            error_type: error.error_type,
+            error_code: error.error_code,
+            error_message: error.error_message
+        })
+    }
+})
+
 
 // @route     GET facility by id
 // @desc      Retrieve an facility's details
@@ -517,6 +543,7 @@ router.post('/:id/close', [auth], async (req, res) => {
 router.get('/:id', [auth], async (req, res) => {
     console.log(req.headers)
     console.log(req.body)
+    console.log('get facility by id route hit')
 
     try {
         const facility = await Facility.findOne({ id: req.params.id });

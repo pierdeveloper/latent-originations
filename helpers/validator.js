@@ -225,6 +225,22 @@ const consumerValidationRules = () => {
     ]
   }
 
+  const disbursementValidationRules = () => {
+    return [
+        check('amount', 'amount must be an integer (in cents).')
+            .isInt(),
+        check('disbursement_bank_account.bank_routing_number', 'Bank account routing must be a valid routing number')
+            .isLength({max: 100})
+            .custom(value => {
+                return routingNumberValidator.ABARoutingNumberIsValid(value)
+            }),
+        check('disbursement_bank_account.bank_account_number', 'Bank account number contains invalid characters')
+            .isInt().isLength({max: 100}),
+        check('disbursement_bank_account.type', 'Bank account type must be one of: checking, savings')
+            .isIn(['checking', 'savings']),
+    ]
+  }
+
   const bankDetailsValidationRules = () => {
     return [
         check('bank_routing_number', 'Bank account routing must be a valid routing number')
@@ -302,6 +318,7 @@ const checkOfferValidationRules = () => {
     offerValidationRules,
     rejectionValidationRules,
     paymentValidationRules,
+    disbursementValidationRules,
     autopayValidationRules,
     bankDetailsValidationRules
   }

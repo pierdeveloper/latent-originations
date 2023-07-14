@@ -270,6 +270,30 @@ const errors = {
         error_message: "Autopay is already disabled for this facility",
         error_status: 400,
         error_type: "FACILITY_ERROR"
+    },
+    disbursement_ach_disabled: {
+        error_code: "DISBURSEMENT_ACH_DISABLED",
+        error_message: "Your account is not enabled for ACH disbursements",
+        error_status: 400,
+        error_type: "FACILITY_ERROR"
+    },
+    disbursement_amount_exceeds_facility_amount: {
+        error_code: "DISBURSEMENT_AMOUNT_EXCEEDS_FACILITY_AMOUNT",
+        error_message: "The disbursement amount requested, along with other disbursements on this facility, may not exceed the loan amount for the facility",
+        error_status: 400,
+        error_type: "FACILITY_ERROR"
+    },
+    disbursement_not_found: {
+        error_code: "DISBURSEMENT_NOT_FOUND",
+        error_message: "The disbursement resource does not exist",
+        error_status: 404,
+        error_type: "FACILITY_ERROR"
+    },
+    invalid_disbursement_id: {
+        error_code: "INVALID_DISBURSEMENT_ID",
+        error_message: "The disbursement_id specified is invalid",
+        error_status: 400,
+        error_type: "FACILITY_ERROR"
     }
 }
 

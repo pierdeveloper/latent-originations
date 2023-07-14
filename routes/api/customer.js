@@ -97,6 +97,7 @@ router.patch('/:id', async (req, res) => {
             nls_group_name,
             duplicate_ssn_whitelist,
             repayment_ach_enabled,
+            disbursement_ach_enabled,
             underwriting_enabled,
             statements_enabled,
             facility_autocreate,
@@ -112,6 +113,7 @@ router.patch('/:id', async (req, res) => {
         if(nls_group_name) customerFields.nls_group_name = nls_group_name;
         if(duplicate_ssn_whitelist) customerFields.duplicate_ssn_whitelist = duplicate_ssn_whitelist;
         if(repayment_ach_enabled !== null && repayment_ach_enabled !== undefined) customerFields.repayment_ach_enabled = repayment_ach_enabled;
+        if(disbursement_ach_enabled !== null && disbursement_ach_enabled !== undefined) customerFields.disbursement_ach_enabled = disbursement_ach_enabled;
         if(underwriting_enabled !== null && underwriting_enabled !== undefined) customerFields.underwriting_enabled = underwriting_enabled;
         if(statements_enabled !== null && statements_enabled !== undefined) customerFields.statements_enabled = statements_enabled;
         if(facility_autocreate !== null && facility_autocreate !== undefined) customerFields.facility_autocreate = facility_autocreate;

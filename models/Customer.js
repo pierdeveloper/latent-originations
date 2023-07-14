@@ -63,6 +63,11 @@ const CustomerSchema = new mongoose.Schema({
         default: false,
         required: true
     },
+    disbursement_ach_enabled: {
+        type: Boolean,
+        default: false,
+        required: false
+    },
     underwriting_enabled: {
         type: Boolean,
         default: false,
