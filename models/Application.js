@@ -7,7 +7,8 @@ const CreditTypes = Object.freeze({
     CONSUMER_BNPL: 'consumer_bnpl',
     COMMERCIAL_NET_TERMS: 'commercial_net_terms',
     COMMERCIAL_INSTALLMENT_LOAN: 'commercial_installment_loan',
-    COMMERCIAL_REVOLVING_LINE_OF_CREDIT: 'commercial_revolving_line_of_credit'
+    COMMERCIAL_REVOLVING_LINE_OF_CREDIT: 'commercial_revolving_line_of_credit',
+    COMMERCIAL_MERCHANT_ADVANCE: 'commercial_merchant_advance'
 });
 
 const PaymentPeriods = Object.freeze({
@@ -31,20 +32,32 @@ const ApplicationStatuses = Object.freeze({
 
 // Base Offer Schema
 const OfferSchema = new mongoose.Schema({
-    type: {
+    id: {
         type: String,
-        enum: ['LoanOffer', 'LineOfCreditOffer'],
         required: true
     }
+    
     // Any common properties can go here
-}, { discriminatorKey: 'type', _id: false });
+}, { discriminatorKey: 'type' });
 
-const LoanOfferSchema = new mongoose.Schema({
-    type: {
-        type: String,
-        enum: [CreditTypes.CONSUMER_INSTALLMENT_LOAN, CreditTypes.CONSUMER_BNPL, CreditTypes.COMMERCIAL_INSTALLMENT_LOAN],
+// Loan Term Schema
+const LoanTermSchema = new mongoose.Schema({
+    term: {
+        type: Number,
         required: true
     },
+    term_type: {
+        type: String,
+        enum: ['days', 'months', 'payments'],
+        required: true
+    },
+    term_due: {
+        type: Number,
+        required: false
+    }
+}, { _id: false })
+
+const LoanOfferSchema = new mongoose.Schema({
     amount: {
         type: Number,
         required: true
@@ -56,24 +69,29 @@ const LoanOfferSchema = new mongoose.Schema({
     grace_period: {
         term: {
             type: Number,
-            required: false
+            required: false,
+            default: 0
         },
         interest_rate: {
             type: Number,
-            required: false
+            required: false,
+            default: 0
         }
     },
     interest_rate: {
         type: Number,
-        required: true
+        required: false,
+        default: 0
     },
     late_payment_fee: {
         type: Number,
-        required: false
+        required: false,
+        default: 0
     },
     origination_fee: {
         type: Schema.Types.Mixed,
-        required: true
+        required: false,
+        default: 0
     },
     first_payment_date: {
         type: String,
@@ -82,17 +100,80 @@ const LoanOfferSchema = new mongoose.Schema({
     payment_period: {
         type: String,
         enum: Object.values(PaymentPeriods),
-        required: true
+        required: true,
+        default: PaymentPeriods.MONTHLY
     },
     periodic_payment: {
         type: Number,
         required: false
     },
-    term: {
-        type: Number,
+    loan_term: {
+        type: LoanTermSchema,
         required: true
     }
 }, { _id: false }); 
+
+const LineOfCreditOfferSchema = new mongoose.Schema({
+    amount: {
+        type: Number,
+        required: true
+    },
+    apr: {
+        type: Number,
+        required: false
+    },
+    interest_rate: {
+        type: Number,
+        required: true
+    },
+    annual_fee: {
+        type: Number,
+        required: false
+    },
+    billing_cycle: {
+        type: Number,
+        required: false
+    },
+    finance_charge: {
+        type: Number,
+        required: false
+    },
+    grace_period: {
+        term: {
+            type: Number,
+            required: false,
+            default: 0
+        },
+        interest_rate: {
+            type: Number,
+            required: false,
+            default: 0
+        }
+    },
+    late_payment_fee: {
+        type: Number,
+        required: false
+    },
+    origination_fee: {
+        type: Schema.Types.Mixed,
+        required: true
+    }
+}, { _id: false });
+
+const MerchantAdvanceOfferSchema = new mongoose.Schema({
+    amount: {
+        type: Number,
+        required: true
+    },
+    due_date: {
+        type: String,
+        required: true
+    },
+    repayment_fee: {
+        type: Number,
+        required: true
+    }
+})
 
 const ApplicationSchema = new mongoose.Schema({
     id: {
@@ -126,6 +207,10 @@ const ApplicationSchema = new mongoose.Schema({
     },
     // deprecated
     offer: {
+        id: {
+            type: String,
+            required: false
+        },
         type: {
             type: String,
             enum: ['loan', 'revolving_line_of_credit'],
@@ -245,6 +330,10 @@ const ApplicationSchema = new mongoose.Schema({
 });
 
 
+const Offer = mongoose.model('offer', OfferSchema);
+const LoanOffer = Offer.discriminator('loan_offer', LoanOfferSchema);
+const LineOfCreditOffer = Offer.discriminator('revolving_line_of_credit_offer', LineOfCreditOfferSchema);
+const MerchantAdvanceOffer = Offer.discriminator('merchant_advance_offer', MerchantAdvanceOfferSchema);
 
 
 const OriginationFeeSchema = new mongoose.Schema({
@@ -259,11 +348,13 @@ const OriginationFeeSchema = new mongoose.Schema({
     },
 })
 
+
+
 const Application = mongoose.model('application', ApplicationSchema);
 
 // Add discriminators
-Application.discriminator('LoanOffer', LoanOfferSchema);
+//Application.discriminator('LoanOffer', LoanOfferSchema);
 //Application.discriminator('LineOfCreditOffer', LineOfCreditOfferSchema);
 
-module.exports = Application;
+module.exports = {Application, Offer, LoanOffer, LineOfCreditOffer, MerchantAdvanceOffer};
 //module.exports = Application = mongoose.model('application', ApplicationSchema)

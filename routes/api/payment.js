@@ -79,6 +79,14 @@ router.post('/', [auth, paymentValidationRules()], async (req, res) => {
                 lastName = borrowerDetails.last_name
         } else { 
             // business
+            var emailPrefix = ""
+                if(process.env.NODE_ENV === 'development') {
+                    emailPrefix = Math.floor(Math.random() * 9000) + 1000;
+                }
+                email = emailPrefix + 'johnd@TextDecoderStream.com'
+                firstName = 'john'
+                lastName = 'dough'
+
         }
 
         // if facility doesn't have a dwolla user id, first see if a dwolla user exists with the same email

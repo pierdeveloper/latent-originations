@@ -17,7 +17,7 @@ const { addDwollaFundingSource, createDwollaCustomer,
         submitDwollaPayment, listDwollaCustomers } = require('../../helpers/dwolla.js');
 const { dwolla } = require('../../config/default');
 const Disbursement = require('../../models/Disbursement');
-
+/*
 
 // @route     POST /facilities/:facility_id/disbursements
 // @desc      Create a disbursement for a facility
@@ -89,97 +89,6 @@ router.post('/', [auth, disbursementValidationRules()], async (req, res) => {
             })
         }
 
-        /*
-
-        // grab borrower details
-        var email = ""
-        var firstName = ""
-        var lastName = ""
-        if (['consumer_bnpl', 'consumer_installment_loan', 'consumer_revolving_line_of_credit']
-            .includes(facility.credit_type)) {
-                const borrowerDetails = await Consumer.findOne({ id: facility.borrower_id })
-                var emailPrefix = ""
-                if(process.env.NODE_ENV === 'development') {
-                    emailPrefix = Math.floor(Math.random() * 9000) + 1000;
-                }
-                email = emailPrefix + borrowerDetails.email
-                firstName = borrowerDetails.first_name
-                lastName = borrowerDetails.last_name
-        } else { 
-            // business
-        }
-
-        // if facility doesn't have a dwolla user id, first see if a dwolla user exists with the same email
-        if(!facility.dwolla_customer_id) {
-            console.log("facility does not have a dwolla customer id")
-            const dwollaCustomerList = await listDwollaCustomers();
-            console.log(dwollaCustomerList)
-            for (let i = 0; i < dwollaCustomerList.length; i++) {
-                const customer = dwollaCustomerList[i];
-                if(customer.email === email) {
-                    // update facility with dwolla customer id
-                    console.log('found existing dwolla customer')
-                    facility.dwolla_customer_id = customer.id
-                    await facility.save()
-                    break;
-                }
-            }
-        }
-
-        // now check again if there still isn't a dwolla customer id
-        // if not then we need to create a new dwolla customer
-        if(!facility.dwolla_customer_id) {
-            console.log("dwolla customer id still not found")
-            // create dwolla customer
-            const dwolla_customer_id = await createDwollaCustomer(firstName, lastName, email)
-
-            // throw error if dwolla customer creation failed
-            if(!dwolla_customer_id || dwolla_customer_id === 'dwolla_error') {
-                const err_response = {
-                    error_type: "PAYMENT_ERROR",
-                    error_code: "PAYMENT_ERROR",
-                    error_message: "Unable to initiate payment"
-                }
-                return res.status(400).json(err_response);
-
-            }
-            facility.dwolla_customer_id = dwolla_customer_id
-            await facility.save()
-
-        }
-
-        console.log(facility)
-
-        // check that facility has repayment bank info
-        const bank_details = facility.repayment_bank_details;
-        if(!bank_details || 
-            !bank_details.bank_account_number ||
-            !bank_details.bank_routing_number) {
-                const error = getError("missing_repayment_bank_details")
-                return res.status(error.error_status).json({ 
-                    error_type: error.error_type,
-                    error_code: error.error_code,
-                    error_message: error.error_message
-                })
-            }
-
-        // Set/update/verify funding source id
-        const dwolla_funding_source_id = await addDwollaFundingSource(facility);
-
-        // throw error if dwolla funding source creation failed
-        if(dwolla_funding_source_id === 'dwolla_error') {
-            const err_response = {
-                error_type: "PAYMENT_ERROR",
-                error_code: "PAYMENT_ERROR",
-                error_message: "Unable to initiate payment"
-            }
-            return res.status(400).json(err_response);
-        }
-        facility.dwolla_funding_source_id = dwolla_funding_source_id
-        await facility.save()
-        console.log(facility)
-
-        */
         // create the disbursement id
         const disbursement_id = 'dsb_' + uuidv4().replace(/-/g, '');
 
@@ -312,5 +221,5 @@ router.get('/', [auth], async (req, res) => {
     }
 })
 
-
+*/
 module.exports = router;

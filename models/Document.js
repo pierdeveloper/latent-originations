@@ -25,6 +25,10 @@ const DocumentSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    accepted_offer_id: {
+        type: String,
+        required: false
+    },
     signature_timestamp: {
         type: Date,
         default: null

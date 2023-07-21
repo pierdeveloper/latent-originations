@@ -1,4 +1,4 @@
-const { check, validationResult } = require('express-validator');
+const { check, oneOf, validationResult } = require('express-validator');
 const states = require('../helpers/coverage/states.json');
 const rejection_reasons = require('../helpers/rejectionReasons.json');
 const routingNumberValidator = require('bank-routing-number-validator');
@@ -110,7 +110,7 @@ const consumerValidationRules = () => {
         check('credit_type', 'Credit type is invalid')
             .isIn(['consumer_installment_loan', 'consumer_revolving_line_of_credit', 'consumer_closed_line_of_credit',
                 'consumer_bnpl', 'commercial_installment_loan', 'commercial_revolving_line_of_credit', 'commercial_closed_line_of_credit',
-                'commercial_bnpl', 'commercial_net_terms' /*todo: remove this*/ ])
+                'commercial_bnpl', 'commercial_merchant_advance' /*todo: remove this*/ ])
     ]
   }
 
@@ -120,8 +120,6 @@ const consumerValidationRules = () => {
             .isInt({min:0}),
         check('offer.annual_fee', 'Annual fee must be an integer greater than or equal to 0')
             .isInt({min:0}).optional({nullable: true}),   
-        check('offer.apr', 'APR must be an integer greater than or equal to 0')
-            .isInt({min:0}).optional({nullable: true}),
         check('offer.billing_cycle', 'Billing cycle must be an integer greater than or equal to 0')
             .isInt({min:0}).optional({nullable: true}), 
         check('offer.finance_charge', 'Finance charge must be an integer >= 0')
@@ -133,19 +131,19 @@ const consumerValidationRules = () => {
         check('offer.interest_free_period', 'Interest free period must be an integer between 0 and 365')
             .isInt({min:0, max:365}).optional({nullable: true}),
         check('offer.interest_rate', 'Interest rate must be an integer greater than or equal to 0')
-            .isInt({min:0}),
+            .isInt({min:0}).optional({nullable: true}),
         check('offer.introductory_offer_interest_rate', 'Intro offer interest rate must be an integer greater than or equal to 0')
             .isInt({min:0}).optional({nullable: true}),
         check('offer.introductory_offer_interest_rate_term', 'Intro offer interest rate term must be an integer >= 0 and <= 36')
             .isInt({min:0, max:36}).optional({nullable: true}),
         check('offer.late_payment_fee', "late payment fee must be an integer between 0 and 50000")
-            .isInt({min:0, max:50000}),
+            .isInt({min:0, max:50000}).optional({nullable: true}),
         check('offer.origination_fee', 'Origination fee must be an integer greater than or equal to 0')
-            .isInt({min:0}),
+            .isInt({min:0}).optional({nullable: true}),
         check('offer.repayment_frequency', 'Repayment frequency must be one of: biweekly, semi_monthly, monthly')
             .isIn(['weekly', 'biweekly', 'semi_monthly_first_15th', 'semi_monthly_last_15th', 'semi_monthly', 'semi_monthly_14', 'monthly']).optional({nullable: true}),
         check('offer.term', 'Term must be an integer >= 3 and <= 260')
-            .isInt({min:3, max:260}).optional({nullable: true}),
+            .isInt({min:3, max:260}),
         check('offer.term').custom((value, { req }) => {
             if(req.body.offer.repayment_frequency === 'monthly' && value < 3) {
                 throw new Error('Term must be at least 3 for monthly payment period');
@@ -202,6 +200,241 @@ const consumerValidationRules = () => {
     ]
   }
 
+  const loanOffersListValidationRules = () => {
+    return [
+        check('offers', 'Offers must be an array')
+            .isArray(),
+        check('offers.*.amount', 'Amount must be an integer greater than or equal to 0')
+            .isInt({min:0}),
+        check('offers.*.type', 'Type must be one of: loan_offer')
+            .isIn(['loan_offer']),
+        check('offers.*.grace_period.term', 'Grace period must be an integer >= 0 and <= 1000')
+            .isInt({min:0, max: 1000}).optional({nullable: true}),
+        check('offers.*.grace_period.interest_rate', 'Grace period interest rate must be an integer >= 0')
+            .isInt({min:0}).optional({nullable: true}),
+        check('offers.*.interest_rate', 'Interest rate must be an integer greater than or equal to 0')
+            .isInt({min:0}).optional({nullable: true}),
+        check('offers.*.late_payment_fee', "late payment fee must be an integer between 0 and 50000")
+            .isInt({min:0, max:50000}).optional({nullable: true}),
+        check('offers.*.origination_fee', 'Origination fee must be an integer greater than or equal to 0')
+            .isInt({min:0}).optional({nullable: true}),
+        check('offers.*.payment_period', 'Repayment frequency must be one of: biweekly, semi_monthly, monthly')
+            .isIn(['weekly', 'biweekly', 'semi_monthly_first_15th', 'semi_monthly_last_15th', 'semi_monthly', 'semi_monthly_14', 'monthly']).optional({nullable: true}),
+        check('offers.*.loan_term.term_type', 'Term type must be one of: months, days, payments')
+            .isIn(['months', 'days', 'payments']),
+        check('offers.*.loan_term.term', 'Term must be an integer >= 3 and <= 260')
+            .isInt({min:3, max:260}),
+        check('offers.*.loan_term.term').custom((value, { req, path }) => {
+            console.log(`value: ${value} path: ${path}`)
+            const index = parseInt(path.split('[')[1].replace(']', ''), 10);
+            console.log(`index: ${index}`)
+            const payment_period = req.body.offers[index].payment_period;
+            console.log(`payment_period: ${payment_period}`)
+            if(payment_period === 'monthly' && value < 3) {
+                throw new Error('Term must be at least 3 for monthly payment period');
+            } else if(payment_period === 'semi_monthly' && value < 6) {
+                throw new Error('Term must be at least 6 for semi monthly payment period');
+            } else if(payment_period === 'semi_monthly_14' && value < 6) {
+                throw new Error('Term must be at least 6 for semi monthly payment period');
+            } else if(payment_period === 'semi_monthly_first_15' && value < 6) {
+                throw new Error('Term must be at least 6 for semi monthly payment period');
+            } else if(payment_period === 'semi_monthly_last_15' && value < 6) {
+                throw new Error('Term must be at least 6 for semi monthly payment period');
+            } else if(payment_period === 'biweekly' && value < 7) {
+                throw new Error('Term must be at least 7 for biweekly payment period');
+            } else if(payment_period === 'weekly' && value < 13) {
+                throw new Error('Term must be at least 13 for weekly monthly payment period');
+            }
+            return true;
+        }),
+        check('offers.*.first_payment_date', 'First payment date format must conform to yyyy-mm-dd')
+            .isDate({format:"yyyy-mm-dd", strictMode:true}).optional({nullable: true})
+            .custom((value) => {
+                const inputDate = moment(value, 'YYYY-MM-DD');
+                const today = moment();
+                if (!inputDate.isAfter(today)) {
+                    throw new Error('First payment date invalid');
+                }
+                // validate that first payment date is not more than 45 days in the future
+                if (inputDate.diff(today, 'days') > 45) {
+                    throw new Error('First payment date cannot be more than 45 days in the future');
+                }
+                return true;
+                })
+            .if((value, { req }) => req.body.offer.payment_period === "semi_monthly_first_15th")
+                .custom((value) => {
+                    const inputDate = moment(value, 'YYYY-MM-DD');
+                    // verify that date is the 1st or 15th
+                    if (inputDate.date() !== 1 && inputDate.date() !== 15) {
+                        throw new Error('First payment date must be the 1st or 15th of the month for this repayment frequency');
+                    }
+                    return true;
+                }),
+        check('offers.*.first_payment_date', 'First payment date format must conform to yyyy-mm-dd')
+            .if((value, { req }) => req.body.offer.payment_period === "semi_monthly_last_15th")
+                .custom((value) => {
+                    console.log('validating first date field for this repay freq type!')
+                    const inputDate = moment(value, 'YYYY-MM-DD');
+                    // verify that date is the last day or 15th
+                    if (inputDate.date() !== 15 && inputDate.date() !== inputDate.daysInMonth()) {
+                        throw new Error('First payment date must be the last day or 15th of the month for this repayment frequency');
+                    }
+                    return true;
+                })
+            ]
+  }
+
+  const locOffersListValidationRules = () => {
+    return [
+        check('offers', 'Offers must be an array')
+            .isArray(),
+        check('offers.*.amount', 'Amount must be an integer greater than or equal to 0')
+            .isInt({min:0}),
+        check('offers.*.annual_fee', 'Annual fee must be an integer greater than or equal to 0')
+            .isInt({min:0}).optional({nullable: true}),   
+        check('offers.*.billing_cycle', 'Billing cycle must be an integer greater than or equal to 0')
+            .isInt({min:0}), 
+        check('offers.*.finance_charge', 'Finance charge must be an integer >= 0')
+            .isInt({min:0}).optional({nullable: true}),
+        check('offers.*.grace_period', 'Grace period must be an integer >= 0 and <= 1000')
+            .isInt({min:0, max: 1000}),
+        check('offers.*.grace_period_interest_rate', 'Grace period interest rate must be an integer >= 0')
+            .isInt({min:0}).optional({nullable: true}),
+        check('offers.*.interest_free_period', 'Interest free period must be an integer between 0 and 365')
+            .isInt({min:0, max:365}).optional({nullable: true}),
+        check('offers.*.interest_rate', 'Interest rate must be an integer greater than or equal to 0')
+            .isInt({min:0}).optional({nullable: true}),
+        check('offers.*.introductory_offer_interest_rate', 'Intro offer interest rate must be an integer greater than or equal to 0')
+            .isInt({min:0}).optional({nullable: true}),
+        check('offers.*.introductory_offer_interest_rate_term', 'Intro offer interest rate term must be an integer >= 0 and <= 36')
+            .isInt({min:0, max:36}).optional({nullable: true}),
+        check('offers.*.late_payment_fee', "late payment fee must be an integer between 0 and 50000")
+            .isInt({min:0, max:50000}).optional({nullable: true}),
+        check('offers.*.origination_fee', 'Origination fee must be an integer greater than or equal to 0')
+            .isInt({min:0}).optional({nullable: true})
+    
+    ]
+}
+
+  const locOfferValidationRules = () => {
+    return [
+        check('offer', 'Offer parameter must be provided')
+            .isObject(),
+        check('offer.amount', 'Amount must be an integer greater than or equal to 0')
+            .isInt({min:0}),
+        check('offer.annual_fee', 'Annual fee must be an integer greater than or equal to 0')
+            .isInt({min:0}).optional({nullable: true}),   
+        check('offer.billing_cycle', 'Billing cycle must be an integer greater than or equal to 0')
+            .isInt({min:0}), 
+        check('offer.finance_charge', 'Finance charge must be an integer >= 0')
+            .isInt({min:0}).optional({nullable: true}),
+        check('offer.grace_period', 'Grace period must be an integer >= 0 and <= 1000')
+            .isInt({min:0, max: 1000}),
+        check('offer.grace_period_interest_rate', 'Grace period interest rate must be an integer >= 0')
+            .isInt({min:0}).optional({nullable: true}),
+        check('offer.interest_free_period', 'Interest free period must be an integer between 0 and 365')
+            .isInt({min:0, max:365}).optional({nullable: true}),
+        check('offer.interest_rate', 'Interest rate must be an integer greater than or equal to 0')
+            .isInt({min:0}).optional({nullable: true}),
+        check('offer.introductory_offer_interest_rate', 'Intro offer interest rate must be an integer greater than or equal to 0')
+            .isInt({min:0}).optional({nullable: true}),
+        check('offer.introductory_offer_interest_rate_term', 'Intro offer interest rate term must be an integer >= 0 and <= 36')
+            .isInt({min:0, max:36}).optional({nullable: true}),
+        check('offer.late_payment_fee', "late payment fee must be an integer between 0 and 50000")
+            .isInt({min:0, max:50000}).optional({nullable: true}),
+        check('offer.origination_fee', 'Origination fee must be an integer greater than or equal to 0')
+            .isInt({min:0}).optional({nullable: true})
+    
+        ]
+    }
+
+  const loanOfferValidationRules = () => {
+    return [
+        //check offer exists
+        check('offer', 'Offer parameter must be provided')
+            .isObject(),
+    check('offer.amount', 'Amount must be an integer greater than or equal to 0')
+        .isInt({min:0}),
+    check('offer.grace_period.term', 'Grace period must be an integer >= 0 and <= 1000')
+        .isInt({min:0, max: 1000}).optional({nullable: true}),
+    check('offer.grace_period.interest_rate', 'Grace period interest rate must be an integer >= 0')
+        .isInt({min:0}).optional({nullable: true}),
+    check('offer.interest_rate', 'Interest rate must be an integer greater than or equal to 0')
+        .isInt({min:0}).optional({nullable: true}),
+    check('offer.late_payment_fee', "late payment fee must be an integer between 0 and 50000")
+        .isInt({min:0, max:50000}).optional({nullable: true}),
+    check('offer.origination_fee', 'Origination fee must be an integer greater than or equal to 0')
+        .isInt({min:0}).optional({nullable: true}),
+    check('offer.payment_period', 'Repayment frequency must be one of: biweekly, semi_monthly, monthly')
+        .isIn(['weekly', 'biweekly', 'semi_monthly_first_15th', 'semi_monthly_last_15th', 'semi_monthly', 'semi_monthly_14', 'monthly']).optional({nullable: true}),
+    check('offer.loan_term', 'Term must be an integer >= 3 and <= 260')
+        .isInt({min:3, max:260}),
+    check('offer.loan_term').custom((value, { req }) => {
+        if(req.body.offer.payment_period === 'monthly' && value < 3) {
+            throw new Error('Term must be at least 3 for monthly payment period');
+        } else if(req.body.offer.payment_period === 'semi_monthly' && value < 6) {
+            throw new Error('Term must be at least 6 for semi monthly payment period');
+        } else if(req.body.offer.payment_period === 'semi_monthly_14' && value < 6) {
+            throw new Error('Term must be at least 6 for semi monthly payment period');
+        } else if(req.body.offer.payment_period === 'semi_monthly_first_15' && value < 6) {
+            throw new Error('Term must be at least 6 for semi monthly payment period');
+        } else if(req.body.offer.payment_period === 'semi_monthly_last_15' && value < 6) {
+            throw new Error('Term must be at least 6 for semi monthly payment period');
+        } else if(req.body.offer.payment_period === 'biweekly' && value < 7) {
+            throw new Error('Term must be at least 7 for biweekly payment period');
+        } else if(req.body.offer.payment_period === 'weekly' && value < 13) {
+            throw new Error('Term must be at least 13 for weekly monthly payment period');
+        }
+        return true;
+        }),
+    check('offer.first_payment_date', 'First payment date format must conform to yyyy-mm-dd')
+        .isDate({format:"yyyy-mm-dd", strictMode:true}).optional({nullable: true})
+        .custom((value) => {
+            const inputDate = moment(value, 'YYYY-MM-DD');
+            const today = moment();
+            if (!inputDate.isAfter(today)) {
+                throw new Error('First payment date invalid');
+            }
+            // validate that first payment date is not more than 45 days in the future
+            if (inputDate.diff(today, 'days') > 45) {
+                throw new Error('First payment date cannot be more than 45 days in the future');
+            }
+            return true;
+            })
+        .if((value, { req }) => req.body.offer.payment_period === "semi_monthly_first_15th")
+            .custom((value) => {
+                const inputDate = moment(value, 'YYYY-MM-DD');
+                // verify that date is the 1st or 15th
+                if (inputDate.date() !== 1 && inputDate.date() !== 15) {
+                    throw new Error('First payment date must be the 1st or 15th of the month for this repayment frequency');
+                }
+                return true;
+            }),
+    check('offer.first_payment_date', 'First payment date format must conform to yyyy-mm-dd')
+        .if((value, { req }) => req.body.offer.payment_period === "semi_monthly_last_15th")
+            .custom((value) => {
+                console.log('validating first date field for this repay freq type!')
+                const inputDate = moment(value, 'YYYY-MM-DD');
+                // verify that date is the last day or 15th
+                if (inputDate.date() !== 15 && inputDate.date() !== inputDate.daysInMonth()) {
+                    throw new Error('First payment date must be the last day or 15th of the month for this repayment frequency');
+                }
+                return true;
+            })
+    ]
+  }
+
+  const arrayOfOffersRules = check('offers.*').custom((object, { req, location, path }) => {
+    if (object.type === 'loan_offer') {
+      // if the object is of type one, apply typeOneRules
+      return loanOfferRules.forEach(rule => rule.run(req));
+    } else if (object.type === 'revolving_line_of_credit_offer') {
+      // if the object is of type two, apply typeTwoRules
+      return lineOfCreditRules.forEach(rule => rule.run(req));
+    } else {
+      throw new Error('Invalid object type');
+    }
+  });
 
 
   const rejectionValidationRules = () => {
@@ -211,6 +444,14 @@ const consumerValidationRules = () => {
             .custom(values => values.length <= 4),
         check('rejection_reasons.*', 'Invalid rejection reason')
             .isIn(rejection_reasons)
+    ]
+  }
+
+  const loanAgreementValidationRules = () => {
+    return [
+        check('application_id', 'application_id missing or invalid')
+            .isString()
+            .isLength({max: 100})
     ]
   }
 
@@ -307,6 +548,7 @@ const checkOfferValidationRules = () => {
 }
 
   module.exports = {
+    arrayOfOffersRules,
     advanceDateValidationRules,
     businessValidationRules,
     checkOfferValidationRules,
@@ -315,10 +557,15 @@ const checkOfferValidationRules = () => {
     creditPolicyRuleValidationRules,
     customerValidationRules,
     applicationValidationRules,
+    loanOfferValidationRules,
+    locOfferValidationRules,
+    loanOffersListValidationRules,
+    locOffersListValidationRules,
     offerValidationRules,
     rejectionValidationRules,
     paymentValidationRules,
     disbursementValidationRules,
     autopayValidationRules,
-    bankDetailsValidationRules
+    bankDetailsValidationRules,
+    loanAgreementValidationRules
   }

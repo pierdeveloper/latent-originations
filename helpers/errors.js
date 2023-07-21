@@ -183,7 +183,7 @@ const errors = {
     },
     facility_not_found: {
         error_code: "FACILITY_NOT_FOUND",
-        error_message: "The facility resoure does not exist",
+        error_message: "The facility resource does not exist",
         error_status: 404,
         error_type: "FACILITY_ERROR"
     },

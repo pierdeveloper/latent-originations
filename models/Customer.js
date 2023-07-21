@@ -92,7 +92,11 @@ const CustomerSchema = new mongoose.Schema({
     facility_autocreate: {
         type: Boolean,
         default: false
-    }
+    },
+    legacy_single_application_offer_supported: {
+        type: Boolean,
+        default: false
+    },
     /*,
     billing: {
         start_date: {

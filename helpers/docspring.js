@@ -63,11 +63,12 @@ const createDocSpringSubmission = async (template_id, doc_data_fields) => {
   }
 
 // Helper function - generate data fields for docspring loan doc submission
-const generateDocspringDataFields = async (borrower_type, borrower, application, isSigned, templateId = null) => {
+const generateDocspringDataFields = async (borrower_type, borrower, application, accepted_offer, isSigned, templateId = null) => {
     console.log('running docspring doc fields populator')
     console.log(borrower_type, borrower, application, isSigned, templateId)
     
-    const offer = application.offer;
+    const offer = accepted_offer
+
     const doc_data_fields = {}
 
     if(borrower_type === 'consumer') {
@@ -81,7 +82,7 @@ const generateDocspringDataFields = async (borrower_type, borrower, application,
             style: 'currency',
             currency: 'USD',
         });
-        const repayment_frequency = offer.repayment_frequency
+        const repayment_frequency = offer.payment_period
         const origination_fee_amount = (offer.origination_fee / 10000) * offer.amount
         console.log(`og fee amt ${origination_fee_amount}`)
         doc_data_fields.date = today.toLocaleDateString('en-us', dateOptions);
@@ -112,24 +113,24 @@ const generateDocspringDataFields = async (borrower_type, borrower, application,
                 // payment amount
                 const periodic_payment_amount = calculate_periodic_payment(
                     loan_amount,
-                    offer.term,
+                    offer.loan_term.term,
                     payments_per_year,
                     offer.interest_rate / 10000
                 );
                 doc_data_fields.payment_amount = `${formatter.format(periodic_payment_amount)}`
                 doc_data_fields.payment_amount_2 = `${formatter.format(periodic_payment_amount)}`
-
+                console.log(' placeholder')
                 const apr = await calculateAPR(offer, periodic_payment_amount);
                 const apr_points = (apr / 100).toFixed(2);
                 doc_data_fields.apr = `${apr_points}%`;
-                doc_data_fields.n_payments = (offer.term - 1);
+                doc_data_fields.n_payments = (offer.loan_term.term - 1);
                 const finance_charge = (offer.interest_rate === 0 && offer.origination_fee === 0) 
                     ? (0) 
-                    : (offer.term * periodic_payment_amount) - (disbursement_amount); // for zero interest, we want to avoid rounding to non zero fin charge
+                    : (offer.loan_term.term * periodic_payment_amount) - (disbursement_amount); // for zero interest, we want to avoid rounding to non zero fin charge
                 doc_data_fields.finance_charge = `${formatter.format(finance_charge)}`; 
                 const total_of_payments = (offer.interest_rate === 0 && offer.origination_fee === 0)
                     ? (offer.amount / 100) 
-                    : (offer.term * periodic_payment_amount); // for zero interest, we want to avoid rounding to non zero fin charge
+                    : (offer.loan_term.term * periodic_payment_amount); // for zero interest, we want to avoid rounding to non zero fin charge
                 doc_data_fields.total_of_payments = `${formatter.format(total_of_payments)}`
 
                 // TODO: move this function into helper file!
@@ -275,7 +276,7 @@ const generateDocspringDataFields = async (borrower_type, borrower, application,
 
         // bnpl type-specific fields
         if(application.credit_type === "consumer_bnpl") {
-            doc_data_fields.merchant_name = `${offer.third_party_disbursement_destination}.`
+            doc_data_fields.merchant_name = `${application.third_party_disbursement_destination}.`
             doc_data_fields.amount_to_others = `${formatter.format(offer.amount / 100)}`
             doc_data_fields.amount_to_you = `${formatter.format(0)}`
         }

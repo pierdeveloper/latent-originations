@@ -139,26 +139,31 @@ const createNLSLoan = async (facility) => {
         const origination_date = moment(facility.origination_date).format(pierFormats.shortDate); // set facility og date based on our format
         const nls_origination_date = moment(origination_date).format("MM/DD/YYYY") // convert to nls format
         const amount = facility.terms.amount / 100;
-        const term = facility.terms.term;
-        const interest_rate = facility.terms.interest_rate / 100;
-        const repayment_frequency = facility.terms.repayment_frequency;
-        const term_type = facility.terms.repayment_frequency === 'monthly' ? 'Months' : 'Payments'
+        const term = facility.terms.loan_term.term;
+        var interest_rate = facility.terms.interest_rate / 100;
+        const payment_period = facility.terms.payment_period;
+        const term_type = facility.terms.loan_term.term_type === 'months' ? 'Months' 
+            : facility.terms.loan_term.term_type === 'payments' ? 'Payments' 
+            : 'Days'
         const billing_cutoff = facility.terms.repayment_frequency === 'monthly' ? -15 : -10
-        var payment_period = '';
-        switch (repayment_frequency) {
-            case 'monthly': payment_period = 'MO'; break;
-            case 'biweekly': payment_period = 'BW'; break;
-            case 'weekly': payment_period = 'WE'; break;
-            case 'semi_monthly_14': payment_period = 'S4'; break;
-            case 'semi_monthly': payment_period = 'SM'; break;
-            case 'semi_monthly_first_15th': payment_period = 'SM'; break;
-            case 'semi_monthly_last_15th': payment_period = 'SM'; break;
+        var nls_payment_period = '';
+        switch (payment_period) {
+            case 'monthly': nls_payment_period = 'MO'; break;
+            case 'biweekly': nls_payment_period = 'BW'; break;
+            case 'weekly': nls_payment_period = 'WE'; break;
+            case 'semi_monthly_14': nls_payment_period = 'S4'; break;
+            case 'semi_monthly': nls_payment_period = 'SM'; break;
+            case 'semi_monthly_first_15th': nls_payment_period = 'SM'; break;
+            case 'semi_monthly_last_15th': nls_payment_period = 'SM'; break;
             default: 
                 // throw error
-                console.log('error: invalid repayment frequency')
                 await revokeNLSAuthToken(nls_token)
                 return 'nls_error'
 
+        }
+        if(facility.credit_type === "commercial_merchant_advance") {
+            payment_period = 'MO'
+            interest_rate = 0
         }
 
         console.log(`payment period: ${payment_period}`)
@@ -173,8 +178,8 @@ const createNLSLoan = async (facility) => {
                 OriginationDate="${nls_origination_date}" 
                 LoanAmount="${amount}"
                 InterestMethod="FA"
-                PrincipalPaymentPeriod="${payment_period}"
-                InterestPaymentPeriod="${payment_period}"
+                PrincipalPaymentPeriod="${nls_payment_period}"
+                InterestPaymentPeriod="${nls_payment_period}"
                 Term="${term}"
                 TermDue="${term}"
                 TermType="${term_type}"
@@ -392,7 +397,7 @@ const syncFacilityWithNLS = async (facility) => {
 
         // get nls loan details
         let nlsLoan = await retrieveNLSLoan(facility.nls_account_ref);
-
+        console.log('retrieved succesfully')
         // populate facility with updated info
         if(nlsLoan !== "nls_error") {
             // populate facility based on type
@@ -400,6 +405,7 @@ const syncFacilityWithNLS = async (facility) => {
                 case "consumer_revolving_line_of_credit":
                 case "consumer_installment_loan":
                 case "consumer_bnpl":
+                    console.log('inside switch statement!')
                     facility.balance = Math.floor(nlsLoan.loanDetails.Current_Principal_Balance * 100);
                     facility.monthly_payment = Math.floor(nlsLoan.paymentDetails.Next_Payment_Total_Amount * 100); // redundant: deprecate!
                     facility.next_payment_amount = Math.floor(nlsLoan.paymentDetails.Next_Payment_Total_Amount * 100);
@@ -440,7 +446,7 @@ const syncFacilityWithNLS = async (facility) => {
                         })
                         facility.remaining_term = termCount;
                     }
-
+                    console.log('end of sync function')
                     break;
                 default: console.log('cannot sync this type of credit product')
                     break;
@@ -450,7 +456,8 @@ const syncFacilityWithNLS = async (facility) => {
             console.log('nls error. Unable to synchronize');
             return 'ERROR: Unable to synchronize'
         }
-
+        console.log('post-synced facility')
+        console.log(facility)
         // save facility
         await facility.save();
 
@@ -577,18 +584,25 @@ const calculateAPR = async (offerTerms, periodicPayment) => {
         console.log(periodicPayment)
 
         const origination_fee_amount = (offerTerms.origination_fee / 10000) * (offerTerms.amount / 100);
+        console.log(`origination fee amount: ${origination_fee_amount}`)
         const loanAmount = offerTerms.amount / 100 - origination_fee_amount;
-        const paymentPeriod = offerTerms.repayment_frequency === 'monthly' ? 'MO' 
-            : offerTerms.repayment_frequency === 'biweekly' ? "BW" 
-            : offerTerms.repayment_frequency === 'semi_monthly' ? "SM" 
-            : offerTerms.repayment_frequency === 'semi_monthly_first_15th' ? "SM" 
-            : offerTerms.repayment_frequency === 'semi_monthly_last_15th' ? "SM" 
-            : offerTerms.repayment_frequency === 'semi_monthly_14' ? "S4"
-            : offerTerms.repayment_frequency === 'weekly'? "WE" 
+        console.log(`loan amount: ${offerTerms.amount}`)
+        const paymentPeriod = offerTerms.payment_period === 'monthly' ? 'MO' 
+            : offerTerms.payment_period === 'biweekly' ? "BW" 
+            : offerTerms.payment_period === 'semi_monthly' ? "SM" 
+            : offerTerms.payment_period === 'semi_monthly_first_15th' ? "SM" 
+            : offerTerms.payment_period === 'semi_monthly_last_15th' ? "SM" 
+            : offerTerms.payment_period === 'semi_monthly_14' ? "S4"
+            : offerTerms.payment_period === 'weekly'? "WE" 
             : "SM" // temporary default to semi_monthly
+        console.log(`payment period: ${paymentPeriod}`)
 
-        const first_payment_date = offerTerms.first_payment_date;
-
+        // check if offerTerms has first_payment_date
+        if(offerTerms.first_payment_date) {
+            console.log(`first payment date: ${offerTerms.first_payment_date}`)
+        }
+        const first_payment_date = offerTerms.first_payment_date ? offerTerms.first_payment_date : null;
+        console.log('post first payment date')
         // default values for first payment period
         var oddDaysInFirstPeriod = 0;
         var periodsInFirstPeriod = 1;
@@ -606,13 +620,18 @@ const calculateAPR = async (offerTerms, periodicPayment) => {
             oddDaysInFirstPeriod = days;
             
         }
-
+        var loanTerm = 'monthly'
+        if (offerTerms.loan_term) {
+            loanTerm = offerTerms.loan_term.term
+        } else if (offerTerms.term) {
+            loanTerm = offerTerms.term
+        }
                 
         let payload = {
             LoanAmount: loanAmount,
             FirstPaymentAmount: periodicPayment,
             RegularPaymentAmount: periodicPayment,
-            NumberOfPayments: offerTerms.term,
+            NumberOfPayments: loanTerm,
             PaymentPeriod: paymentPeriod,
             OddDaysInFirstPeriod: oddDaysInFirstPeriod,
             PeriodsInFirstPeriod: periodsInFirstPeriod,
@@ -642,10 +661,9 @@ const calculateAPR = async (offerTerms, periodicPayment) => {
         
     } catch (error) {
         console.log('error trying to accrue nls loan')
-        console.log(error.response.data);
-
         // Revoke token
         await revokeNLSAuthToken(nls_token)
+        console.log(error.response.data);
         return "nls_error"
     }
 

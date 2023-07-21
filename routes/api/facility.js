@@ -5,7 +5,7 @@ const auth = require('../../middleware/auth');
 const { encrypt, decrypt } = require('../../helpers/crypto');
 const router = express.Router();
 const Borrower = require('../../models/Borrower');
-const Application = require('../../models/Application');
+const {Application} = require('../../models/Application');
 const Facility = require('../../models/Facility');
 const Job = require('../../models/Job');
 const { calculate_periodic_payment } = require('../../helpers/docspring.js');
@@ -19,7 +19,7 @@ const axios = require('axios');
 const config = require('config');
 const responseFilters = require('../../helpers/responseFilters.json');
 const { response } = require('express');
-const { bankDetailsValidationRules, autopayValidationRules } = require('../../helpers/validator.js');
+const { bankDetailsValidationRules, autopayValidationRules, disbursementValidationRules } = require('../../helpers/validator.js');
 const { WebClient } = require('@slack/web-api');
 const Statement = require('../../models/Statement.js');
 const pierFormats = require('../../helpers/formats.js');
@@ -438,7 +438,7 @@ router.post('/:id/disable_autopay', [auth], async (req, res) => {
                 error_code: error.error_code,
                 error_message: error.error_message
             })
-        }
+            }
 
         // disable autopay
         facility.autopay = undefined;
@@ -537,53 +537,7 @@ router.get('/disbursements', [auth], async (req, res) => {
 })
 
 
-// @route     GET facility by id
-// @desc      Retrieve an facility's details
-// @access    Public
-router.get('/:id', [auth], async (req, res) => {
-    console.log(req.headers)
-    console.log(req.body)
-    console.log('get facility by id route hit')
 
-    try {
-        const facility = await Facility.findOne({ id: req.params.id });
-        if(!facility || facility.client_id !== req.client_id) {
-            const error = getError("facility_not_found")
-            return res.status(error.error_status).json({ 
-                error_type: error.error_type,
-                error_code: error.error_code,
-                error_message: error.error_message
-            })
-        }
-
-        // Response
-        let facilityResponse = await Facility.findOne({ id: facility.id, client_id: req.client_id })
-            .select(responseFilters['facility'] + ' -client_id');
-
-        if(facilityResponse.repayment_bank_details?.bank_account_number) {
-            facilityResponse.repayment_bank_details.bank_account_number = decrypt(facilityResponse.repayment_bank_details.bank_account_number)
-        }
-        res.json(facilityResponse);
-
-    } catch(err) {
-        console.error(err.message);
-        if(err.kind === 'ObjectId') {
-            const error = getError("invalid_facility_id")
-            return res.status(error.error_status).json({ 
-                error_type: error.error_type,
-                error_code: error.error_code,
-                error_message: error.error_message
-            })
-        }
-        console.error(err);
-        const error = getError("internal_server_error")
-        return res.status(error.error_status).json({ 
-            error_type: error.error_type,
-            error_code: error.error_code,
-            error_message: error.error_message
-        })
-    }
-})
 
 // @route     GET facilities
 // @desc      List all facilities
@@ -609,10 +563,114 @@ router.get('/', [auth], async (req, res) => {
             }
         }
 
+  
         console.log(facilities); 
         res.json(facilities);
 
     } catch(err) {
+        console.error(err);
+        const error = getError("internal_server_error")
+        return res.status(error.error_status).json({ 
+            error_type: error.error_type,
+            error_code: error.error_code,
+            error_message: error.error_message
+        })
+    }
+})
+
+// @route     GET facilities DEBT CAPITAL 
+// @desc      List all facilities
+// @access    Public
+router.get('/debt_capital', [auth], async (req, res) => {
+    console.log(req.headers)
+    console.log(req.body)
+
+    try {
+        const facilities = await Facility.find({ client_id: req.client_id })
+            .select(responseFilters['facility'] + ' -client_id');
+        
+        const debt_cap_summary = {}
+        var total_amount = 152500
+        var total_interest_due = 8459244
+        const time_start = new Date('2022-03-01')
+        const time_end = new Date('2024-12-31')
+
+        var advance_count = 62
+        // loop through facilities and decrypt each bank account number in repayment bank details
+        for(let i = 0; i < facilities.length; i++) {
+            total_amount = facilities[i].balance + total_amount
+            advance_count++
+        }
+        debt_cap_summary.total_amount = total_amount
+        debt_cap_summary.total_interest_due = total_interest_due
+        debt_cap_summary.time_start = time_start
+        debt_cap_summary.time_end = time_end
+        debt_cap_summary.advance_count = advance_count
+
+        // add more fields from loan tape examples
+        
+        console.log(debt_cap_summary); 
+        res.json(debt_cap_summary);
+
+    } catch(err) {
+        console.error(err);
+        const error = getError("internal_server_error")
+        return res.status(error.error_status).json({ 
+            error_type: error.error_type,
+            error_code: error.error_code,
+            error_message: error.error_message
+        })
+    }
+})
+
+// @route     GET facilities DEBT CAPITAL by ID
+// @desc      List all facilities
+// @access    Public
+router.get('/:id/debt_capital', [auth], async (req, res) => {
+    console.log(req.headers)
+    console.log(req.body)
+
+    try {
+        const facility = await Facility.findOne({ id: req.params.id });
+        if(!facility || facility.client_id !== req.client_id) {
+            const error = getError("facility_not_found")
+            return res.status(error.error_status).json({ 
+                error_type: error.error_type,
+                error_code: error.error_code,
+                error_message: error.error_message
+            })
+        }
+
+        const responseFields = {}
+        responseFields.account_number = facility.account_number
+        responseFields.amount = facility.balance
+        responseFields.days = facility.terms.term 
+        responseFields.interest_rate = 1800
+        responseFields.interest_due = 17500
+        responseFields.outstanding_balance = facility.balance
+        responseFields.facility_utilisation = 0.23
+        responseFields.advance_rate = 1800
+        responseFields.status = 'active'
+        responseFields.event_log = []
+        responseFields.payments = []
+        responseFields.reporting_date = '2023-07-20'
+        responseFields.days_accrued_interest = 0
+        responseFields.advance_term = 35
+        responseFields.paydown_date = '2023-08-25'
+
+        // Response
+        res.json(responseFields)
+
+    } catch(err) {
+        console.error(err.message);
+        if(err.kind === 'ObjectId') {
+            const error = getError("invalid_facility_id")
+            return res.status(error.error_status).json({ 
+                error_type: error.error_type,
+                error_code: error.error_code,
+                error_message: error.error_message
+            })
+        }
         console.error(err);
         const error = getError("internal_server_error")
         return res.status(error.error_status).json({ 
@@ -666,7 +724,255 @@ router.get('/:id/statements', [auth], async (req, res) => {
     }
 })
 
+// @route     POST /facilities/:facility_id/disbursements
+// @desc      Create a disbursement for a facility
+// @access    Public
+router.post('/:id/disbursements', [auth, disbursementValidationRules()], async (req, res) => {
+    console.log(req.headers)
+    console.log(req.body)
+    console.log('hit disbursement route')
 
+    const errors = validationResult(req);
+    if(!errors.isEmpty()) {
+        const response = {
+            error_type: "APPLICATION_ERROR",
+            error_code: "INVALID_INPUT",
+            error_message: "A value provided in the body is incorrect. See error_detail for more",
+            error_detail: errors.array()
+        }
+        return res.status(400).json(response);
+    }
+
+    try {
+        const facility_id = req.params.id;
+        const client_id = req.client_id;
+        const { amount, disbursement_bank_account, transfer_type  } = req.body
+
+        // check that facility exists
+        var facility = await Facility.findOne({ id: facility_id });
+        if(!facility || facility.client_id !== client_id) {
+            const error = getError("facility_not_found")
+            return res.status(error.error_status).json({ 
+                error_type: error.error_type,
+                error_code: error.error_code,
+                error_message: error.error_message
+            })
+        }
+
+        // check that customer is enabled for disbursements
+        const customer = await Customer.findOne({ client_id });
+
+        if(!customer.disbursement_ach_enabled) {
+            const error = getError("disbursement_ach_disabled")
+            return res.status(error.error_status).json({ 
+                error_type: error.error_type,
+                error_code: error.error_code,
+                error_message: error.error_message
+            })
+        }   
+
+        // calculate sum of existing disbursements for facility
+        const existingDisbursements = await Disbursement.find({ facility_id: facility_id });
+        var existingDisbursementsSum = 0;
+        for (let i = 0; i < existingDisbursements.length; i++) {
+            // skip if status is canceled or failed
+            if(['canceled', 'failed'].includes(existingDisbursements[i].status)) {
+                continue;
+            }
+            existingDisbursementsSum += existingDisbursements[i].amount;
+        }
+        // add new disbursement amount
+        existingDisbursementsSum += amount;
+
+        // check that disbursement amount is less than facility.terms.amount
+        if(existingDisbursementsSum > facility.terms.amount) {
+            const error = getError("disbursement_amount_exceeds_facility_amount")
+            return res.status(error.error_status).json({
+                error_type: error.error_type,
+                error_code: error.error_code,
+                error_message: error.error_message
+            })
+        }
+
+        // create the disbursement id
+        const disbursement_id = 'dsb_' + uuidv4().replace(/-/g, '');
+
+        const encrypted_bank_account_number = encrypt(disbursement_bank_account.bank_account_number)
+
+        // Build bank account object
+        const disbursement_bank_account_fields = {
+            bank_routing_number: disbursement_bank_account.bank_routing_number,
+            bank_account_number: encrypted_bank_account_number,
+            type: disbursement_bank_account.type
+        }
+
+        const disbursement_account = 'svb' // in future link client config to get dwolla/svb/etc
+
+        // create payment resource
+        let disbursement = new Disbursement({
+            id: disbursement_id,
+            facility_id,
+            client_id,
+            amount,
+            transfer_type,
+            disbursement_bank_account: disbursement_bank_account_fields,
+            disbursement_account
+        })
+        
+        await disbursement.save()
+
+        // ping slack for prod payments
+        if(process.env.NODE_ENV === 'production') {
+            const slack = new WebClient(config.get('slack_bot_id'));
+            (async () => {
+                try {
+                    const greeting = 'Bonjour! A disbursement has been submitted. Submit the disbursal! 🫡'
+                    const result = slack.chat.postMessage({
+                        channel: '#payments',
+                        text: greeting + '\n' + `*Amount:* $${amount/100}` + '\n' + 
+                            `*Status:* ${disbursement.status}` + '\n' + `*Facility id:* ${facility_id}` + '\n' +
+                            `*Disbursement id:* ${disbursement_id}` + '\n' 
+                            
+                    });
+                }
+                catch (error) { console.error(error); }
+            })();
+        }
+        console.log('successfully created a disbursement. Facility and disbursement details below:')
+        console.log(facility)
+        console.log(disbursement)
+        disbursement = await Disbursement.findOne({ id: disbursement_id })
+            .select(responseFilters['disbursement'] + ' -client_id');
+        res.json(disbursement);
+
+    } catch (err) {
+        console.error(err);
+        const error = getError("internal_server_error")
+        return res.status(error.error_status).json({ 
+            error_type: error.error_type,
+            error_code: error.error_code,
+            error_message: error.error_message
+        })
+    }
+});
+
+// @route     GET /facilities/:facility_id/disbursements/id
+// @desc      Get disbursements by id
+// @access    Public
+router.get('/:fac_id/disbursements/dsb_id', [auth], async (req, res) => {
+    console.log(req.headers)
+    console.log(req.body)
+
+    try {
+        const disbursement = await Disbursement.findOne({ id: req.params.dsb_id });
+        if(!disbursement || disbursement.client_id !== req.client_id) {
+            const error = getError("disbursement_not_found")
+            return res.status(error.error_status).json({ 
+                error_type: error.error_type,
+                error_code: error.error_code,
+                error_message: error.error_message
+            })
+        }
+
+        // Response
+        let disbursementResponse = await Disbursement.findOne({ id: req.params.dsb_id, client_id: req.client_id })
+            .select(responseFilters['disbursement'] + ' -client_id');
+
+        res.json(disbursementResponse);
+
+    } catch(err) {
+        console.error(err.message);
+        if(err.kind === 'ObjectId') {
+            const error = getError("invalid_disbursement_id")
+            return res.status(error.error_status).json({ 
+                error_type: error.error_type,
+                error_code: error.error_code,
+                error_message: error.error_message
+            })
+        }
+        console.error(err);
+        const error = getError("internal_server_error")
+        return res.status(error.error_status).json({ 
+            error_type: error.error_type,
+            error_code: error.error_code,
+            error_message: error.error_message
+        })
+    }
+});
+
+// @route     GET disbursements
+// @desc      List all disbursements for a facility
+// @access    Public
+router.get('/disbursements', [auth], async (req, res) => {
+    console.log(req.headers)
+    console.log(req.body)
+    console.log('list all disbursements for a facility route hit')
+
+    try {
+        const disbursements = await Disbursement.find({ client_id: req.client_id, facility_id: req.params.facility_id })
+            .select(responseFilters['disbursement'] + ' -client_id');
+
+        console.log(disbursements); 
+        res.json(disbursements);
+
+    } catch(err) {
+        console.error(err);
+        const error = getError("internal_server_error")
+        return res.status(error.error_status).json({ 
+            error_type: error.error_type,
+            error_code: error.error_code,
+            error_message: error.error_message
+        })
+    }
+})
+
+// @route     GET facility by id
+// @desc      Retrieve an facility's details
+// @access    Public
+router.get('/:id', [auth], async (req, res) => {
+    console.log(req.headers)
+    console.log(req.body)
+    console.log('get facility by id route hit')
+
+    try {
+        const facility = await Facility.findOne({ id: req.params.id });
+        if(!facility || facility.client_id !== req.client_id) {
+            const error = getError("facility_not_found")
+            return res.status(error.error_status).json({ 
+                error_type: error.error_type,
+                error_code: error.error_code,
+                error_message: error.error_message
+            })
+        }
+
+        // Response
+        let facilityResponse = await Facility.findOne({ id: facility.id, client_id: req.client_id })
+            .select(responseFilters['facility'] + ' -client_id');
+
+        if(facilityResponse.repayment_bank_details?.bank_account_number) {
+            facilityResponse.repayment_bank_details.bank_account_number = decrypt(facilityResponse.repayment_bank_details.bank_account_number)
+        }
+        res.json(facilityResponse);
+
+    } catch(err) {
+        console.error(err.message);
+        if(err.kind === 'ObjectId') {
+            const error = getError("invalid_facility_id")
+            return res.status(error.error_status).json({ 
+                error_type: error.error_type,
+                error_code: error.error_code,
+                error_message: error.error_message
+            })
+        }
+        console.error(err);
+        const error = getError("internal_server_error")
+        return res.status(error.error_status).json({ 
+            error_type: error.error_type,
+            error_code: error.error_code,
+            error_message: error.error_message
+        })
+    }
+})
 
 ////////////////////////
 // INTERNAL PRIVATE ROUTES FOR SYNCING WITH NLS

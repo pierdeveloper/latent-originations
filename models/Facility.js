@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 const moment = require('moment');
 const { BankAccountSchema, AutopaySchema } = require('./shared_schemas/BankAccount');
+const { Offer } = require('../models/Application.js')
 
 const FacilitySchema = new mongoose.Schema({
     id: {
@@ -157,12 +158,18 @@ const FacilitySchema = new mongoose.Schema({
             type: String,
             required: false
         },
-        fund_access: {
-            type: Array,
-            required: true
-        },
         grace_period: {
-            type: Number,
+            term: {
+                type: Number,
+                required: false
+            },
+            interest_rate: {
+                type: Number,
+                required: false
+            }
+        },
+        type: {
+            type: String,
             required: false
         },
         grace_period_interest_rate: {
@@ -179,8 +186,12 @@ const FacilitySchema = new mongoose.Schema({
         },
         interest_type: {
             type: String,
-            required: true,
+            required: false,
             default: 'fixed'
+        },
+        finance_charge: {
+            type: Number,
+            required: false
         },
         introductory_offer_interest_rate: {
             type: Number,
@@ -202,8 +213,30 @@ const FacilitySchema = new mongoose.Schema({
             type: String,
             required: false
         },
+        payment_period: {
+            type: String,
+            required: false
+        },
+        periodic_payment: {
+            type: Number,
+            required: false
+        },
+        loan_term: {
+            term: {
+                type: Number,
+                required: false
+            }, 
+            term_type: {
+                type: String,
+                required: false
+            }
+        },
         term: {
             type: Number,
+            required: false
+        },
+        term_type: {
+            type: String,
             required: false
         }
     },

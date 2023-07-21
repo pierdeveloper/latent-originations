@@ -101,6 +101,7 @@ router.patch('/:id', async (req, res) => {
             underwriting_enabled,
             statements_enabled,
             facility_autocreate,
+            legacy_single_application_offer_supported,
             blacklisted_states } = req.body;
 
         const customerFields = {};
@@ -116,6 +117,7 @@ router.patch('/:id', async (req, res) => {
         if(disbursement_ach_enabled !== null && disbursement_ach_enabled !== undefined) customerFields.disbursement_ach_enabled = disbursement_ach_enabled;
         if(underwriting_enabled !== null && underwriting_enabled !== undefined) customerFields.underwriting_enabled = underwriting_enabled;
         if(statements_enabled !== null && statements_enabled !== undefined) customerFields.statements_enabled = statements_enabled;
+        if(legacy_single_application_offer_supported !== null && legacy_single_application_offer_supported !== undefined) customerFields.legacy_single_application_offer_supported = legacy_single_application_offer_supported;
         if(facility_autocreate !== null && facility_autocreate !== undefined) customerFields.facility_autocreate = facility_autocreate;
 
         console.log(customerFields)
