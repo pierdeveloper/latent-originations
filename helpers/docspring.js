@@ -132,7 +132,6 @@ const generateDocspringDataFields = async (borrower_type, borrower, application,
                     ? (offer.amount / 100) 
                     : (offer.loan_term.term * periodic_payment_amount); // for zero interest, we want to avoid rounding to non zero fin charge
                 doc_data_fields.total_of_payments = `${formatter.format(total_of_payments)}`
-
                 // TODO: move this function into helper file!
                 // date incrementer for semi monthly date calcs
                 function incrementSemiMonthly(start_date, cadence, intervals) {
@@ -244,10 +243,17 @@ const generateDocspringDataFields = async (borrower_type, borrower, application,
                 
                 doc_data_fields.final_payment_due = final_due_date;
                 doc_data_fields.amount_to_you = `${formatter.format(disbursement_amount)}`;
+                doc_data_fields.amount_to_others = `${formatter.format(0)}`;
                 doc_data_fields.total_financed = `${formatter.format(disbursement_amount)}`;
                 doc_data_fields.origination_fee = `${formatter.format(origination_fee_amount / 100)}`;
                 doc_data_fields.total_loan_amount = `${formatter.format(disbursement_amount + origination_fee_amount / 100)}`;
                 doc_data_fields.borrower_name = `${consumer.first_name} ${consumer.last_name}`;
+                doc_data_fields.year_days = '360'
+                doc_data_fields.cs_email = 'support@pier-finance.com';
+                doc_data_fields.payment_period = payment_period_text.toLowerCase();
+                doc_data_fields.payment_period_2 = payment_period_text.toLowerCase();
+                doc_data_fields.payment_period_3 = payment_period_text.toLowerCase();
+
                 console.log('logging doc data fields')
                 console.log(doc_data_fields);
                 break;
@@ -597,7 +603,7 @@ const generateDocspringStatementDataFields = (facility, borrower_details, nls_lo
 
 // Loan doc templates (note: currently don't include statement template ids here)
 const docspringTemplates = {
-    consumer_installment_loan: "tpl_CxaCsG7LtLH9Jksez2",
+    consumer_installment_loan: "tpl_2LEhsEjPKkRxMx2MHd",
     consumer_bnpl: "tpl_eyyPPRERjTyn2Z4QJy",
     consumer_revolving_line_of_credit: "tpl_m5cpPsgcqxk2RzM2cN",
     consumer_closed_line_of_credit: "",
