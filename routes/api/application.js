@@ -197,6 +197,7 @@ router.post('/:id/evaluate', [auth, offerValidationRules()], async (req, res) =>
 
     // get client config
     const customer = await Customer.findOne({ client_id: req.client_id })
+    const client_id = customer.client_id
     
     // require underwriting enabled for production
     if(process.env.NODE_ENV !== 'development' && !customer.underwriting_enabled) {
