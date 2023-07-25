@@ -243,6 +243,10 @@ router.post('/:id/evaluate', [auth, offerValidationRules()], async (req, res) =>
         offerFields.third_party_disbursement_destination = offer.third_party_disbursement_destination
     }
 
+    // create offer id
+    offerFields.id = 'off_' + uuidv4().replace(/-/g, '');
+    console.log(`offer fields: ${JSON.stringify(offerFields)}`)
+
     try {
         // pull in application
         var application = await Application.findOne({ id: req.params.id});
@@ -579,6 +583,20 @@ router.post('/:id/evaluate', [auth, offerValidationRules()], async (req, res) =>
         if(credit_policy_rules_passed === credit_policy_rules_length) {
             application.status = 'approved'
             application.offer = offerFields
+            switch (application.credit_type) {
+                case 'consumer_revolving_line_of_credit':
+                    const locOffer = new LineOfCreditOffer(offerFields)
+                    await locOffer.save()
+                    break;
+                case 'consumer_installment_loan':
+                case 'consumer_bnpl':
+                    const loanOffer = new LoanOffer(offerFields)
+                    await loanOffer.save()
+                    break;
+                default:
+                    break;
+            }
+            
         } else {
             application.status = 'rejected'
         }
