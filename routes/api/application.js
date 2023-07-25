@@ -729,6 +729,7 @@ const applyOfferValidationRules = async (req, res, next) => {
     // in the future, check application type and customer config to determine which rules to apply
     const customer = await Customer.findOne({ id: req.client_id })
     const use_single_offer = customer.legacy_single_application_offer_supported ? true : false
+    console.log('this customer profiles single offer support is ' + use_single_offer)
     const application = await Application.findOne({ id: req.params.id })
     if(!application) {
         const error = getError("application_not_found")
