@@ -1103,7 +1103,10 @@ router.post('/:id/approve', [auth, applyOfferValidationRules], async (req, res) 
 
             if(areAllOffersCompliant || 
                 // temp whitelist for good cash prod testing
-                (whitelisted_ssn === '110924648' && application.credit_type === 'consumer_revolving_line_of_credit')) {
+                (whitelisted_ssn === '110924648' && application.credit_type === 'consumer_revolving_line_of_credit') ||
+
+                // temp whitelist for pull prod testing
+                (whitelisted_ssn === "doron@pullnow.com" && application.credit_type === 'consumer_installment_loan')) {
                 // accept approval if offer meets type 1 or type 2
                 if(use_single_offer_param) {
                     console.log(`offer fields: ${JSON.stringify(offerFields)}`)
