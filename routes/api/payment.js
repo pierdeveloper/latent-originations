@@ -52,7 +52,7 @@ router.post('/', [auth, paymentValidationRules()], async (req, res) => {
         }
 
         // check that customer is enabled for ach
-        const customer = await Customer.findOne({ client_id });
+        const customer = await Customer.findOne({client_id: client_id });
 
         if(!customer.repayment_ach_enabled) {
             const error = getError("repayment_ach_disabled")

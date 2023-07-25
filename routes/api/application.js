@@ -727,7 +727,7 @@ router.post('/:id/reject', [auth, rejectionValidationRules()], async (req, res) 
 
 const applyOfferValidationRules = async (req, res, next) => {
     // in the future, check application type and customer config to determine which rules to apply
-    const customer = await Customer.findOne({ id: req.client_id })
+    const customer = await Customer.findOne({ client_id: req.client_id })
     console.log(`customer client id is ${customer.client_id}`)
     console.log(`request client id is ${req.client_id}`)
     const use_single_offer = customer.legacy_single_application_offer_supported ? true : false

@@ -85,7 +85,7 @@ async function createFacility(loan_agreement_id, client_id, autocreate = false) 
         }
 
         // Get portfolio id from client resource
-        const client = await Customer.findOne({client_id});
+        const client = await Customer.findOne({client_id: client_id});
         
         // check if this is not auto create + client auto create set to true
         if(!autocreate && client.facility_autocreate) {

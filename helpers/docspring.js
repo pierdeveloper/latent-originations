@@ -170,7 +170,6 @@ const generateDocspringDataFields = async (borrower_type, borrower, application,
                                 break;
                             default: // semi monthly 
                                 // if t is 1st thru 13th of the month add 15 days
-                                console.log(`t.date is ${t.date()}`)
                                 if (t.date() <= 13) {
                                     t.add(15, 'days');
                                 

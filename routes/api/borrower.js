@@ -227,7 +227,7 @@ router.post('/consumer', [auth, consumerValidationRules()], async (req, res) => 
             phone,
             ssn } = req.body
 
-        const customer = await Customer.findOne({ client_id });
+        const customer = await Customer.findOne({ client_id: client_id });
 
         // confirm the address is not blacklisted for this customer
         const blacklisted_states = customer.blacklisted_states;

@@ -760,7 +760,7 @@ router.post('/:id/disbursements', [auth, disbursementValidationRules()], async (
         }
 
         // check that customer is enabled for disbursements
-        const customer = await Customer.findOne({ client_id });
+        const customer = await Customer.findOne({ client_id: client_id });
 
         if(!customer.disbursement_ach_enabled) {
             const error = getError("disbursement_ach_disabled")
