@@ -92,6 +92,8 @@ router.post('/check_offers', [auth, checkOfferValidationRules()], async (req, re
         offers 
     } = req.body
 
+    const customer = await Customer.findOne({ client_id: req.client_id });
+
     // validate that state has limits
     const state_thresholds = consumer_state_limits[state]
 
@@ -223,6 +225,9 @@ router.post('/check_offers', [auth, checkOfferValidationRules()], async (req, re
     }
     console.log('offers: ', offers)
 
+    // temp white list logic for pull
+    const whitelisted_ssn = customer.duplicate_ssn_whitelist[0] ? customer.duplicate_ssn_whitelist[0] : null
+
     // for each offer, check if it is within our limits
     for(let i = 0; i < offers.length; i++) {
         const offer = offers[i];
@@ -242,7 +247,8 @@ router.post('/check_offers', [auth, checkOfferValidationRules()], async (req, re
 
         var apr = offer.apr 
 
-        if(isOfferCompliant) {
+        if(isOfferCompliant ||
+            whitelisted_ssn === 'doron@pullnow.com') {
             console.log('offer limits are valid!')
             // update bool
             offer_amount_within_limits = true
