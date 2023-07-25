@@ -248,20 +248,6 @@ router.post('/:id/evaluate', [auth, offerValidationRules()], async (req, res) =>
     offerFields.id = 'off_' + uuidv4().replace(/-/g, '');
     console.log(`offer fields: ${JSON.stringify(offerFields)}`)
 
-    // if line of credit create lineofcreditoffer
-    if (application.credit_type === 'consumer_revolving_line_of_credit') {
-        const lineOfCreditOffer = new LineOfCreditOffer(offerFields)
-        lineOfCreditOffer.grace_period = { term: offerFields.grace_period, interest_rate: offerFields.grace_period_interest_rate }
-        offersList.push(lineOfCreditOffer)
-
-    } else { // else create loanoffer
-        const loanOffer = new LoanOffer(offerFields)
-        const term_type = offerFields.repayment_frequency === "monthly" ? "months" : "payments"
-        loanOffer.loan_term = { term: offerFields.term, term_type: term_type }
-        loanOffer.grace_period = { term: offerFields.grace_period, interest_rate: offerFields.grace_period_interest_rate }
-        loanOffer.payment_period = offerFields.repayment_frequency
-        offersList.push(loanOffer)
-    }  
 
     try {
         // pull in application
@@ -269,6 +255,21 @@ router.post('/:id/evaluate', [auth, offerValidationRules()], async (req, res) =>
         if(client_id === "eca6a64850e2417baeb5ed47ad6b7ad3") {
             application.third_party_disbursement_destination = offerFields.third_party_disbursement_destination
         }
+
+        // if line of credit create lineofcreditoffer
+        if (application.credit_type === 'consumer_revolving_line_of_credit') {
+            const lineOfCreditOffer = new LineOfCreditOffer(offerFields)
+            lineOfCreditOffer.grace_period = { term: offerFields.grace_period, interest_rate: offerFields.grace_period_interest_rate }
+            offersList.push(lineOfCreditOffer)
+
+        } else { // else create loanoffer
+            const loanOffer = new LoanOffer(offerFields)
+            const term_type = offerFields.repayment_frequency === "monthly" ? "months" : "payments"
+            loanOffer.loan_term = { term: offerFields.term, term_type: term_type }
+            loanOffer.grace_period = { term: offerFields.grace_period, interest_rate: offerFields.grace_period_interest_rate }
+            loanOffer.payment_period = offerFields.repayment_frequency
+            offersList.push(loanOffer)
+        }  
         // confirm application exists
         if (!application || application.client_id !== req.client_id) {
             const error = getError("application_not_found")

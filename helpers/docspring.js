@@ -285,6 +285,11 @@ const generateDocspringDataFields = async (borrower_type, borrower, application,
             doc_data_fields.merchant_name = `${application.third_party_disbursement_destination}.`
             doc_data_fields.amount_to_others = `${formatter.format(offer.amount / 100)}`
             doc_data_fields.amount_to_you = `${formatter.format(0)}`
+            doc_data_fields.year_days = undefined;
+            doc_data_fields.cs_email = undefined;
+            doc_data_fields.payment_period = undefined;
+            doc_data_fields.payment_period_2 = undefined;
+            doc_data_fields.payment_period_3 = undefined;
         }
     } else { // business borrower
         // standard fields
