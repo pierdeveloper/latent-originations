@@ -136,9 +136,10 @@ const generateDocspringDataFields = async (borrower_type, borrower, application,
                 // date incrementer for semi monthly date calcs
                 function incrementSemiMonthly(start_date, cadence, intervals) {
                     var t = moment(start_date, "MM/DD/YYYY");
-
+                    console.log('semi monthly date schedule for cadence ', cadence)
                     // loop through for each interval
                     for (let i = 0; i < intervals; i++) {
+                        console.log(t.format('MM/DD/YYYY'))
                         switch (cadence) {
                             case 'semi_monthly_first_15th':
                                 // if t is the 1st of the month set it to the 15th
@@ -169,15 +170,18 @@ const generateDocspringDataFields = async (borrower_type, borrower, application,
                                 break;
                             default: // semi monthly 
                                 // if t is 1st thru 13th of the month add 15 days
+                                console.log(`t.date is ${t.date()}`)
                                 if (t.date() <= 13) {
                                     t.add(15, 'days');
                                 
                                 // else if t is the 14th or 15th of the month, if t+15 is not in this month, set it to the last day, otherwise set it to t+15
                                 } else if (t.date() === 14 || t.date() === 15) {
                                     if (t.add(15, 'days').month() !== t.month()) {
+                                        console.log('t +15 is not in this month. T.month is ', t.month())
                                         t.endOf('month');
                                     } else {
-                                        t.add(15, 'days');
+                                        // next loop
+                                        continue
                                     }
                                 // else if t is the 31st of the month, set t to the 15th of the next month
                                 } else if (t.date() === 31) {
@@ -236,10 +240,10 @@ const generateDocspringDataFields = async (borrower_type, borrower, application,
                                 
 
                 const final_due_date = repayment_frequency === 'monthly'
-                    ? moment(first_payment_date, "MM/DD/YYYY").add(offer.term-1,'months').format("MM/DD/YYYY") : repayment_frequency === 'biweekly'
-                    ? moment(first_payment_date, "MM/DD/YYYY").add((offer.term-1) * 2,'weeks').format("MM/DD/YYYY") : repayment_frequency === 'weekly'
-                    ? moment(first_payment_date, "MM/DD/YYYY").add(offer.term-1,'weeks').format("MM/DD/YYYY") 
-                    : incrementSemiMonthly(first_payment_date, repayment_frequency, offer.term-1).format("MM/DD/YYYY"); 
+                    ? moment(first_payment_date, "MM/DD/YYYY").add(offer.loan_term.term-1,'months').format("MM/DD/YYYY") : repayment_frequency === 'biweekly'
+                    ? moment(first_payment_date, "MM/DD/YYYY").add((offer.loan_term.term-1) * 2,'weeks').format("MM/DD/YYYY") : repayment_frequency === 'weekly'
+                    ? moment(first_payment_date, "MM/DD/YYYY").add(offer.loan_term.term-1,'weeks').format("MM/DD/YYYY") 
+                    : incrementSemiMonthly(first_payment_date, repayment_frequency, offer.loan_term.term-1).format("MM/DD/YYYY"); 
                 
                 doc_data_fields.final_payment_due = final_due_date;
                 doc_data_fields.amount_to_you = `${formatter.format(disbursement_amount)}`;
