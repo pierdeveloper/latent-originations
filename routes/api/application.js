@@ -212,6 +212,7 @@ router.post('/:id/evaluate', [auth, offerValidationRules()], async (req, res) =>
     const { offer, offers } = req.body
 
     // build offer object
+    const offersList = [];
     const offerFields = {};
     offerFields.amount = offer.amount;
     offerFields.interest_rate = offer.interest_rate;
@@ -246,6 +247,21 @@ router.post('/:id/evaluate', [auth, offerValidationRules()], async (req, res) =>
     // create offer id
     offerFields.id = 'off_' + uuidv4().replace(/-/g, '');
     console.log(`offer fields: ${JSON.stringify(offerFields)}`)
+
+    // if line of credit create lineofcreditoffer
+    if (application.credit_type === 'consumer_revolving_line_of_credit') {
+        const lineOfCreditOffer = new LineOfCreditOffer(offerFields)
+        lineOfCreditOffer.grace_period = { term: offerFields.grace_period, interest_rate: offerFields.grace_period_interest_rate }
+        offersList.push(lineOfCreditOffer)
+
+    } else { // else create loanoffer
+        const loanOffer = new LoanOffer(offerFields)
+        const term_type = offerFields.repayment_frequency === "monthly" ? "months" : "payments"
+        loanOffer.loan_term = { term: offerFields.term, term_type: term_type }
+        loanOffer.grace_period = { term: offerFields.grace_period, interest_rate: offerFields.grace_period_interest_rate }
+        loanOffer.payment_period = offerFields.repayment_frequency
+        offersList.push(loanOffer)
+    }  
 
     try {
         // pull in application
@@ -362,6 +378,7 @@ router.post('/:id/evaluate', [auth, offerValidationRules()], async (req, res) =>
             );
             offerFields.periodic_payment = periodic_payment_amount;
             offer.periodic_payment = periodic_payment_amount;
+            offersList[0].periodic_payment = periodic_payment_amount;
 
             console.log('periodic payment amount: ', periodic_payment_amount)
             // calc offer
@@ -370,8 +387,10 @@ router.post('/:id/evaluate', [auth, offerValidationRules()], async (req, res) =>
             
             offerFields.apr = apr;
             offer.apr = apr
+            offersList[0].apr = apr;
         } else if (application.credit_type === 'consumer_revolving_line_of_credit') {
             offer.apr = offer.interest_rate
+            offersList[0].apr = offer.interest_rate
         }
 
         
@@ -583,19 +602,21 @@ router.post('/:id/evaluate', [auth, offerValidationRules()], async (req, res) =>
         if(credit_policy_rules_passed === credit_policy_rules_length) {
             application.status = 'approved'
             application.offer = offerFields
-            switch (application.credit_type) {
-                case 'consumer_revolving_line_of_credit':
-                    const locOffer = new LineOfCreditOffer(offerFields)
-                    await locOffer.save()
-                    break;
-                case 'consumer_installment_loan':
-                case 'consumer_bnpl':
-                    const loanOffer = new LoanOffer(offerFields)
-                    await loanOffer.save()
-                    break;
-                default:
-                    break;
-            }
+            offersList.forEach(async offer => {
+                switch (application.credit_type) {
+                    case 'consumer_revolving_line_of_credit':
+                        const locOffer = new LineOfCreditOffer(offer)
+                        await locOffer.save()
+                        break;
+                    case 'consumer_installment_loan':
+                    case 'consumer_bnpl':
+                        const loanOffer = new LoanOffer(offer)
+                        await loanOffer.save()
+                        break;
+                    default:
+                        break;
+                }
+            })
             
         } else {
             application.status = 'rejected'
