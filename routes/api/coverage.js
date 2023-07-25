@@ -226,7 +226,7 @@ router.post('/check_offers', [auth, checkOfferValidationRules()], async (req, re
     console.log('offers: ', offers)
 
     // temp white list logic for pull
-    const whitelisted_ssn = customer.duplicate_ssn_whitelist[0] ? customer.duplicate_ssn_whitelist[0] : null
+
 
     // for each offer, check if it is within our limits
     for(let i = 0; i < offers.length; i++) {
@@ -247,8 +247,7 @@ router.post('/check_offers', [auth, checkOfferValidationRules()], async (req, re
 
         var apr = offer.apr 
 
-        if(isOfferCompliant ||
-            whitelisted_ssn === 'doron@pullnow.com') {
+        if(isOfferCompliant) {
             console.log('offer limits are valid!')
             // update bool
             offer_amount_within_limits = true
