@@ -74,7 +74,7 @@ router.post('/:id/approve', [], async (req, res) => {
         }
 
         // calculate and set apr for each offer
-        await calculateAPRs(offersList)
+        //await calculateAPRs(offersList)
 
         // save offers
         offersList.forEach(async offer => {
