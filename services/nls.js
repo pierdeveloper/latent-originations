@@ -69,7 +69,7 @@ const revokeNLSAuthToken = async (token) => {
 // calculate aprs for a list of offers
 const calculateAPRs = async (offers) => {
     // Generate Auth token
-    const nls_token = await generateNLSAuthToken();
+    //const nls_token = await generateNLSAuthToken();
 
     // create response object
     const offers_data = [...offers]
@@ -80,6 +80,7 @@ const calculateAPRs = async (offers) => {
 
         try {
             // NLS config
+            /*
             const url = `https://api.nortridgehosting.com/25.0/nls/apr`;
             const auth = 'Bearer ' + nls_token;
             const header = {'Authorization': auth, 'content-type': 'application/x-www-form-urlencoded'}
@@ -116,14 +117,15 @@ const calculateAPRs = async (offers) => {
             const apr = parseInt((apr_raw.toFixed(2) * 100).toFixed(0))
     
             console.log(`apr: ${apr}`)
-            offers_data[index].apr = apr;
+            */
+            offers_data[index].apr = offer.interest_rate;
 
         } catch (error) {
             console.log('error trying to accrue nls loan')
             console.log(error.response.data);
     
             // Revoke token
-            await revokeNLSAuthToken(nls_token)
+            //await revokeNLSAuthToken(nls_token)
             return "nls_error"
         }
         
@@ -133,7 +135,7 @@ const calculateAPRs = async (offers) => {
     }
         
     // Revoke token
-    await revokeNLSAuthToken(nls_token);
+    //await revokeNLSAuthToken(nls_token);
 
     return offers_data;
               
